@@ -1,0 +1,37 @@
+# Ignore all hidden files/dirs by default
+.*
+!.gitignore
+!.env.example
+
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+build/
+
+# Env
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+
+# Editors / OS
+.DS_Store
+.vscode/
+.idea/
+
+# pnpm
+.pnpm-store/
+
+# Local tooling output (machine-state, ephemeral)
+scripts/outputs/
+
+# Agent instructions (kept out of VCS)
+/AGENTS.md
+
+# PGlite persisted test database
+packages/db/test-pgdata/
