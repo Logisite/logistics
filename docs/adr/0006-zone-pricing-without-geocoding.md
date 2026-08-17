@@ -1,0 +1,5 @@
+# Zone-based pricing without geocoding
+
+We price deliveries as `zone-pair × size/weight class × delivery option`, per currency. A Zone is a named catchment area around a Hub; at Booking, the customer picks the Recipient's Zone from a dropdown (Pick-a-zone). Geocoding is explicitly deferred — addresses are stored as free-form text plus a Zone and an optional Hub reference.
+
+We chose this over distance-calculated pricing. Distance pricing needs a geocoding provider day one and cannot compute estimates offline; Pick-a-zone needs no coordinates, works in dead zones (matching the offline-first posture), and keeps the local pricing matrix in PGlite exact. It is hard to reverse because pricing tables, the booking form, and the offline estimate all assume the zone selector; future geocoding would be additive on top of zones, not a replacement. A future reader may wonder why we don't just geo-locate addresses — this ADR explains that zones were a deliberate product choice, not an omission.

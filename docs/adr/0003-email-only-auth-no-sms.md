@@ -1,0 +1,5 @@
+# Email-only auth, no phone/SMS anywhere
+
+We chose email-only authentication: email verification required before first login, password reset via email, JWT access token with rotating refresh tokens and device-session revocation. **SMS is disallowed system-wide** — no SMS provider, architecture, or references anywhere; email (via Resend) and in-app push are the only notification channels, now and in the future. Recipients are matched to shipments by the email captured at booking.
+
+We chose this over phone/OTP or phone-based-sync signup (which the original spec emphasized) to keep onboarding simple and global, and to avoid SMS costs and telephony fragility. This is hard to reverse because recipient matching, session model, and all notification plumbing assume email+push only; a future reader seeing "why is phone optional / why no SMS?" needs this context.

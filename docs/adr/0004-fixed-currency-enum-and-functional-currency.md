@@ -1,0 +1,5 @@
+# Fixed currency set with functional reporting currency
+
+We use a fixed set of exactly three currencies — USD, EUR, GBP — as a closed enum, not an arbitrary multi-currency system. All monetary values are stored as integer minor units (with a `currency` field). Collections (especially COD) can be in any of the three; a single **Functional (reporting) currency is configured by Admin**, and collections are converted to it at Reconciliation via asset-wise fx rates.
+
+We chose this over (a) a single currency and (b) open-ended arbitrary currency support. Single currency skips customer/settle context incorrectly; full arbitrary multi-currency adds currency admin and per-currency pricing UX we don't need. A closed 3-set gives per-currency pricing rules and honest reporting while staying simple. This is hard to reverse because pricing rules, COD settlement, and the schema all assume the closed enum; it's surprising because currency is fixed but multi-valued and reporting is centralized on one functional currency.

@@ -1,0 +1,5 @@
+# Modular monolith with vertical slices
+
+We structure the backend as a modular monolith organized by bounded context: code lives under `src/modules/<domain>` (identity, customers, merchants, locations, shipments, operations, cod, notifications, sync, reporting), each module owns its tables, hides internals, and exposes only a public barrel `index.ts`. Inside modules, features are organized as vertical slices — one file per feature by default, split into route/handler/command/validator only when a slice grows. Modules communicate via synchronous typed function calls for queries and in-process events for "happens-after".
+
+We chose this over (a) microservices for the operational weight and (b) a layered monolith (top-level controllers/services/repositories) because layered organization spreads each feature across layers and weakens domain boundaries. This is hard to reverse because it sets the module boundaries, the only import surface (barrel `index.ts`), and the "one DB writer per dataset" rule. It's surprising because the whole backend is one deployable, yet strict boundaries apply. Enforcement uses `eslint-plugin-boundaries` and path aliases in CI.
