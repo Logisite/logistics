@@ -3,6 +3,8 @@ import type { ErrorRequestHandler, Express } from 'express';
 
 import { authRouter } from './auth/router.js';
 import type { Mailer } from './auth/emails.js';
+import { customerRouter } from './customers/router.js';
+import { merchantRouter } from './merchants/router.js';
 import type { Db } from './db.js';
 import { HttpError } from './errors.js';
 
@@ -30,6 +32,8 @@ export function createApp({ db, mailer }: AppDeps): Express {
   });
 
   app.use('/auth', authRouter(db, mailer));
+  app.use('/customers', customerRouter(db));
+  app.use('/merchants', merchantRouter(db));
 
   app.use(errorHandler);
 
