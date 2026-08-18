@@ -1,10 +1,37 @@
 import express from 'express';
-import type { Express } from 'express';
+import type { ErrorRequestHandler, Express } from 'express';
 
-export const app: Express = express();
+import { authRouter } from './auth/router.js';
+import type { Mailer } from './auth/emails.js';
+import type { Db } from './db.js';
+import { HttpError } from './errors.js';
 
-app.use(express.json());
+export interface AppDeps {
+  db: Db;
+  mailer: Mailer;
+}
 
-app.get('/health', (_req, res) => {
-  res.json({ status: 'ok' });
-});
+const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
+  if (err instanceof HttpError) {
+    res.status(err.status).json({ error: { code: err.code, message: err.message } });
+    return;
+  }
+  console.error(err);
+  res.status(500).json({ error: { code: 'INTERNAL', message: 'Internal server error' } });
+};
+
+export function createApp({ db, mailer }: AppDeps): Express {
+  const app = express();
+
+  app.use(express.json());
+
+  app.get('/health', (_req, res) => {
+    res.json({ status: 'ok' });
+  });
+
+  app.use('/auth', authRouter(db, mailer));
+
+  app.use(errorHandler);
+
+  return app;
+}

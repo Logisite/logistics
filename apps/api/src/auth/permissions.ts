@@ -1,0 +1,59 @@
+export const ROLE_NAMES = [
+  'ADMIN',
+  'DISPATCHER',
+  'BRANCH_OPERATOR',
+  'DRIVER',
+  'MERCHANT',
+  'CUSTOMER',
+] as const;
+
+export type RoleName = (typeof ROLE_NAMES)[number];
+
+export const PERMISSIONS = {
+  AUTH_INVITE: 'auth:invite',
+  AUTH_MANAGE_BUNDLES: 'auth:manage-bundles',
+  AUTH_REVOKE_ANY_SESSION: 'auth:revoke-any-session',
+  AUDIT_READ: 'audit:read',
+  RUNS_MANAGE: 'runs:manage',
+  SYNC_PUSH: 'sync:push',
+  SHIPMENTS_MANAGE: 'shipments:manage',
+  PROFILE_MANAGE: 'profile:manage',
+} as const;
+
+export type Permission = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
+
+export const ROLE_PERMISSIONS: Record<RoleName, readonly Permission[]> = {
+  ADMIN: [
+    PERMISSIONS.AUTH_INVITE,
+    PERMISSIONS.AUTH_MANAGE_BUNDLES,
+    PERMISSIONS.AUTH_REVOKE_ANY_SESSION,
+    PERMISSIONS.AUDIT_READ,
+    PERMISSIONS.RUNS_MANAGE,
+    PERMISSIONS.SYNC_PUSH,
+    PERMISSIONS.SHIPMENTS_MANAGE,
+    PERMISSIONS.PROFILE_MANAGE,
+  ],
+  DISPATCHER: [PERMISSIONS.AUDIT_READ, PERMISSIONS.RUNS_MANAGE],
+  BRANCH_OPERATOR: [PERMISSIONS.RUNS_MANAGE],
+  DRIVER: [PERMISSIONS.SYNC_PUSH],
+  MERCHANT: [PERMISSIONS.SHIPMENTS_MANAGE],
+  CUSTOMER: [PERMISSIONS.PROFILE_MANAGE],
+};
+
+export const ROLE_DESCRIPTIONS: Record<RoleName, string> = {
+  ADMIN: 'Full control of the platform.',
+  DISPATCHER: 'Plans and manages runs.',
+  BRANCH_OPERATOR: 'Operates a branch and its runs.',
+  DRIVER: 'Delivers shipments and syncs mobile updates.',
+  MERCHANT: 'Books and manages their own shipments.',
+  CUSTOMER: 'Books and tracks their own shipments.',
+};
+
+export const ROLE_PRIORITY: readonly RoleName[] = [
+  'ADMIN',
+  'DISPATCHER',
+  'BRANCH_OPERATOR',
+  'MERCHANT',
+  'DRIVER',
+  'CUSTOMER',
+];

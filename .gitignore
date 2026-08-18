@@ -34,4 +34,4 @@ scripts/outputs/
 /AGENTS.md
 
 # PGlite persisted test database
-packages/db/test-pgdata/
+test-pgdata/

@@ -1,5 +1,6 @@
 export * from './enums.js';
 export * from './identity.js';
+export * from './audit.js';
 export * from './customers.js';
 export * from './merchants.js';
 export * from './locations.js';

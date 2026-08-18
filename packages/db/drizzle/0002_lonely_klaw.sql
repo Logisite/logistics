@@ -1,0 +1,3 @@
+-- Consolidated into 0001: previous_refresh_token_hash added there.
+-- This migration is a no-op for new installs. Existing databases that already
+-- applied the original 0002 will skip this harmlessly.
