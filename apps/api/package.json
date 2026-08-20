@@ -17,6 +17,8 @@
   },
   "devDependencies": {
     "@electric-sql/pglite": "^0.5.4",
+    "@electric-sql/pglite-postgis": "^0.2.5",
+    "@electric-sql/pglite-socket": "^0.2.8",
     "@types/bcryptjs": "^3.0.0",
     "@types/express": "^5.0.0",
     "@types/node": "^24.13.3",

@@ -33,5 +33,6 @@ scripts/outputs/
 # Agent instructions (kept out of VCS)
 /AGENTS.md
 
-# PGlite persisted test database
+# PGlite persisted test databases
 test-pgdata/
+test-pgdata-pglite/

@@ -18,6 +18,7 @@ export const PERMISSIONS = {
   SYNC_PUSH: 'sync:push',
   SHIPMENTS_MANAGE: 'shipments:manage',
   PROFILE_MANAGE: 'profile:manage',
+  LOCATIONS_MANAGE: 'locations:manage',
 } as const;
 
 export type Permission = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
@@ -32,6 +33,7 @@ export const ROLE_PERMISSIONS: Record<RoleName, readonly Permission[]> = {
     PERMISSIONS.SYNC_PUSH,
     PERMISSIONS.SHIPMENTS_MANAGE,
     PERMISSIONS.PROFILE_MANAGE,
+    PERMISSIONS.LOCATIONS_MANAGE,
   ],
   DISPATCHER: [PERMISSIONS.AUDIT_READ, PERMISSIONS.RUNS_MANAGE],
   BRANCH_OPERATOR: [PERMISSIONS.RUNS_MANAGE],
@@ -41,7 +43,7 @@ export const ROLE_PERMISSIONS: Record<RoleName, readonly Permission[]> = {
 };
 
 export const ROLE_DESCRIPTIONS: Record<RoleName, string> = {
-  ADMIN: 'Full control of the platform.',
+  ADMIN: 'Full control of the platform, including location management.',
   DISPATCHER: 'Plans and manages runs.',
   BRANCH_OPERATOR: 'Operates a branch and its runs.',
   DRIVER: 'Delivers shipments and syncs mobile updates.',

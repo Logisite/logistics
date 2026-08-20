@@ -12,6 +12,6 @@ export default defineConfig({
     include: ['test/**/*.test.ts'],
     globals: true,
     globalSetup: './test/setup.ts',
-    hookTimeout: 60_000,
+    hookTimeout: 120_000,
   },
 });

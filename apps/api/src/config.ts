@@ -6,6 +6,7 @@ export interface AppConfig {
   appUrl: string;
   bootstrapOwnerEmail?: string;
   bootstrapOwnerPassword?: string;
+  mapboxAccessToken: string;
 }
 
 export function getConfig(): AppConfig {
@@ -25,5 +26,6 @@ export function getConfig(): AppConfig {
     appUrl: process.env.APP_URL ?? 'http://localhost:3000',
     bootstrapOwnerEmail: process.env.BOOTSTRAP_OWNER_EMAIL,
     bootstrapOwnerPassword: process.env.BOOTSTRAP_OWNER_PASSWORD,
+    mapboxAccessToken: process.env.MAPBOX_ACCESS_TOKEN ?? '',
   };
 }
