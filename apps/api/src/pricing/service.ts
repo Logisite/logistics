@@ -351,44 +351,6 @@ export async function createBooking(db: Db, ctx: AuthContext, input: BookingInpu
 }
 
 // ---------------------------------------------------------------------------
-// Cancel booking
-// ---------------------------------------------------------------------------
-
-export async function cancelBooking(db: Db, ctx: AuthContext, shipmentId: string) {
-  const shipment = await db.query.shipments.findFirst({
-    where: (t, { eq }) => eq(t.id, shipmentId),
-  });
-  if (!shipment) throw notFound('NOT_FOUND', 'Shipment not found');
-
-  if (shipment.status !== 'BOOKED' && shipment.status !== 'DRAFT') {
-    throw badRequest('INVALID_STATUS', 'Only BOOKED or DRAFT shipments can be cancelled');
-  }
-
-  const [updated] = await db
-    .update(shipments)
-    .set({ status: 'CANCELLED', updatedAt: new Date() })
-    .where(eq(shipments.id, shipmentId))
-    .returning();
-  if (!updated) throw new Error('cancelBooking: update returned nothing');
-
-  await db.insert(shipmentEvents).values({
-    shipmentId: shipment.id,
-    fromStatus: shipment.status,
-    toStatus: 'CANCELLED',
-    actorUserId: ctx.userId,
-    occurredAt: new Date(),
-  });
-
-  await writeAudit(db, ctx, {
-    action: 'booking.cancel',
-    entityType: 'shipment',
-    entityId: shipment.id,
-  });
-
-  return updated;
-}
-
-// ---------------------------------------------------------------------------
 // Admin: Pricing rules CRUD
 // ---------------------------------------------------------------------------
 

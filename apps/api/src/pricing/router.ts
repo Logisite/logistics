@@ -128,21 +128,6 @@ export function pricingRouter(db: Db): Router {
     },
   );
 
-  // ── Cancel booking ────────────────────────────────────────────────────────
-
-  router.patch(
-    '/bookings/:id/cancel',
-    requireAuth(db),
-    requirePermission(PERMISSIONS.BOOKING_CREATE),
-    async (req, res) => {
-      const ctx = res.locals.auth as AuthContext;
-      const { id } = req.params;
-      if (typeof id !== 'string') throw badRequest('VALIDATION', 'Invalid shipment id');
-      const shipment = await service.cancelBooking(db, ctx, id);
-      res.json({ shipment });
-    },
-  );
-
   // ── Admin: Pricing rules ──────────────────────────────────────────────────
 
   const requireAdmin = [requireAuth(db), requirePermission(PERMISSIONS.PRICING_MANAGE)];

@@ -150,41 +150,7 @@ describe('pricing booking + cancel + immutability', () => {
     });
   });
 
-  // ── Cancel ───────────────────────────────────────────────────────────────
-
-  describe('cancel', () => {
-    let cancelShipmentId: string;
-
-    beforeAll(async () => {
-      const res = await request(f.app)
-        .post('/pricing/book')
-        .set('Authorization', customer())
-        .send(bookingPayload({ recipientName: 'Cancel Test' }));
-      cancelShipmentId = res.body.shipment.id;
-    });
-
-    it('cancels a BOOKED shipment', async () => {
-      const res = await request(f.app)
-        .patch(`/pricing/bookings/${cancelShipmentId}/cancel`)
-        .set('Authorization', customer());
-      expect(res.status).toBe(200);
-      expect(res.body.shipment.status).toBe('CANCELLED');
-    });
-
-    it('rejects cancel of already cancelled shipment', async () => {
-      const res = await request(f.app)
-        .patch(`/pricing/bookings/${cancelShipmentId}/cancel`)
-        .set('Authorization', customer());
-      expect(res.status).toBe(400);
-    });
-
-    it('rejects cancel of non-existent shipment', async () => {
-      const res = await request(f.app)
-        .patch('/pricing/bookings/00000000-0000-0000-0000-000000000000/cancel')
-        .set('Authorization', customer());
-      expect(res.status).toBe(404);
-    });
-  });
+  // ── Cancel moved to shipments module (issue 07): see shipments.cancel.test.ts ──
 
   // ── Immutability ─────────────────────────────────────────────────────────
 

@@ -37,3 +37,4 @@ scripts/outputs/
 test-pgdata/
 test-pgdata-pglite/
 test-pgdata-pricing/
+test-pgdata-shipments/

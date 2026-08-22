@@ -38,4 +38,21 @@ export default tseslint.config(
       },
     },
   },
+  {
+    // Module barrels: code outside a module may only import its index.ts.
+    files: ['apps/api/src/**/*.ts', '!apps/api/src/modules/**'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['**/modules/*/*', '!**/modules/*/index.*'],
+              message: 'Import the module public API via modules/<name>/index.js only.',
+            },
+          ],
+        },
+      ],
+    },
+  },
 );

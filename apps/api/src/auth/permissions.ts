@@ -17,6 +17,7 @@ export const PERMISSIONS = {
   RUNS_MANAGE: 'runs:manage',
   SYNC_PUSH: 'sync:push',
   SHIPMENTS_MANAGE: 'shipments:manage',
+  SHIPMENT_TRANSITION: 'shipments:transition',
   PROFILE_MANAGE: 'profile:manage',
   LOCATIONS_MANAGE: 'locations:manage',
   PRICING_MANAGE: 'pricing:manage',
@@ -35,13 +36,14 @@ export const ROLE_PERMISSIONS: Record<RoleName, readonly Permission[]> = {
     PERMISSIONS.RUNS_MANAGE,
     PERMISSIONS.SYNC_PUSH,
     PERMISSIONS.SHIPMENTS_MANAGE,
+    PERMISSIONS.SHIPMENT_TRANSITION,
     PERMISSIONS.PROFILE_MANAGE,
     PERMISSIONS.LOCATIONS_MANAGE,
     PERMISSIONS.PRICING_MANAGE,
     PERMISSIONS.QUOTE_CREATE,
     PERMISSIONS.BOOKING_CREATE,
   ],
-  DISPATCHER: [PERMISSIONS.AUDIT_READ, PERMISSIONS.RUNS_MANAGE],
+  DISPATCHER: [PERMISSIONS.AUDIT_READ, PERMISSIONS.RUNS_MANAGE, PERMISSIONS.SHIPMENT_TRANSITION],
   BRANCH_OPERATOR: [PERMISSIONS.RUNS_MANAGE],
   DRIVER: [PERMISSIONS.SYNC_PUSH],
   MERCHANT: [
@@ -54,7 +56,7 @@ export const ROLE_PERMISSIONS: Record<RoleName, readonly Permission[]> = {
 
 export const ROLE_DESCRIPTIONS: Record<RoleName, string> = {
   ADMIN: 'Full control of the platform, including location and pricing management.',
-  DISPATCHER: 'Plans and manages runs.',
+  DISPATCHER: 'Plans and manages runs; moves shipments through the delivery state machine.',
   BRANCH_OPERATOR: 'Operates a branch and its runs.',
   DRIVER: 'Delivers shipments and syncs mobile updates.',
   MERCHANT: 'Books and manages their own shipments.',
