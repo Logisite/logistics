@@ -6,6 +6,7 @@ import type { Mailer } from './auth/emails.js';
 import { customerRouter } from './customers/router.js';
 import { locationRouter } from './locations/router.js';
 import { merchantRouter } from './merchants/router.js';
+import { pricingRouter } from './pricing/router.js';
 import type { Db } from './db.js';
 import { HttpError } from './errors.js';
 
@@ -36,6 +37,7 @@ export function createApp({ db, mailer }: AppDeps): Express {
   app.use('/customers', customerRouter(db));
   app.use('/locations', locationRouter(db));
   app.use('/merchants', merchantRouter(db));
+  app.use('/pricing', pricingRouter(db));
 
   app.use(errorHandler);
 

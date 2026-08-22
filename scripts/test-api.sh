@@ -17,7 +17,23 @@ if ! (echo > /dev/tcp/127.0.0.1/5432) 2>/dev/null; then
   exit 1
 fi
 
+# Reset the schema so every suite starts from a clean database and can be
+# re-run independently of previous runs.
+reset_db() {
+  (cd apps/api && ./node_modules/.bin/tsx scripts/reset-test-db.ts) >/dev/null
+}
+
+reset_db
 run "auth" pnpm -F @logistics/api exec vitest run --reporter=verbose test/auth.test.ts
+reset_db
 run "customers" pnpm -F @logistics/api exec vitest run --reporter=verbose test/customers.test.ts
+reset_db
 run "merchants" pnpm -F @logistics/api exec vitest run --reporter=verbose test/merchants.test.ts
+reset_db
 run "locations" pnpm -F @logistics/api exec vitest run --reporter=verbose test/locations.test.ts
+reset_db
+run "pricing-admin" pnpm -F @logistics/api exec vitest run --reporter=verbose test/pricing.admin.test.ts
+reset_db
+run "pricing-quote" pnpm -F @logistics/api exec vitest run --reporter=verbose test/pricing.quote.test.ts
+reset_db
+run "pricing-booking" pnpm -F @logistics/api exec vitest run --reporter=verbose test/pricing.booking.test.ts

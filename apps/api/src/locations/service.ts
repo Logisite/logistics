@@ -129,7 +129,7 @@ export async function listPickupLocations(db: Db) {
 export async function createPickupLocation(
   db: Db,
   ctx: AuthContext,
-  input: { hubId?: string | null; name: string; address: string },
+  input: { hubId?: string | null; zoneId?: string | null; name: string; address: string },
 ) {
   if (input.hubId) {
     const hub = await db.query.hubs.findFirst({
@@ -138,12 +138,20 @@ export async function createPickupLocation(
     if (!hub) throw badRequest('VALIDATION', 'Hub not found');
   }
 
+  if (input.zoneId) {
+    const zone = await db.query.zones.findFirst({
+      where: (t, { eq }) => eq(t.id, input.zoneId!),
+    });
+    if (!zone) throw badRequest('VALIDATION', 'Zone not found');
+  }
+
   const coords = await geocodeAddress(input.address);
 
   const [loc] = await db
     .insert(pickupLocations)
     .values({
       hubId: input.hubId ?? null,
+      zoneId: input.zoneId ?? null,
       name: input.name,
       address: input.address,
       ...(coords && { location: { x: coords.lng, y: coords.lat } }),
@@ -164,7 +172,7 @@ export async function updatePickupLocation(
   db: Db,
   ctx: AuthContext,
   locationId: string,
-  input: { hubId?: string | null; name?: string; address?: string; isActive?: boolean },
+  input: { hubId?: string | null; zoneId?: string | null; name?: string; address?: string; isActive?: boolean },
 ) {
   const existing = await db.query.pickupLocations.findFirst({
     where: (t, { eq }) => eq(t.id, locationId),
@@ -178,6 +186,13 @@ export async function updatePickupLocation(
     if (!hub) throw badRequest('VALIDATION', 'Hub not found');
   }
 
+  if (input.zoneId) {
+    const zone = await db.query.zones.findFirst({
+      where: (t, { eq }) => eq(t.id, input.zoneId!),
+    });
+    if (!zone) throw badRequest('VALIDATION', 'Zone not found');
+  }
+
   const addressChanged = input.address !== undefined && input.address !== existing.address;
   const coords = addressChanged ? await geocodeAddress(input.address!) : null;
 
@@ -185,6 +200,7 @@ export async function updatePickupLocation(
     .update(pickupLocations)
     .set({
       ...(input.hubId !== undefined && { hubId: input.hubId }),
+      ...(input.zoneId !== undefined && { zoneId: input.zoneId }),
       ...(input.name !== undefined && { name: input.name }),
       ...(input.address !== undefined && { address: input.address }),
       ...(input.isActive !== undefined && { isActive: input.isActive }),
@@ -347,7 +363,7 @@ export async function listActiveHubs(db: Db) {
 export async function listActivePickupLocations(db: Db) {
   return db.query.pickupLocations.findMany({
     where: (t, { eq }) => eq(t.isActive, true),
-    columns: { id: true, name: true, address: true, hubId: true },
+    columns: { id: true, name: true, address: true, hubId: true, zoneId: true },
     orderBy: (t, { asc }) => [asc(t.name)],
   });
 }

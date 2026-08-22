@@ -28,12 +28,14 @@ const updateHubSchema = z.object({
 
 const createPickupLocationSchema = z.object({
   hubId: z.string().uuid().nullable().optional(),
+  zoneId: z.string().uuid().nullable().optional(),
   name: z.string().min(1).max(200),
   address: z.string().min(1).max(500),
 });
 
 const updatePickupLocationSchema = z.object({
   hubId: z.string().uuid().nullable().optional(),
+  zoneId: z.string().uuid().nullable().optional(),
   name: z.string().min(1).max(200).optional(),
   address: z.string().min(1).max(500).optional(),
   isActive: z.boolean().optional(),

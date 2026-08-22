@@ -100,3 +100,16 @@ export const shipmentEvents = pgTable(
     unique('shipment_events_shipment_occurred_unique').on(t.shipmentId, t.occurredAt),
   ],
 );
+
+export const idempotencyKeys = pgTable(
+  'idempotency_keys',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    key: text('key').notNull().unique(),
+    requestHash: text('request_hash').notNull(),
+    shipmentId: uuid('shipment_id').references(() => shipments.id, { onDelete: 'set null' }),
+    response: jsonb('response'),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+);

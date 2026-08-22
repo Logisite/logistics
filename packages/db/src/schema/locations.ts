@@ -28,6 +28,7 @@ export const pickupLocations = pgTable(
   {
     id: uuid('id').primaryKey().defaultRandom(),
     hubId: uuid('hub_id').references(() => hubs.id, { onDelete: 'set null' }),
+    zoneId: uuid('zone_id').references(() => zones.id, { onDelete: 'set null' }),
     name: text('name').notNull(),
     address: text('address').notNull(),
     location: geometry('location', { type: 'point', mode: 'xy', srid: 4326 }),
@@ -36,6 +37,7 @@ export const pickupLocations = pgTable(
   },
   (t) => [
     index('pickup_locations_hub_id_idx').on(t.hubId),
+    index('pickup_locations_zone_id_idx').on(t.zoneId),
     index('pickup_locations_spatial_idx').using('gist', t.location),
   ],
 );

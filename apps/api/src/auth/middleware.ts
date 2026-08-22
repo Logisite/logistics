@@ -2,7 +2,7 @@ import type { RequestHandler } from 'express';
 
 import { and, eq } from 'drizzle-orm';
 
-import { roleGrants, roles, sessions, users } from '@logistics/db';
+import { roleGrants, roles, users } from '@logistics/db';
 
 import { getConfig } from '../config.js';
 import type { Db } from '../db.js';

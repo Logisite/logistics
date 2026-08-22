@@ -36,3 +36,4 @@ scripts/outputs/
 # PGlite persisted test databases
 test-pgdata/
 test-pgdata-pglite/
+test-pgdata-pricing/
