@@ -1,4 +1,3 @@
-// Public API of the shipments module. Import nothing from its internal files.
 export {
   TRANSITIONS,
   TERMINAL_STATUSES,
@@ -10,3 +9,4 @@ export type { ShipmentStatus } from './transitions.js';
 export { transition, cancelShipment, getShipmentWithEvents } from './service.js';
 export type { TransitionInput, TransitionResult } from './service.js';
 export { shipmentsRouter } from './router.js';
+export { trackingRouter } from './tracking.js';

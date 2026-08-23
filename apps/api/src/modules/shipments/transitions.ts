@@ -8,8 +8,7 @@ export const TERMINAL_STATUSES: readonly ShipmentStatus[] = [
   'CANCELLED',
 ];
 
-// Single source of truth for allowed status transitions.
-// Every mutation of shipments.status MUST go through the transition() gateway.
+// source of truth, every shipments.status write goes through transition()
 export const TRANSITIONS: Readonly<Record<ShipmentStatus, readonly ShipmentStatus[]>> = {
   DRAFT: ['BOOKED', 'CANCELLED'],
   BOOKED: ['PICKED_UP', 'CANCELLED'],

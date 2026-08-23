@@ -6,13 +6,11 @@ import { badRequest } from '../../errors.js';
 import type { AuthContext } from '../../auth/middleware.js';
 import { requireAuth, requirePermission } from '../../auth/middleware.js';
 import { PERMISSIONS } from '../../auth/permissions.js';
+import type { Mailer } from '../../auth/emails.js';
 
 import * as service from './service.js';
 import type { ShipmentStatus } from './transitions.js';
-
-// ---------------------------------------------------------------------------
-// Zod schemas
-// ---------------------------------------------------------------------------
+import { notifyTransition } from '../notifications/index.js';
 
 const transitionBodySchema = z.object({
   locationLabel: z.string().max(500).optional(),
@@ -36,10 +34,6 @@ function shipmentId(req: { params: Record<string, unknown> }): string {
   return id;
 }
 
-// ---------------------------------------------------------------------------
-// Router
-// ---------------------------------------------------------------------------
-
 const ACTION_ROUTES: ReadonlyArray<readonly [string, ShipmentStatus]> = [
   ['pickup', 'PICKED_UP'],
   ['transit', 'IN_TRANSIT'],
@@ -50,18 +44,29 @@ const ACTION_ROUTES: ReadonlyArray<readonly [string, ShipmentStatus]> = [
   ['returned', 'RETURNED'],
 ];
 
-export function shipmentsRouter(db: Db): Router {
+export function shipmentsRouter(db: Db, mailer?: Mailer): Router {
   const router = Router();
+
+  // a notification failure must never fail the transition
+  async function maybeNotify(
+    result: Awaited<ReturnType<typeof service.transition>>,
+  ): Promise<void> {
+    if (!mailer || !result.event) return;
+    try {
+      await notifyTransition(db, mailer, result.shipment, result.event);
+    } catch (err) {
+      console.error('notification fan-out failed', err);
+    }
+  }
 
   const staff = [requireAuth(db), requirePermission(PERMISSIONS.SHIPMENT_TRANSITION)];
 
-  // Explicit action routes; every one funnels through the single transition()
-  // gateway in service.ts.
   for (const [path, toStatus] of ACTION_ROUTES) {
     router.post(`/:id/${path}`, ...staff, async (req, res) => {
       const ctx = res.locals.auth as AuthContext;
       const input = parse(transitionBodySchema, req.body ?? {});
       const result = await service.transition(db, ctx, shipmentId(req), toStatus, input);
+      await maybeNotify(result);
       res.status(200).json(result);
     });
   }
@@ -70,11 +75,13 @@ export function shipmentsRouter(db: Db): Router {
     const ctx = res.locals.auth as AuthContext;
     const input = parse(transitionBodySchema, req.body ?? {});
     const result = await service.cancelShipment(db, ctx, shipmentId(req), input);
+    await maybeNotify(result);
     res.status(200).json(result);
   });
 
-  router.get('/:id/events', ...staff, async (req, res) => {
-    res.json(await service.getShipmentWithEvents(db, shipmentId(req)));
+  router.get('/:id/events', requireAuth(db), async (req, res) => {
+    const ctx = res.locals.auth as AuthContext;
+    res.json(await service.getShipmentWithEvents(db, ctx, shipmentId(req)));
   });
 
   return router;

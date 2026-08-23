@@ -24,6 +24,7 @@ const ROLE_EMAILS: Record<ShipmentsRole, string> = {
 export interface ShipmentsFixture {
   db: Db;
   app: ReturnType<typeof createApp>;
+  mailer: FakeMailer;
   ids: {
     originZoneId: string;
     destZoneId: string;
@@ -40,8 +41,9 @@ export interface ShipmentsFixture {
 export async function setupShipmentsTest(roles: ShipmentsRole[]): Promise<ShipmentsFixture> {
   const testDb = await createTestDb({ postgis: true });
   const db = testDb.db;
+  const mailer = new FakeMailer();
   await seedAuthData(db);
-  const app = createApp({ db, mailer: new FakeMailer() } satisfies AppDeps);
+  const app = createApp({ db, mailer } satisfies AppDeps);
 
   for (const role of roles) {
     await seedUserWithRoles(
@@ -140,6 +142,7 @@ export async function setupShipmentsTest(roles: ShipmentsRole[]): Promise<Shipme
   return {
     db,
     app,
+    mailer,
     ids: { originZoneId, destZoneId, pickupLocationId, deliveryOptionId, bookedShipmentId },
     token(role) {
       const t = tokens.get(role);

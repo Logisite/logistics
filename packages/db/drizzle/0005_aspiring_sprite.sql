@@ -1,0 +1,1 @@
+ALTER TABLE "notification_logs" ALTER COLUMN "user_id" DROP NOT NULL;

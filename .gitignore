@@ -38,3 +38,5 @@ test-pgdata/
 test-pgdata-pglite/
 test-pgdata-pricing/
 test-pgdata-shipments/
+test-pgdata-tracking/
+test-pgdata-cod/

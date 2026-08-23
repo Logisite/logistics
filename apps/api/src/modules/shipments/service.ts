@@ -10,7 +10,6 @@ import { conflict, forbidden, notFound } from '../../errors.js';
 import { canTransition } from './transitions.js';
 import type { ShipmentStatus } from './transitions.js';
 
-// Roles allowed to transition/cancel any shipment regardless of ownership.
 const STAFF_ROLES: ReadonlySet<string> = new Set(['ADMIN', 'DISPATCHER']);
 
 export interface TransitionInput {
@@ -41,12 +40,7 @@ function buildMetadata(input: TransitionInput): Record<string, unknown> | null {
   return Object.keys(meta).length > 0 ? meta : null;
 }
 
-/**
- * The ONLY writer of shipments.status: locks the row, validates against the
- * transition table, then updates status and appends the event in one
- * transaction. Same-state calls are idempotent no-ops (no new event);
- * invalid attempts are audited and rejected with 409.
- */
+/** same state is an idempotent no-op, invalid attempts are audited then rejected */
 export async function transition(
   db: Db,
   ctx: AuthContext,
@@ -128,10 +122,6 @@ export async function transition(
   }
 }
 
-/**
- * Cancel is a transition gated by ownership: staff may cancel anything,
- * senders only their own shipments.
- */
 export async function cancelShipment(
   db: Db,
   ctx: AuthContext,
@@ -150,12 +140,22 @@ export async function cancelShipment(
   return transition(db, ctx, shipmentId, 'CANCELLED', input);
 }
 
-/** Timeline read: current shipment plus its immutable event trail, oldest first. */
-export async function getShipmentWithEvents(db: Db, shipmentId: string) {
+/** Timeline read: staff see everything; everyone else only their own shipments. */
+export async function getShipmentWithEvents(db: Db, ctx: AuthContext, shipmentId: string) {
   const shipment = await db.query.shipments.findFirst({
     where: (t, { eq: eql }) => eql(t.id, shipmentId),
   });
   if (!shipment) throw notFound('NOT_FOUND', 'Shipment not found');
+
+  if (!STAFF_ROLES.has(ctx.roleName)) {
+    const email = ctx.email.toLowerCase();
+    const visible =
+      shipment.senderUserId === ctx.userId ||
+      shipment.senderEmail?.toLowerCase() === email ||
+      shipment.recipientEmail?.toLowerCase() === email;
+    // 404 rather than 403 so strangers cannot probe ids.
+    if (!visible) throw notFound('NOT_FOUND', 'Shipment not found');
+  }
 
   const events = await db.query.shipmentEvents.findMany({
     where: (t, { eq: eql }) => eql(t.shipmentId, shipmentId),
