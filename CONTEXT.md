@@ -55,7 +55,7 @@ The act of choosing a Recipient's Zone from a dropdown at Booking instead of geo
 A company-operated logistics facility for sorting, holding, and package pickup/drop-off.
 
 **Pickup Location**:
-A designated point — a Hub or partner site — where packages are dropped off or collected.
+A designated point (a Hub or partner site) where packages are dropped off or collected.
 _Avoid_: drop point
 
 **Address**:
@@ -179,3 +179,22 @@ The last server-acknowledged Sequence position; a Device resumes from it after r
 **Static Reference**:
 Server-distributed tables (pricing rules, Hubs, Zones, Driver rosters) that Devices refresh.
 _Avoid_: lookup table
+
+**Shadow Account**:
+A Customer account created silently by a first confirmed action, carrying an expiry that freezes login only and deletes nothing.
+_Avoid_: guest account
+
+**Contact Point**:
+A verified channel address (phone, email, WhatsApp) attached to a User; the canonical anchor for Customers is the phone.
+_Avoid_: username
+
+**Capability Link**:
+A signed URL granting exactly one action (book at agreed price, track one shipment, claim an account); possession of the message is the authorisation.
+_Avoid_: magic link, token link
+
+**Booking Request**:
+A negotiation artifact: customer intent awaiting an operator price offer before booking. Planned.
+_Avoid_: quote request
+
+**Self-claim Run**:
+A run-sheet built by its own driver from queued shipments without a dispatcher. Planned.
