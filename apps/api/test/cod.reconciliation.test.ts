@@ -15,7 +15,7 @@ describe('cod: capture + reconciliation', () => {
     await f.cleanup();
   });
 
-  const admin = () => f.token('ADMIN');
+  const admin = () => `Bearer ${f.token('ADMIN')}`;
   const branch = () => `Bearer ${f.token('BRANCH_OPERATOR')}`;
 
   async function collect(

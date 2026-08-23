@@ -60,11 +60,29 @@ describe('notifications: milestone fan-out', () => {
   });
 
   it('emails an unregistered recipient at the booking address with null userId', async () => {
-    // bookedShipmentId recipient has no user yet -> EMAIL row with null userId.
-    const emails = await emailRows(f.ids.bookedShipmentId, 'PICKED_UP');
+    // A fresh booking whose recipient email has NO user account.
+    const res = await request(f.app)
+      .post('/pricing/book')
+      .set('Authorization', `Bearer ${f.token('CUSTOMER1')}`)
+      .send({
+        recipientName: 'Ghost Recipient',
+        recipientEmail: 'unregistered-notify@test.com',
+        pickupLocationId: f.ids.pickupLocationId,
+        destinationZoneId: f.ids.destZoneId,
+        deliveryOptionId: f.ids.deliveryOptionId,
+        packages: [{ sizeClass: 'SMALL', weightClass: 'LIGHT', quantity: 1 }],
+      });
+    expect(res.status).toBe(201);
+    const ghostId = res.body.shipment.id as string;
+
+    await request(f.app)
+      .post(`/shipments/${ghostId}/pickup`)
+      .set('Authorization', `Bearer ${f.token('ADMIN')}`);
+
+    const emails = await emailRows(ghostId, 'PICKED_UP');
     const raw = emails.find((r) => r.userId === null);
     expect(raw).toBeTruthy();
-    expect(f.mailer.notificationsTo('recipient-shipments@test.com').length).toBeGreaterThanOrEqual(1);
+    expect(f.mailer.notificationsTo('unregistered-notify@test.com').length).toBeGreaterThanOrEqual(1);
   });
 
   it('skips IN_TRANSIT entirely', async () => {
@@ -78,18 +96,24 @@ describe('notifications: milestone fan-out', () => {
   });
 
   it('never double-sends the same milestone', async () => {
-    // PICKED_UP already fired once; a same-state replay is a no-op event=null.
+    const id = await f.bookShipment('No Duplicate');
+    const firstPost = await request(f.app)
+      .post(`/shipments/${id}/pickup`)
+      .set('Authorization', `Bearer ${f.token('ADMIN')}`);
+    expect(firstPost.status).toBe(200);
+
+    // Same-state replay is a no-op event=null.
     const res = await request(f.app)
-      .post(`/shipments/${f.ids.bookedShipmentId}/pickup`)
+      .post(`/shipments/${id}/pickup`)
       .set('Authorization', `Bearer ${f.token('ADMIN')}`);
     expect(res.status).toBe(200);
     expect(res.body.event).toBeNull();
 
     const picks = f.mailer.sent.filter(
-      (m) => m.kind === 'notification' && m.subject?.includes('PICKED_UP'),
+      (m) => m.kind === 'notification' && m.body.includes(id),
     );
     expect(picks.length).toBeLessThanOrEqual(2); // one per audience address at most
-    const rowsForPickup = await emailRows(f.ids.bookedShipmentId, 'PICKED_UP');
+    const rowsForPickup = await emailRows(id, 'PICKED_UP');
     expect(rowsForPickup.length).toBeLessThanOrEqual(2);
   });
 
