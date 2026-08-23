@@ -6,6 +6,7 @@ import {
   pgTable,
   text,
   timestamp,
+  unique,
   uuid,
 } from 'drizzle-orm/pg-core';
 
@@ -122,4 +123,38 @@ export const disputes = pgTable(
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [index('disputes_collection_id_idx').on(t.collectionId)],
+);
+export const fxRates = pgTable(
+  'fx_rates',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    fromCurrency: currencyEnum('from_currency').notNull(),
+    toCurrency: currencyEnum('to_currency').notNull(),
+    // decimal string like 0.85528000, never a float
+    rate: numeric('rate', { precision: 18, scale: 8 }).notNull(),
+    rateDate: timestamp('rate_date', { withTimezone: true }).notNull(),
+    createdByUserId: uuid('created_by_user_id').references(() => users.id, {
+      onDelete: 'set null',
+    }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [unique('fx_rates_pair_date_unique').on(t.fromCurrency, t.toCurrency, t.rateDate)],
+);
+
+export const settlementLines = pgTable(
+  'settlement_lines',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    settlementId: uuid('settlement_id')
+      .notNull()
+      .references(() => settlements.id, { onDelete: 'cascade' }),
+    reconciliationId: uuid('reconciliation_id')
+      .notNull()
+      .references(() => reconciliations.id, { onDelete: 'restrict' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    unique('settlement_lines_reconciliation_unique').on(t.reconciliationId),
+    index('settlement_lines_settlement_id_idx').on(t.settlementId),
+  ],
 );

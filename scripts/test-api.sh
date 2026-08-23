@@ -37,3 +37,15 @@ reset_db
 run "pricing-quote" pnpm -F @logistics/api exec vitest run --reporter=verbose test/pricing.quote.test.ts
 reset_db
 run "pricing-booking" pnpm -F @logistics/api exec vitest run --reporter=verbose test/pricing.booking.test.ts
+reset_db
+run "shipments-transitions" pnpm -F @logistics/api exec vitest run --reporter=verbose test/shipments.transitions.test.ts
+reset_db
+run "shipments-cancel" pnpm -F @logistics/api exec vitest run --reporter=verbose test/shipments.cancel.test.ts
+reset_db
+run "tracking" pnpm -F @logistics/api exec vitest run --reporter=verbose test/tracking.test.ts
+reset_db
+run "notifications" pnpm -F @logistics/api exec vitest run --reporter=verbose test/notifications.test.ts
+reset_db
+run "cod-reconciliation" pnpm -F @logistics/api exec vitest run --reporter=verbose test/cod.reconciliation.test.ts
+reset_db
+run "cod-settlement" pnpm -F @logistics/api exec vitest run --reporter=verbose test/cod.settlement.test.ts

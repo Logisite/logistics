@@ -16,9 +16,8 @@ export const notificationLogs = pgTable(
   'notification_logs',
   {
     id: uuid('id').primaryKey().defaultRandom(),
-    userId: uuid('user_id')
-      .notNull()
-      .references(() => users.id, { onDelete: 'cascade' }),
+    // nullable, unregistered recipients get email at their booking address
+    userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }),
     channel: notificationChannelEnum('channel').notNull(),
     type: text('type').notNull(),
     subject: text('subject'),
