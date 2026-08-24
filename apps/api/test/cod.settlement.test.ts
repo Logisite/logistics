@@ -2,7 +2,7 @@ import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { eq } from 'drizzle-orm';
 
-import { disputes, settlements } from '@logistics/db';
+import { disputes, settlementLines, settlements } from '@logistics/db';
 
 import { setupCodTest } from './cod.fixture.js';
 import type { CodFixture } from './cod.fixture.js';

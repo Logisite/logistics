@@ -121,16 +121,25 @@ describe('cod: capture + reconciliation', () => {
   });
 
   it('rejects mismatched sums with 409 and refuses double reconciliation', async () => {
-    const rate = await request(f.app)
+    const eurRate = await request(f.app)
       .post('/cod/fx-rates')
       .set('Authorization', admin())
-      .send({ fromCurrency: 'EUR', toCurrency: 'GBP', rate: '0.85000000', rateDate: new Date(Date.now() - 86400000).toISOString() });
-    void rate;
+      .send({
+        fromCurrency: 'EUR',
+        toCurrency: 'GBP',
+        rate: '0.85000000',
+        rateDate: new Date(Date.now() - 86400000).toISOString(),
+      });
+    expect(eurRate.status).toBe(201);
 
-    const id = await f.deliveredShipment();
-    const c = await collect(id, { amountCents: 10000, currency: 'EUR' });
-    void c;
+    const idA = await f.deliveredShipment();
+    const c1 = await collect(idA, { amountCents: 10000, currency: 'EUR' });
+    expect(c1.status).toBe(201);
+    const idB = await f.deliveredShipment();
+    const c2 = await collect(idB, { amountCents: 2000, currency: 'GBP' });
+    expect(c2.status).toBe(201);
 
+    // Deposit does not cover both collections (10000*0.85 + 2000 = 10500).
     const deposit = await request(f.app)
       .post('/cod/deposits')
       .set('Authorization', branch())
@@ -140,31 +149,19 @@ describe('cod: capture + reconciliation', () => {
         amountCents: 9999,
         currency: 'GBP',
       });
-
-    const list = await request(f.app)
-      .get('/cod/pending')
-      .set('Authorization', branch());
-    void list;
-
-    // Grab the EUR collection id straight from the API is not exposed; use pending + db.
-    const rows = await f.db.query.collections.findMany();
-    const eur = rows.find((r) => r.currency === 'EUR' && r.amountCents === 10000)!;
-    const second = rows.find((r) => r.currency === 'GBP' && r.amountCents === 2000 && r.id !== eur.id);
-
-    const ids = second ? [eur.id, second.id] : [eur.id];
+    expect(deposit.status).toBe(201);
 
     const bad = await request(f.app)
       .post('/cod/reconciliations')
       .set('Authorization', admin())
-      .send({ depositId: deposit.body.deposit.id, collectionIds: ids });
-    if (ids.length === 2) {
-      expect(bad.status).toBe(409);
-      expect(bad.body.error.code).toBe('RECON_MISMATCH');
-    } else {
-      // single-collection fallback still must not silently pass
-      expect([409, 201]).toContain(bad.status);
-    }
+      .send({
+        depositId: deposit.body.deposit.id,
+        collectionIds: [c1.body.collection.id, c2.body.collection.id],
+      });
+    expect(bad.status).toBe(409);
+    expect(bad.body.error.code).toBe('RECON_MISMATCH');
 
+    // Single collection that converts exactly: 10000 * 0.85 = 8500.
     const goodDeposit = await request(f.app)
       .post('/cod/deposits')
       .set('Authorization', branch())
@@ -174,16 +171,18 @@ describe('cod: capture + reconciliation', () => {
         amountCents: 8500,
         currency: 'GBP',
       });
+    expect(goodDeposit.status).toBe(201);
+
     const good = await request(f.app)
       .post('/cod/reconciliations')
       .set('Authorization', admin())
-      .send({ depositId: goodDeposit.body.deposit.id, collectionIds: [eur.id] });
+      .send({ depositId: goodDeposit.body.deposit.id, collectionIds: [c1.body.collection.id] });
     expect(good.status).toBe(201);
 
     const again = await request(f.app)
       .post('/cod/reconciliations')
       .set('Authorization', admin())
-      .send({ depositId: goodDeposit.body.deposit.id, collectionIds: [eur.id] });
+      .send({ depositId: goodDeposit.body.deposit.id, collectionIds: [c1.body.collection.id] });
     expect(again.status).toBe(409);
     expect(again.body.error.code).toBe('ALREADY_RECONCILED');
   });

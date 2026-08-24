@@ -25,13 +25,15 @@ type Currency = 'USD' | 'EUR' | 'GBP';
 // one functional currency per deployment, ADR 0004
 export const FUNCTIONAL_CURRENCY: Currency = getConfig().functionalCurrency;
 
+type Queryable = Pick<Db, 'select'>;
+
 async function latestRate(
-  db: Db,
+  q: Queryable,
   from: Currency,
   to: Currency,
   at: Date,
 ): Promise<{ rate: string; rateDate: Date }> {
-  const [row] = await db
+  const [row] = await q
     .select({ rate: fxRates.rate, rateDate: fxRates.rateDate })
     .from(fxRates)
     .where(and(eq(fxRates.fromCurrency, from), eq(fxRates.toCurrency, to), lt(fxRates.rateDate, at)))
@@ -164,7 +166,7 @@ export async function reconcile(
     async function rateFor(from: Currency): Promise<string> {
       if (from === FUNCTIONAL_CURRENCY) return '1';
       if (!rates.has(from)) {
-        rates.set(from, await latestRate(db, from, FUNCTIONAL_CURRENCY, depositedAt));
+        rates.set(from, await latestRate(tx, from, FUNCTIONAL_CURRENCY, depositedAt));
       }
       return rates.get(from)!.rate;
     }

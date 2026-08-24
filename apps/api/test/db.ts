@@ -19,7 +19,8 @@ export interface TestDbOptions {
 
 export async function createTestDb(options: TestDbOptions = {}) {
   if (DATABASE_URL) {
-    const client = postgres(DATABASE_URL);
+    // PGlite has one backend, keep one connection
+    const client = postgres(DATABASE_URL, { max: 1 });
     const db = drizzlePostgres(client, { schema });
     await migratePostgres(db, { migrationsFolder: MIGRATIONS });
     return { db, cleanup: () => client.end() };
