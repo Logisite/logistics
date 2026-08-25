@@ -18,8 +18,10 @@ export function reportingRouter(db: Db): Router {
     res.json({ data: await service.revenueVolume(db, q.from, q.to, q.zoneId) });
   });
 
-  router.get('/cod', ...admin, async (_req, res) => {
-    res.json(await service.codReconciliationReport(db));
+  const codQuery = z.object({ periodStart: z.string().datetime().optional(), periodEnd: z.string().datetime().optional() });
+  router.get('/cod', ...admin, async (req, res) => {
+    const q = parse(codQuery, req.query);
+    res.json(await service.codReconciliationReport(db, q.periodStart, q.periodEnd));
   });
 
   router.get('/drivers', ...admin, async (_req, res) => {
