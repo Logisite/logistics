@@ -43,6 +43,7 @@ export const syncLedger = pgTable(
   },
   (t) => [
     unique('sync_ledger_device_seq_unique').on(t.deviceId, t.seq),
+    unique('sync_ledger_device_op_unique').on(t.deviceId, t.opId),
     index('sync_ledger_device_id_idx').on(t.deviceId),
   ],
 );

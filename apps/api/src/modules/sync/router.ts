@@ -25,7 +25,14 @@ export function syncRouter(db: Db): Router {
     const deviceId = req.params.deviceId as string;
     if (!deviceId) throw badRequest('VALIDATION', 'Missing deviceId');
     const since = Number(req.query.since ?? -1);
-    res.json({ ops: await service.getPending(db, res.locals.auth, deviceId, since) });
+    const limit = Math.min(100, Math.max(1, Number(req.query.limit ?? 50)));
+    res.json({ ops: await service.getPending(db, res.locals.auth, deviceId, since, limit) });
+  });
+
+  router.get('/deltas/:deviceId', requireAuth(db), async (req, res) => {
+    const deviceId = req.params.deviceId as string;
+    const since = Number(req.query.since ?? -1);
+    res.json(await service.getDeltas(db, res.locals.auth, deviceId, since));
   });
 
   router.get('/static', requireAuth(db), async (_req, res) => {

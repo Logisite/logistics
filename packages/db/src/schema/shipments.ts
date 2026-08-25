@@ -93,11 +93,15 @@ export const shipmentEvents = pgTable(
     locationLabel: text('location_label'),
     occurredAt: timestamp('occurred_at', { withTimezone: true }).notNull(),
     metadata: jsonb('metadata'),
+    deviceId: uuid('device_id'),
+    opId: uuid('op_id'),
+    operatorId: text('operator_id'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
     index('shipment_events_shipment_id_idx').on(t.shipmentId),
-    unique('shipment_events_shipment_occurred_unique').on(t.shipmentId, t.occurredAt),
+    index('shipment_events_shipment_occurred_idx').on(t.shipmentId, t.occurredAt),
+    unique('shipment_events_device_op_unique').on(t.deviceId, t.opId),
   ],
 );
 
