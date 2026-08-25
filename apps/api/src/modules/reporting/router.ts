@@ -2,7 +2,6 @@ import { Router } from 'express';
 import { z } from 'zod';
 
 import type { Db } from '../../db.js';
-import { badRequest } from '../../errors.js';
 import { requireAuth, requirePermission } from '../../auth/middleware.js';
 import { PERMISSIONS } from '../../auth/permissions.js';
 import { parse } from '../../validate.js';
@@ -31,12 +30,6 @@ export function reportingRouter(db: Db): Router {
   router.get('/exceptions', ...admin, async (req, res) => {
     const q = parse(exQuery, req.query);
     const ageDays = q.ageDays ?? 7;
-    res.json(await service.exceptionsAging(db, ageDays));
-  });
-
-  router.get('/exceptions/:ageDays', ...admin, async (req, res) => {
-    const ageDays = Number(req.params.ageDays);
-    if (!Number.isInteger(ageDays) || ageDays < 1 || ageDays > 90) throw badRequest('VALIDATION', 'ageDays must be 1..90');
     res.json(await service.exceptionsAging(db, ageDays));
   });
 
