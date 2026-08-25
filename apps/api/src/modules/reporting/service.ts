@@ -17,7 +17,7 @@ async function loadRates(db: Db, currencies: string[], at: Date): Promise<RateMa
     .select({ fromCurrency: fxRates.fromCurrency, rate: fxRates.rate, rateDate: fxRates.rateDate })
     .from(fxRates)
     .where(and(inArray(fxRates.fromCurrency, distinct as never), eq(fxRates.toCurrency, functional as never), lte(fxRates.rateDate, at)))
-    .orderBy(sql`${fxRates.rateDate} desc`);
+    .orderBy(sql`${fxRates.rateDate} desc`.mapWith(String));
   for (const c of distinct) {
     const hit = rows.find((r) => r.fromCurrency === c);
     if (!hit) throw badRequest('FX_RATE_MISSING', `Missing FX rate ${c}->${functional}`);
@@ -102,7 +102,7 @@ export async function driverPerformance(db: Db, periodStart?: string, periodEnd?
   if (periodStart) where.push(gte(collections.collectedAt, new Date(periodStart)));
   if (periodEnd) where.push(lte(collections.collectedAt, new Date(periodEnd)));
   const clause = where.length ? and(...where) : undefined;
-  const base = await db.select({ driverUserId: collections.driverUserId, deliveries: sql<number>`count(*)::int`, avgCollectedAt: sql<Date | null>`avg(extract(epoch from ${collections.collectedAt}))` }).from(collections).where(clause).groupBy(collections.driverUserId);
+  const base = await db.select({ driverUserId: collections.driverUserId, deliveries: sql<number>`count(*)::int`, avgEpoch: sql<number | null>`avg(extract(epoch from ${collections.collectedAt}))` }).from(collections).where(clause).groupBy(collections.driverUserId);
   const failedRows = await db.select({ driverUserId: shipmentEvents.actorUserId, count: sql<number>`count(*)::int` }).from(shipmentEvents).where(eq(shipmentEvents.toStatus, 'FAILED_ATTEMPT')).groupBy(shipmentEvents.actorUserId);
   const returnedRows = await db.select({ driverUserId: shipmentEvents.actorUserId, count: sql<number>`count(*)::int` }).from(shipmentEvents).where(eq(shipmentEvents.toStatus, 'RETURNED')).groupBy(shipmentEvents.actorUserId);
   const failedByDriver = new Map(failedRows.map((r) => [r.driverUserId, r.count]));
@@ -112,12 +112,12 @@ export async function driverPerformance(db: Db, periodStart?: string, periodEnd?
     deliveries: r.deliveries,
     failedAttempts: failedByDriver.get(r.driverUserId) ?? 0,
     returns: returnedByDriver.get(r.driverUserId) ?? 0,
-    avgSeconds: r.avgCollectedAt ? Math.round(new Date(r.avgCollectedAt).getTime() / 1000) : null,
+    avgSeconds: r.avgEpoch !== null ? Math.round(r.avgEpoch) : null,
   }));
 }
 
 export async function exceptionsAging(db: Db, ageDays = 7) {
-  const cutoff = sql`${shipments.updatedAt} < now() - ${sql.raw(`interval '${ageDays} days'`)}`;
+  const cutoff = sql`${shipments.updatedAt} < now() - (${ageDays}::int * interval '1 day')`;
   const stuckRows = await db
     .select()
     .from(shipments)
