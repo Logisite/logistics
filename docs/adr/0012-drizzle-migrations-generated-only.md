@@ -1,0 +1,5 @@
+# Generated migrations only
+
+We never hand-write SQL in `packages/db/drizzle/`. Schema changes live in `packages/db/src/schema/*.ts`; migrations are generated append-only via `pnpm --filter @logistics/db exec drizzle-kit generate`, which reads `drizzle.config.ts` and writes `drizzle/*.sql` plus `drizzle/meta/*`. The generated SQL is reviewed but never edited by hand; `drizzle-kit push` is reserved for ephemeral local experiments and never committed.
+
+We chose this over hand-written SQL because the schema file is already the single source of truth and the generator keeps the `drizzle/meta/*` snapshot in sync; hand-written `0003` without a snapshot let `0004` duplicate columns and crash fresh-DB `migrate` while persistent `test-pgdata` hid the failure (`M-002`). It is hard to reverse because every future migration assumes the snapshot chain is continuous and `test/db.ts` runs `migrator` against that chain. It is surprising because the fastest way to add an index feels like writing one line of SQL, but the cheapest durable path is editing the `pgTable` definition and letting the tool emit the `CREATE INDEX`.
