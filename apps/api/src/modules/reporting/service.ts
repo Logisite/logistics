@@ -1,4 +1,4 @@
-import { and, eq, gte, lte, sql } from 'drizzle-orm';
+import { and, eq, gte, inArray, lte, sql } from 'drizzle-orm';
 
 import { collections, fxRates, reconciliations, settlements, shipmentEvents, shipments, zones } from '@logistics/db';
 import { getConfig } from '../../config.js';
@@ -6,25 +6,28 @@ import type { Db } from '../../db.js';
 import { badRequest, notFound } from '../../errors.js';
 import { convertCents } from '../cod/index.js';
 
-async function functionalRate(db: Db, from: string, to: string, at: Date) {
-  if (from === to) return '1.00000000';
-  const [row] = await db
-    .select({ rate: fxRates.rate })
-    .from(fxRates)
-    .where(and(eq(fxRates.fromCurrency, from as never), eq(fxRates.toCurrency, to as never), lte(fxRates.rateDate, at)))
-    .orderBy(sql`${fxRates.rateDate} desc`)
-    .limit(1);
-  if (!row) throw badRequest('FX_RATE_MISSING', `Missing FX rate ${from}->${to} at ${at.toISOString()}`);
-  return row.rate;
-}
+type RateMap = Map<string, string>;
 
-async function toFunctional(db: Db, amount: number, currency: string, at: Date) {
+async function loadRates(db: Db, currencies: string[], at: Date): Promise<RateMap> {
   const functional = getConfig().functionalCurrency;
-  const rate = await functionalRate(db, currency, functional, at);
-  return { functional, total: convertCents(amount, rate) };
+  const distinct = [...new Set(currencies.filter((c) => c !== functional))];
+  const map: RateMap = new Map();
+  if (distinct.length === 0) return map;
+  const rows = await db
+    .select({ fromCurrency: fxRates.fromCurrency, rate: fxRates.rate, rateDate: fxRates.rateDate })
+    .from(fxRates)
+    .where(and(inArray(fxRates.fromCurrency, distinct as never), eq(fxRates.toCurrency, functional as never), lte(fxRates.rateDate, at)))
+    .orderBy(sql`${fxRates.rateDate} desc`);
+  for (const c of distinct) {
+    const hit = rows.find((r) => r.fromCurrency === c);
+    if (!hit) throw badRequest('FX_RATE_MISSING', `Missing FX rate ${c}->${functional}`);
+    map.set(c, hit.rate);
+  }
+  return map;
 }
 
-export async function revenueVolume(db: Db, from?: string, to?: string, zoneId?: string) {
+export async function revenueVolume(db: Db, from?: string, to?: string, zoneId?: string, route?: string) {
+  if (from && to && new Date(from).getTime() > new Date(to).getTime()) throw badRequest('VALIDATION', 'from must be before to');
   if (zoneId) {
     const [z] = await db.select().from(zones).where(eq(zones.id, zoneId));
     if (!z) throw notFound('NOT_FOUND', 'Zone not found');
@@ -33,6 +36,7 @@ export async function revenueVolume(db: Db, from?: string, to?: string, zoneId?:
   if (from) where.push(gte(shipments.createdAt, new Date(from)));
   if (to) where.push(lte(shipments.createdAt, new Date(to)));
   if (zoneId) where.push(eq(shipments.destinationZoneId, zoneId));
+  if (route) where.push(eq(shipments.destinationZoneId, route));
   const clause = where.length ? and(...where) : undefined;
   const rows = await db
     .select({ currency: shipments.quoteCurrency, count: sql<number>`count(*)::int`, total: sql<number>`coalesce(sum(${shipments.quoteAmountCents}),0)::int` })
@@ -40,43 +44,48 @@ export async function revenueVolume(db: Db, from?: string, to?: string, zoneId?:
     .where(clause)
     .groupBy(shipments.quoteCurrency);
   const at = to ? new Date(to) : new Date();
-  const out = [];
-  for (const r of rows) {
-    if (!r.currency) continue;
-    const conv = await toFunctional(db, r.total, r.currency, at);
-    out.push({ currency: r.currency, count: r.count, totalMinor: r.total, functionalCurrency: conv.functional, functionalTotalMinor: conv.total });
-  }
-  return out;
+  const currencies = rows.map((r) => r.currency).filter(Boolean) as string[];
+  const rates = await loadRates(db, currencies, at);
+  const functional = getConfig().functionalCurrency;
+  return rows
+    .filter((r) => r.currency)
+    .map((r) => {
+      const rate = rates.get(r.currency!) ?? '1.00000000';
+      return { currency: r.currency!, count: r.count, totalMinor: r.total, functionalCurrency: functional, functionalTotalMinor: convertCents(r.total, rate) };
+    });
 }
 
 export async function codReconciliationReport(db: Db, periodStart?: string, periodEnd?: string) {
+  if (periodStart && periodEnd && new Date(periodStart).getTime() > new Date(periodEnd).getTime()) throw badRequest('VALIDATION', 'periodStart must be before periodEnd');
   const where = [];
   if (periodStart) where.push(gte(collections.createdAt, new Date(periodStart)));
   if (periodEnd) where.push(lte(collections.createdAt, new Date(periodEnd)));
   const clause = where.length ? and(...where) : undefined;
-  const cols = await db
-    .select({ currency: collections.currency, count: sql<number>`count(*)::int`, total: sql<number>`coalesce(sum(${collections.amountCents}),0)::int` })
-    .from(collections)
-    .where(clause)
-    .groupBy(collections.currency);
-  const recons = await db.select({ count: sql<number>`count(*)::int` }).from(reconciliations);
-  const sets = await db.select({ count: sql<number>`count(*)::int` }).from(settlements);
+  const reconWhere = [];
+  if (periodStart) reconWhere.push(gte(reconciliations.createdAt, new Date(periodStart)));
+  if (periodEnd) reconWhere.push(lte(reconciliations.createdAt, new Date(periodEnd)));
+  const reconClause = reconWhere.length ? and(...reconWhere) : undefined;
+  const [cols, recons, sets, reconFunctionalRows, reconciledIdsRows, allCols] = await Promise.all([
+    db.select({ currency: collections.currency, count: sql<number>`count(*)::int`, total: sql<number>`coalesce(sum(${collections.amountCents}),0)::int` }).from(collections).where(clause).groupBy(collections.currency),
+    db.select({ count: sql<number>`count(*)::int` }).from(reconciliations).where(reconClause),
+    db.select({ count: sql<number>`count(*)::int` }).from(settlements).where(reconClause),
+    db.select({ amount: reconciliations.functionalAmountCents }).from(reconciliations).where(reconClause),
+    db.select({ id: reconciliations.collectionId }).from(reconciliations).where(reconClause),
+    db.select({ id: collections.id, currency: collections.currency, amountCents: collections.amountCents }).from(collections).where(clause),
+  ]);
   const at = periodEnd ? new Date(periodEnd) : new Date();
-  let functionalCollections = 0;
-  for (const c of cols) {
-    const conv = await toFunctional(db, c.total, c.currency, at);
-    functionalCollections += conv.total;
-  }
-  const reconFunctionalRows = await db.select({ amount: reconciliations.functionalAmountCents }).from(reconciliations);
+  const currencies = [...new Set([...cols.map((c) => c.currency), ...allCols.map((c) => c.currency)])];
+  const rates = await loadRates(db, currencies, at);
+  const sumFunctional = (list: Array<{ currency: string; amountCents?: number; total?: number }>) =>
+    list.reduce((s, r) => {
+      const amt = (r as { amountCents?: number; total?: number }).amountCents ?? (r as { total?: number }).total ?? 0;
+      return s + convertCents(amt, rates.get(r.currency) ?? '1.00000000');
+    }, 0);
+  const functionalCollections = sumFunctional(cols.map((c) => ({ currency: c.currency, total: c.total })));
   const reconFunctional = reconFunctionalRows.reduce((s, r) => s + r.amount, 0);
-  const reconciledIds = new Set((await db.select({ id: reconciliations.collectionId }).from(reconciliations)).map((r) => r.id));
-  const allCols = await db.select({ id: collections.id, currency: collections.currency, amountCents: collections.amountCents }).from(collections).where(clause);
+  const reconciledIds = new Set(reconciledIdsRows.map((r) => r.id));
   const unreconciledRows = allCols.filter((c) => !reconciledIds.has(c.id));
-  let unreconciledFunctional = 0;
-  for (const u of unreconciledRows) {
-    const conv = await toFunctional(db, u.amountCents, u.currency, at);
-    unreconciledFunctional += conv.total;
-  }
+  const unreconciledFunctional = sumFunctional(unreconciledRows.map((u) => ({ currency: u.currency, amountCents: u.amountCents })));
   const shortfall = functionalCollections - reconFunctional;
   return {
     collections: cols,
@@ -88,8 +97,12 @@ export async function codReconciliationReport(db: Db, periodStart?: string, peri
   };
 }
 
-export async function driverPerformance(db: Db) {
-  const base = await db.select({ driverUserId: collections.driverUserId, deliveries: sql<number>`count(*)::int` }).from(collections).groupBy(collections.driverUserId);
+export async function driverPerformance(db: Db, periodStart?: string, periodEnd?: string) {
+  const where = [];
+  if (periodStart) where.push(gte(collections.collectedAt, new Date(periodStart)));
+  if (periodEnd) where.push(lte(collections.collectedAt, new Date(periodEnd)));
+  const clause = where.length ? and(...where) : undefined;
+  const base = await db.select({ driverUserId: collections.driverUserId, deliveries: sql<number>`count(*)::int`, avgCollectedAt: sql<Date | null>`avg(extract(epoch from ${collections.collectedAt}))` }).from(collections).where(clause).groupBy(collections.driverUserId);
   const failedRows = await db.select({ driverUserId: shipmentEvents.actorUserId, count: sql<number>`count(*)::int` }).from(shipmentEvents).where(eq(shipmentEvents.toStatus, 'FAILED_ATTEMPT')).groupBy(shipmentEvents.actorUserId);
   const returnedRows = await db.select({ driverUserId: shipmentEvents.actorUserId, count: sql<number>`count(*)::int` }).from(shipmentEvents).where(eq(shipmentEvents.toStatus, 'RETURNED')).groupBy(shipmentEvents.actorUserId);
   const failedByDriver = new Map(failedRows.map((r) => [r.driverUserId, r.count]));
@@ -99,16 +112,16 @@ export async function driverPerformance(db: Db) {
     deliveries: r.deliveries,
     failedAttempts: failedByDriver.get(r.driverUserId) ?? 0,
     returns: returnedByDriver.get(r.driverUserId) ?? 0,
-    avgSeconds: null as number | null,
+    avgSeconds: r.avgCollectedAt ? Math.round(new Date(r.avgCollectedAt).getTime() / 1000) : null,
   }));
 }
 
 export async function exceptionsAging(db: Db, ageDays = 7) {
-  const cutoff = new Date(Date.now() - ageDays * 24 * 60 * 60 * 1000);
+  const cutoff = sql`${shipments.updatedAt} < now() - ${sql.raw(`interval '${ageDays} days'`)}`;
   const stuckRows = await db
     .select()
     .from(shipments)
-    .where(and(sql`${shipments.status} IN ('IN_TRANSIT','OUT_FOR_DELIVERY','FAILED_ATTEMPT','RETURNED')`, sql`${shipments.updatedAt} < ${cutoff}`));
+    .where(and(inArray(shipments.status, ['IN_TRANSIT', 'OUT_FOR_DELIVERY', 'FAILED_ATTEMPT', 'RETURNED'] as never), cutoff));
   const now = Date.now();
   const stuck = stuckRows.map((s) => ({ shipmentId: s.id, status: s.status, ageDays: Math.floor((now - new Date(s.updatedAt).getTime()) / (24 * 60 * 60 * 1000)) }));
   const buckets = { '7-14': 0, '14-30': 0, '30+': 0 };

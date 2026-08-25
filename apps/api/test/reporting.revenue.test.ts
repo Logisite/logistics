@@ -40,9 +40,11 @@ describe('reporting revenue', () => {
   it('returns functional totals and filters by zone', async () => {
     const ok = await request(app).get('/reports/revenue').set('Authorization', `Bearer ${adminToken}`);
     expect(ok.status).toBe(200);
-    expect(ok.body.data[0].functionalTotalMinor).toBeDefined();
+    expect(ok.body.data[0].functionalTotalMinor).toBe(1200);
+    expect(ok.body.data[0].totalMinor).toBe(1200);
     const filtered = await request(app).get(`/reports/revenue?zoneId=${zoneId}`).set('Authorization', `Bearer ${adminToken}`);
     expect(filtered.status).toBe(200);
+    expect(filtered.body.data[0].count).toBe(1);
   });
 
   it('404 on unknown zone', async () => {
