@@ -8,6 +8,7 @@ export interface AppConfig {
   resendApiKey: string;
   functionalCurrency: 'USD' | 'EUR' | 'GBP';
   mapTilesUrl: string;
+  syncSkewMs: number;
   bootstrapOwnerEmail?: string;
   bootstrapOwnerPassword?: string;
   mapboxAccessToken: string;
@@ -41,6 +42,7 @@ export function getConfig(): AppConfig {
     throw new Error('FUNCTIONAL_CURRENCY must be one of USD, EUR, GBP');
   }
 
+  const syncSkewMs = Number(process.env.SYNC_SKEW_MS ?? 300000);
   return {
     jwtAccessSecret: jwtAccessSecret ?? 'dev-access-secret',
     jwtRefreshSecret: jwtRefreshSecret ?? 'dev-refresh-secret',
@@ -52,6 +54,7 @@ export function getConfig(): AppConfig {
     functionalCurrency: (functionalCurrency ?? 'GBP') as 'USD' | 'EUR' | 'GBP',
     mapTilesUrl:
       process.env.MAP_TILES_URL ?? 'https://tiles.openfreemap.org/styles/liberty',
+    syncSkewMs,
     bootstrapOwnerEmail: process.env.BOOTSTRAP_OWNER_EMAIL,
     bootstrapOwnerPassword: process.env.BOOTSTRAP_OWNER_PASSWORD,
     mapboxAccessToken: process.env.MAPBOX_ACCESS_TOKEN ?? '',

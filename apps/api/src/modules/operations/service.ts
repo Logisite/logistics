@@ -113,6 +113,7 @@ export async function cancelRun(db: Db, ctx: AuthContext, runId: string) {
 
 export async function pushGps(db: Db, ctx: AuthContext, runId: string, positions: Array<{ latitude: number; longitude: number; recordedAt?: string }>) {
   return db.transaction(async (tx) => {
+    await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${runId}::text))`);
     const [run] = await tx.select().from(runs).where(eq(runs.id, runId)).for('update');
     if (!run) throw notFound('NOT_FOUND', 'Run not found');
     if (run.status !== 'ACTIVE') throw conflict('RUN_NOT_ACTIVE', 'GPS only while run is active');

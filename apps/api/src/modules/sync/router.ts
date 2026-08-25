@@ -29,12 +29,6 @@ export function syncRouter(db: Db): Router {
     res.json({ ops: await service.getPending(db, res.locals.auth, deviceId, since, limit) });
   });
 
-  router.get('/deltas/:deviceId', requireAuth(db), async (req, res) => {
-    const deviceId = req.params.deviceId as string;
-    const since = Number(req.query.since ?? -1);
-    res.json(await service.getDeltas(db, res.locals.auth, deviceId, since));
-  });
-
   router.get('/static', requireAuth(db), async (_req, res) => {
     res.json(await service.getStaticRefs(db));
   });
