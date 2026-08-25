@@ -8,8 +8,10 @@ import { getConfig } from '../../config.js';
 import type { Db } from '../../db.js';
 import { badRequest } from '../../errors.js';
 
+import { applyTransitionTx } from '../shipments/index.js';
 import { canTransition } from '../shipments/index.js';
 import type { ShipmentStatus } from '../shipments/index.js';
+import type { TxHandle } from '../shipments/service.js';
 
 const LOCKED_FIELDS = ['destinationZoneId', 'recipientName', 'recipientEmail', 'recipientPhone', 'deliveryOptionId', 'pickupLocationId'] as const;
 
@@ -56,18 +58,21 @@ export async function pushLedger(
 
   const toInsert = ops.filter((o) => !seenOp.has(o.opId));
   if (toInsert.length > 0) {
-    await db.insert(syncLedger).values(
-      toInsert.map((o) => ({
-        deviceId,
-        seq: o.seq,
-        opId: o.opId,
-        action: o.action,
-        entity: o.entity,
-        entityId: o.entityId ?? null,
-        payload: o.payload as object,
-        status: 'PENDING',
-      })),
-    );
+    await db
+      .insert(syncLedger)
+      .values(
+        toInsert.map((o) => ({
+          deviceId,
+          seq: o.seq,
+          opId: o.opId,
+          action: o.action,
+          entity: o.entity,
+          entityId: o.entityId ?? null,
+          payload: o.payload as object,
+          status: 'PENDING',
+        })),
+      )
+      .onConflictDoNothing();
   }
 
   const pending = await db
@@ -124,19 +129,16 @@ export async function pushLedger(
             return { status: 'APPLIED' };
           }
 
-          await tx.update(shipments).set({ status: toStatus as ShipmentStatus, updatedAt: occurredAt }).where(eq(shipments.id, locked.entityId));
-          await tx.insert(shipmentEvents).values({
-            shipmentId: locked.entityId,
-            fromStatus: shipment.status as ShipmentStatus,
-            toStatus: toStatus as ShipmentStatus,
-            actorUserId: ctx.userId,
-            locationLabel: (payload.locationLabel as string) ?? null,
+          const outcome = await applyTransitionTx(tx as TxHandle, ctx, locked.entityId, toStatus as ShipmentStatus, {
+            locationLabel: payload.locationLabel as string | undefined,
+            metadata: payload.metadata as Record<string, unknown> | undefined,
             occurredAt,
-            metadata: payload.metadata as Record<string, unknown> | null,
             deviceId,
             opId: locked.opId,
             operatorId,
           });
+          if (outcome.kind === 'rejected') return reject(tx, row.id, 'INVALID_TRANSITION');
+          if (outcome.kind === 'missing') return reject(tx, row.id, 'NOT_FOUND');
           await tx.update(syncLedger).set({ status: 'APPLIED' }).where(eq(syncLedger.id, row.id));
           return { status: 'APPLIED' };
         }

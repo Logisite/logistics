@@ -40,6 +40,39 @@ function buildMetadata(input: TransitionInput): Record<string, unknown> | null {
   return Object.keys(meta).length > 0 ? meta : null;
 }
 
+export type TxHandle = Parameters<Parameters<Db['transaction']>[0]>[0];
+
+export async function applyTransitionTx(
+  tx: TxHandle,
+  ctx: AuthContext,
+  shipmentId: string,
+  to: ShipmentStatus,
+  input: TransitionInput & { occurredAt?: Date; deviceId?: string; opId?: string; operatorId?: string },
+): Promise<Outcome> {
+  const [shipment] = await tx.select().from(shipments).where(eq(shipments.id, shipmentId)).for('update');
+  if (!shipment) return { kind: 'missing' };
+  if (shipment.status === to) return { kind: 'noop', shipment };
+  if (!canTransition(shipment.status, to)) return { kind: 'rejected', from: shipment.status };
+  const occurredAt = input.occurredAt ?? new Date();
+  const [updated] = await tx.update(shipments).set({ status: to, updatedAt: occurredAt }).where(eq(shipments.id, shipmentId)).returning();
+  const [event] = await tx
+    .insert(shipmentEvents)
+    .values({
+      shipmentId,
+      fromStatus: shipment.status,
+      toStatus: to,
+      actorUserId: ctx.userId,
+      locationLabel: input.locationLabel ?? null,
+      occurredAt,
+      metadata: buildMetadata(input),
+      deviceId: input.deviceId ?? null,
+      opId: input.opId ?? null,
+      operatorId: input.operatorId ?? null,
+    })
+    .returning();
+  return { kind: 'applied', from: shipment.status, shipment: updated!, event: event! };
+}
+
 /** same state is an idempotent no-op, invalid attempts are audited then rejected */
 export async function transition(
   db: Db,
