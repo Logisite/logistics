@@ -1,6 +1,6 @@
 import { and, eq, inArray, sql } from 'drizzle-orm';
 
-import { devices, shipments, syncLedger } from '@logistics/db';
+import { devices, runSheetEntries, runs, shipments, syncLedger } from '@logistics/db';
 
 import { writeAudit } from '../../auth/audit.js';
 import type { AuthContext } from '../../auth/middleware.js';
@@ -65,7 +65,18 @@ export async function pushLedger(
 
       if (locked.entity === 'shipment' && locked.entityId) {
         const [shipment] = await tx.select().from(shipments).where(eq(shipments.id, locked.entityId)).for('update');
-        if (shipment?.fieldLock) {
+        // also check active run membership if fieldLock is desynced
+        let isLocked = !!shipment?.fieldLock;
+        if (!isLocked && locked.entityId) {
+          const [active] = await tx
+            .select({ id: runSheetEntries.id })
+            .from(runSheetEntries)
+            .innerJoin(runs, eq(runs.id, runSheetEntries.runId))
+            .where(and(eq(runSheetEntries.shipmentId, locked.entityId), sql`${runs.status} IN ('PLANNED','ACTIVE')`))
+            .limit(1);
+          if (active) isLocked = true;
+        }
+        if (isLocked) {
           const payload = locked.payload as Record<string, unknown> | null;
           const lockedFields = ['destinationZoneId', 'recipientName', 'recipientEmail', 'recipientPhone', 'deliveryOptionId', 'pickupLocationId'];
           const touchesLocked = payload ? lockedFields.some((f) => f in payload) : false;

@@ -158,6 +158,7 @@ export async function patchShipment(
   return db.transaction(async (tx) => {
     const [shipment] = await tx.select().from(shipments).where(eq(shipments.id, shipmentId)).for('update');
     if (!shipment) throw notFound('NOT_FOUND', 'Shipment not found');
+    const isAdmin = ctx.roleName === 'ADMIN';
     const isStaff = STAFF_ROLES.has(ctx.roleName);
     const isOwner = shipment.senderUserId === ctx.userId;
     if (!isStaff && !isOwner) throw forbidden('NOT_SHIPMENT_OWNER', 'Not authorized for this shipment');
@@ -169,13 +170,13 @@ export async function patchShipment(
       'deliveryOptionId',
       'pickupLocationId',
     ];
-    if (shipment.fieldLock && !isStaff) {
+    if (shipment.fieldLock && !isAdmin) {
       for (const f of lockedFields) if (input[f] !== undefined) throw conflict('SHIPMENT_LOCKED', `Field ${f} locked while on active run`);
     }
     const patch: Record<string, unknown> = { updatedAt: new Date() };
     if (input.specialInstructions !== undefined) patch.specialInstructions = input.specialInstructions;
     if (input.category !== undefined) patch.category = input.category;
-    if (isStaff || !shipment.fieldLock) {
+    if (isAdmin || !shipment.fieldLock) {
       if (input.destinationZoneId !== undefined) patch.destinationZoneId = input.destinationZoneId;
       if (input.recipientName !== undefined) patch.recipientName = input.recipientName;
       if (input.recipientEmail !== undefined) patch.recipientEmail = input.recipientEmail;

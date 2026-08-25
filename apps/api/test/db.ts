@@ -7,8 +7,6 @@ import { migrate as migratePostgres } from 'drizzle-orm/postgres-js/migrator';
 
 import * as schema from '@logistics/db';
 
-const DATABASE_URL =
-  process.env.DATABASE_URL ?? 'postgresql://postgres:postgres@127.0.0.1:5432/postgres';
 const PGDATA_DIR = './test-pgdata';
 const MIGRATIONS = new URL('../../../packages/db/drizzle', import.meta.url).pathname;
 
@@ -18,9 +16,9 @@ export interface TestDbOptions {
 }
 
 export async function createTestDb(options: TestDbOptions = {}) {
-  if (DATABASE_URL) {
-    // PGlite has one backend, keep one connection
-    const client = postgres(DATABASE_URL, { max: 1 });
+  const databaseUrl = process.env.DATABASE_URL;
+  if (databaseUrl) {
+    const client = postgres(databaseUrl, { max: 1 });
     const db = drizzlePostgres(client, { schema });
     await migratePostgres(db, { migrationsFolder: MIGRATIONS });
     return { db, cleanup: () => client.end() };
