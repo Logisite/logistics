@@ -9,6 +9,7 @@ import { merchantRouter } from './merchants/router.js';
 import { pricingRouter } from './pricing/router.js';
 import { shipmentsRouter, trackingRouter } from './modules/shipments/index.js';
 import { codRouter } from './modules/cod/index.js';
+import { operationsRouter } from './modules/operations/index.js';
 import type { Db } from './db.js';
 import { HttpError } from './errors.js';
 
@@ -43,6 +44,7 @@ export function createApp({ db, mailer }: AppDeps): Express {
   app.use('/shipments', shipmentsRouter(db, mailer));
   app.use('/tracking', trackingRouter(db));
   app.use('/cod', codRouter(db));
+  app.use('/runs', operationsRouter(db));
 
   app.use(errorHandler);
 

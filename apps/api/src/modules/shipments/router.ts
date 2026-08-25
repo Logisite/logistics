@@ -7,6 +7,7 @@ import type { AuthContext } from '../../auth/middleware.js';
 import { requireAuth, requirePermission } from '../../auth/middleware.js';
 import { PERMISSIONS } from '../../auth/permissions.js';
 import type { Mailer } from '../../auth/emails.js';
+import { parse } from '../../validate.js';
 
 import * as service from './service.js';
 import type { ShipmentStatus } from './transitions.js';
@@ -17,12 +18,6 @@ const transitionBodySchema = z.object({
   reason: z.string().max(500).optional(),
   metadata: z.record(z.unknown()).optional(),
 });
-
-function parse<T>(schema: z.ZodType<T>, body: unknown): T {
-  const result = schema.safeParse(body);
-  if (!result.success) throw badRequest('VALIDATION', 'Invalid request payload');
-  return result.data;
-}
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -82,6 +77,23 @@ export function shipmentsRouter(db: Db, mailer?: Mailer): Router {
   router.get('/:id/events', requireAuth(db), async (req, res) => {
     const ctx = res.locals.auth as AuthContext;
     res.json(await service.getShipmentWithEvents(db, ctx, shipmentId(req)));
+  });
+
+  const patchSchema = z.object({
+    specialInstructions: z.string().max(2000).nullable().optional(),
+    category: z.string().max(200).nullable().optional(),
+    destinationZoneId: z.string().uuid().optional(),
+    recipientName: z.string().max(200).optional(),
+    recipientEmail: z.string().email().max(200).nullable().optional(),
+    recipientPhone: z.string().max(50).nullable().optional(),
+    deliveryOptionId: z.string().uuid().optional(),
+    pickupLocationId: z.string().uuid().optional(),
+  });
+
+  router.patch('/:id', requireAuth(db), async (req, res) => {
+    const input = parse(patchSchema, req.body ?? {});
+    const shipment = await service.patchShipment(db, res.locals.auth as AuthContext, shipmentId(req), input);
+    res.json({ shipment });
   });
 
   return router;

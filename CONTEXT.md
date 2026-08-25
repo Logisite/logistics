@@ -198,3 +198,21 @@ _Avoid_: quote request
 
 **Self-claim Run**:
 A run-sheet built by its own driver from queued shipments without a dispatcher. Planned.
+
+**Thin App**:
+A per-operator frontend built from `packages/core` plus one app shell, sharing 95% of product code. Planned.
+
+**Operator Deployment**:
+One full stack (api + db + web) per operator company from the same codebase, isolated by `DATABASE_URL` and `APP_URL`. Planned.
+
+**Version Pin**:
+The `operators/<name>.json` file holding a deployment's approved `desiredVersion`, used for promotion windows.
+
+**Promotion Window**:
+An operator-approved time slot when a pinned version rolls out, never mid-operations.
+
+**Build-time Config**:
+Brand differences compiled per thin app via `VITE_*` env, one artifact per operator. Planned.
+
+**Runtime Config**:
+Brand resolved at request time from domain or login response, one artifact serves all brands. Planned alternative for mobile.

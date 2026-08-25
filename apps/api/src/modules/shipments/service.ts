@@ -140,6 +140,55 @@ export async function cancelShipment(
   return transition(db, ctx, shipmentId, 'CANCELLED', input);
 }
 
+export async function patchShipment(
+  db: Db,
+  ctx: AuthContext,
+  shipmentId: string,
+  input: {
+    specialInstructions?: string | null;
+    category?: string | null;
+    destinationZoneId?: string;
+    recipientName?: string;
+    recipientEmail?: string | null;
+    recipientPhone?: string | null;
+    deliveryOptionId?: string;
+    pickupLocationId?: string;
+  },
+) {
+  return db.transaction(async (tx) => {
+    const [shipment] = await tx.select().from(shipments).where(eq(shipments.id, shipmentId)).for('update');
+    if (!shipment) throw notFound('NOT_FOUND', 'Shipment not found');
+    const isStaff = STAFF_ROLES.has(ctx.roleName);
+    const isOwner = shipment.senderUserId === ctx.userId;
+    if (!isStaff && !isOwner) throw forbidden('NOT_SHIPMENT_OWNER', 'Not authorized for this shipment');
+    const lockedFields: (keyof typeof input)[] = [
+      'destinationZoneId',
+      'recipientName',
+      'recipientEmail',
+      'recipientPhone',
+      'deliveryOptionId',
+      'pickupLocationId',
+    ];
+    if (shipment.fieldLock && !isStaff) {
+      for (const f of lockedFields) if (input[f] !== undefined) throw conflict('SHIPMENT_LOCKED', `Field ${f} locked while on active run`);
+    }
+    const patch: Record<string, unknown> = { updatedAt: new Date() };
+    if (input.specialInstructions !== undefined) patch.specialInstructions = input.specialInstructions;
+    if (input.category !== undefined) patch.category = input.category;
+    if (isStaff || !shipment.fieldLock) {
+      if (input.destinationZoneId !== undefined) patch.destinationZoneId = input.destinationZoneId;
+      if (input.recipientName !== undefined) patch.recipientName = input.recipientName;
+      if (input.recipientEmail !== undefined) patch.recipientEmail = input.recipientEmail;
+      if (input.recipientPhone !== undefined) patch.recipientPhone = input.recipientPhone;
+      if (input.deliveryOptionId !== undefined) patch.deliveryOptionId = input.deliveryOptionId;
+      if (input.pickupLocationId !== undefined) patch.pickupLocationId = input.pickupLocationId;
+    }
+    const [updated] = await tx.update(shipments).set(patch).where(eq(shipments.id, shipmentId)).returning();
+    await writeAudit(tx as unknown as Db, ctx, { action: 'shipment.patch', entityType: 'shipment', entityId: shipmentId, payload: input as Record<string, unknown> });
+    return updated!;
+  });
+}
+
 /** Timeline read: staff see everything; everyone else only their own shipments. */
 export async function getShipmentWithEvents(db: Db, ctx: AuthContext, shipmentId: string) {
   const shipment = await db.query.shipments.findFirst({
