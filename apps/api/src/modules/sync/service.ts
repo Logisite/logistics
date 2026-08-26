@@ -48,15 +48,13 @@ export async function pushLedger(
     : [];
   const seenOp = new Set(existingByOp.map((r) => r.opId));
   const seqToOp = new Map(existingBySeq.map((r) => [r.seq, r.opId] as const));
-  for (const o of ops) {
-    const claimedOp = seqToOp.get(o.seq);
-    if (claimedOp !== undefined && claimedOp !== o.opId) {
-      const { conflict } = await import('../../errors.js');
-      throw conflict('SEQ_CONFLICT', `Duplicate seq ${o.seq} for device`);
-    }
-  }
 
-  const toInsert = ops.filter((o) => !seenOp.has(o.opId));
+  const toInsert = ops.filter((o) => {
+    if (seenOp.has(o.opId)) return false;
+    const claimedOp = seqToOp.get(o.seq);
+    if (claimedOp !== undefined && claimedOp !== o.opId) return false;
+    return true;
+  });
   if (toInsert.length > 0) {
     await db
       .insert(syncLedger)
@@ -82,7 +80,7 @@ export async function pushLedger(
     .orderBy(syncLedger.seq);
 
   const skewMs = getConfig().syncSkewMs;
-  const operatorId = getConfig().appUrl;
+  const operatorId = null;
   const results: Array<{ seq: number; opId: string; status: string }> = [];
   for (const row of pending) {
     const outcome = await db.transaction(async (tx) => {

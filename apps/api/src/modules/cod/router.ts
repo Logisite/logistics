@@ -8,6 +8,7 @@ import { PERMISSIONS } from '../../auth/permissions.js';
 
 import * as service from './service.js';
 import { defineRoute } from '../../openapi/registry.js';
+import { parse } from '../../validate.js';
 
 const currencySchema = z.enum(['USD', 'EUR', 'GBP']);
 
@@ -64,12 +65,6 @@ defineRoute({ method: 'patch', path: '/cod/settlements/{id}/settle', request: { 
 defineRoute({ method: 'post', path: '/cod/disputes', request: { body: { content: { 'application/json': { schema: disputeSchema } } } }, responses: { 201: { description: 'created' } } });
 defineRoute({ method: 'patch', path: '/cod/disputes/{id}/resolve', request: { params: z.object({ id: z.string().uuid() }), body: { content: { 'application/json': { schema: resolveSchema } } } }, responses: { 200: { description: 'ok' } } });
 defineRoute({ method: 'post', path: '/cod/fx-rates', request: { body: { content: { 'application/json': { schema: fxRateSchema } } } }, responses: { 201: { description: 'created' } } });
-
-function parse<T>(schema: z.ZodType<T>, body: unknown): T {
-  const result = schema.safeParse(body);
-  if (!result.success) throw badRequest('VALIDATION', 'Invalid request payload');
-  return result.data;
-}
 
 export function codRouter(db: Db): Router {
   const router = Router();

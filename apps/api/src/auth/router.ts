@@ -10,6 +10,7 @@ import { defineRoute } from '../openapi/registry.js';
 import { requireAuth, requirePermission } from './middleware.js';
 import { PERMISSIONS, ROLE_NAMES } from './permissions.js';
 import * as service from './service.js';
+import { parse } from '../validate.js';
 
 const registerSchema = z.object({
   email: z.string().email(),
@@ -60,12 +61,6 @@ defineRoute({ method: 'delete', path: '/auth/bundles/{id}', request: { params: z
 defineRoute({ method: 'post', path: '/auth/bundles/{id}/apply', request: { params: z.object({ id: z.string().uuid() }), body: { content: { 'application/json': { schema: bundleApplySchema } } } }, responses: { 200: { description: 'ok' } } });
 defineRoute({ method: 'post', path: '/auth/forgot-password', request: { body: { content: { 'application/json': { schema: forgotSchema } } } }, responses: { 202: { description: 'accepted' } } });
 defineRoute({ method: 'post', path: '/auth/reset-password', request: { body: { content: { 'application/json': { schema: resetSchema } } } }, responses: { 200: { description: 'ok' } } });
-
-function parse<T>(schema: z.ZodType<T>, body: unknown): T {
-  const result = schema.safeParse(body);
-  if (!result.success) throw badRequest('VALIDATION', 'Invalid request payload');
-  return result.data;
-}
 
 export function authRouter(db: Db, mailer: Mailer): Router {
   const router = Router();

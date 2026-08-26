@@ -9,6 +9,7 @@ import { PERMISSIONS } from '../auth/permissions.js';
 
 import * as service from './service.js';
 import { defineRoute } from '../openapi/registry.js';
+import { parse } from '../validate.js';
 
 // ---------------------------------------------------------------------------
 // Zod schemas
@@ -62,12 +63,6 @@ defineRoute({ method: 'get', path: '/locations/pickup-points', responses: { 200:
 defineRoute({ method: 'post', path: '/locations/pickup-points', request: { body: { content: { 'application/json': { schema: createPickupLocationSchema } } } }, responses: { 201: { description: 'created' } } });
 defineRoute({ method: 'get', path: '/locations/zones', responses: { 200: { description: 'ok' } } });
 defineRoute({ method: 'post', path: '/locations/zones', request: { body: { content: { 'application/json': { schema: createZoneSchema } } } }, responses: { 201: { description: 'created' } } });
-
-function parse<T>(schema: z.ZodType<T>, body: unknown): T {
-  const result = schema.safeParse(body);
-  if (!result.success) throw badRequest('VALIDATION', 'Invalid request payload');
-  return result.data;
-}
 
 // ---------------------------------------------------------------------------
 // Router
