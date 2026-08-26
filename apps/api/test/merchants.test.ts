@@ -27,7 +27,7 @@ describe('merchant profiles', () => {
     await seedUserWithRoles(db, ['MERCHANT'], MERCHANT_EMAIL);
 
     const loginRes = await request(app)
-      .post('/auth/login')
+      .post('/api/v1/auth/login')
       .send({ email: MERCHANT_EMAIL, password: TEST_PASSWORD });
     merchantToken = loginRes.body.accessToken as string;
   });
@@ -39,14 +39,14 @@ describe('merchant profiles', () => {
   describe('profile', () => {
     it('returns 404 when no profile exists', async () => {
       const res = await request(app)
-        .get('/merchants/me')
+        .get('/api/v1/merchants/me')
         .set('Authorization', `Bearer ${merchantToken}`);
       expect(res.status).toBe(404);
     });
 
     it('creates a profile', async () => {
       const res = await request(app)
-        .post('/merchants/me')
+        .post('/api/v1/merchants/me')
         .set('Authorization', `Bearer ${merchantToken}`)
         .send({
           businessName: 'Acme Corp',
@@ -63,7 +63,7 @@ describe('merchant profiles', () => {
 
     it('rejects duplicate profile creation', async () => {
       const res = await request(app)
-        .post('/merchants/me')
+        .post('/api/v1/merchants/me')
         .set('Authorization', `Bearer ${merchantToken}`)
         .send({ businessName: 'Acme Corp 2' });
       expect(res.status).toBe(409);
@@ -71,7 +71,7 @@ describe('merchant profiles', () => {
 
     it('reads the profile', async () => {
       const res = await request(app)
-        .get('/merchants/me')
+        .get('/api/v1/merchants/me')
         .set('Authorization', `Bearer ${merchantToken}`);
       expect(res.status).toBe(200);
       expect(res.body.profile.businessName).toBe('Acme Corp');
@@ -79,7 +79,7 @@ describe('merchant profiles', () => {
 
     it('updates the profile', async () => {
       const res = await request(app)
-        .put('/merchants/me')
+        .put('/api/v1/merchants/me')
         .set('Authorization', `Bearer ${merchantToken}`)
         .send({ businessName: 'Acme Inc' });
       expect(res.status).toBe(200);
@@ -89,7 +89,7 @@ describe('merchant profiles', () => {
 
   describe('auth required', () => {
     it('rejects unauthenticated requests', async () => {
-      const res = await request(app).get('/merchants/me');
+      const res = await request(app).get('/api/v1/merchants/me');
       expect(res.status).toBe(401);
     });
   });

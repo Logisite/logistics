@@ -30,12 +30,12 @@ describe('locations', () => {
     await seedUserWithRoles(db, ['DISPATCHER'], DISPATCHER_EMAIL);
 
     const adminLogin = await request(app)
-      .post('/auth/login')
+      .post('/api/v1/auth/login')
       .send({ email: ADMIN_EMAIL, password: TEST_PASSWORD });
     adminToken = adminLogin.body.accessToken as string;
 
     const dispatcherLogin = await request(app)
-      .post('/auth/login')
+      .post('/api/v1/auth/login')
       .send({ email: DISPATCHER_EMAIL, password: TEST_PASSWORD });
     dispatcherToken = dispatcherLogin.body.accessToken as string;
   });
@@ -50,20 +50,20 @@ describe('locations', () => {
     let hubId: string;
 
     it('rejects unauthenticated requests', async () => {
-      const res = await request(app).get('/locations/hubs');
+      const res = await request(app).get('/api/v1/locations/hubs');
       expect(res.status).toBe(401);
     });
 
     it('rejects non-admin role (403)', async () => {
       const res = await request(app)
-        .get('/locations/hubs')
+        .get('/api/v1/locations/hubs')
         .set('Authorization', `Bearer ${dispatcherToken}`);
       expect(res.status).toBe(403);
     });
 
     it('returns empty list initially', async () => {
       const res = await request(app)
-        .get('/locations/hubs')
+        .get('/api/v1/locations/hubs')
         .set('Authorization', `Bearer ${adminToken}`);
       expect(res.status).toBe(200);
       expect(res.body.hubs).toEqual([]);
@@ -71,7 +71,7 @@ describe('locations', () => {
 
     it('creates a hub', async () => {
       const res = await request(app)
-        .post('/locations/hubs')
+        .post('/api/v1/locations/hubs')
         .set('Authorization', `Bearer ${adminToken}`)
         .send({ name: 'London Hub', code: 'LON-01', address: '10 Downing Street, London' });
       expect(res.status).toBe(201);
@@ -87,7 +87,7 @@ describe('locations', () => {
 
     it('rejects duplicate hub code', async () => {
       const res = await request(app)
-        .post('/locations/hubs')
+        .post('/api/v1/locations/hubs')
         .set('Authorization', `Bearer ${adminToken}`)
         .send({ name: 'Another Hub', code: 'LON-01', address: '1 Parliament St' });
       expect(res.status).toBe(409);
@@ -95,7 +95,7 @@ describe('locations', () => {
 
     it('rejects missing required fields', async () => {
       const res = await request(app)
-        .post('/locations/hubs')
+        .post('/api/v1/locations/hubs')
         .set('Authorization', `Bearer ${adminToken}`)
         .send({ name: 'Incomplete' });
       expect(res.status).toBe(400);
@@ -103,7 +103,7 @@ describe('locations', () => {
 
     it('reads the hub', async () => {
       const res = await request(app)
-        .get('/locations/hubs')
+        .get('/api/v1/locations/hubs')
         .set('Authorization', `Bearer ${adminToken}`);
       expect(res.status).toBe(200);
       expect(res.body.hubs).toHaveLength(1);
@@ -112,7 +112,7 @@ describe('locations', () => {
 
     it('updates the hub', async () => {
       const res = await request(app)
-        .put(`/locations/hubs/${hubId}`)
+        .put(`/api/v1/locations/hubs/${hubId}`)
         .set('Authorization', `Bearer ${adminToken}`)
         .send({ name: 'London Central Hub' });
       expect(res.status).toBe(200);
@@ -121,7 +121,7 @@ describe('locations', () => {
 
     it('soft-deletes the hub', async () => {
       const res = await request(app)
-        .delete(`/locations/hubs/${hubId}`)
+        .delete(`/api/v1/locations/hubs/${hubId}`)
         .set('Authorization', `Bearer ${adminToken}`);
       expect(res.status).toBe(200);
       expect(res.body.hub.isActive).toBe(false);
@@ -129,7 +129,7 @@ describe('locations', () => {
 
     it('admin list still includes inactive hubs', async () => {
       const res = await request(app)
-        .get('/locations/hubs')
+        .get('/api/v1/locations/hubs')
         .set('Authorization', `Bearer ${adminToken}`);
       expect(res.status).toBe(200);
       expect(res.body.hubs).toHaveLength(1);
@@ -138,7 +138,7 @@ describe('locations', () => {
 
     it('returns 404 for non-existent hub', async () => {
       const res = await request(app)
-        .put('/locations/hubs/00000000-0000-0000-0000-000000000000')
+        .put('/api/v1/locations/hubs/00000000-0000-0000-0000-000000000000')
         .set('Authorization', `Bearer ${adminToken}`)
         .send({ name: 'Nope' });
       expect(res.status).toBe(404);
@@ -154,7 +154,7 @@ describe('locations', () => {
     beforeAll(async () => {
       // Create a hub first (need a valid hub for pickup location)
       const res = await request(app)
-        .post('/locations/hubs')
+        .post('/api/v1/locations/hubs')
         .set('Authorization', `Bearer ${adminToken}`)
         .send({ name: 'Manchester Hub', code: 'MAN-01', address: '1 Albert Square, Manchester' });
       hubId = res.body.hub.id;
@@ -162,7 +162,7 @@ describe('locations', () => {
 
     it('creates a pickup location', async () => {
       const res = await request(app)
-        .post('/locations/pickup-points')
+        .post('/api/v1/locations/pickup-points')
         .set('Authorization', `Bearer ${adminToken}`)
         .send({ hubId, name: 'City Centre Point', address: '50 Piccadilly, Manchester' });
       expect(res.status).toBe(201);
@@ -175,7 +175,7 @@ describe('locations', () => {
 
     it('creates a pickup location without hub', async () => {
       const res = await request(app)
-        .post('/locations/pickup-points')
+        .post('/api/v1/locations/pickup-points')
         .set('Authorization', `Bearer ${adminToken}`)
         .send({ name: 'Standalone Point', address: '1 Oxford Road, Manchester' });
       expect(res.status).toBe(201);
@@ -184,7 +184,7 @@ describe('locations', () => {
 
     it('rejects invalid hub id', async () => {
       const res = await request(app)
-        .post('/locations/pickup-points')
+        .post('/api/v1/locations/pickup-points')
         .set('Authorization', `Bearer ${adminToken}`)
         .send({ hubId: 'not-a-uuid', name: 'Bad Hub', address: '123 Street' });
       expect(res.status).toBe(400);
@@ -192,7 +192,7 @@ describe('locations', () => {
 
     it('rejects non-existent hub', async () => {
       const res = await request(app)
-        .post('/locations/pickup-points')
+        .post('/api/v1/locations/pickup-points')
         .set('Authorization', `Bearer ${adminToken}`)
         .send({
           hubId: '00000000-0000-0000-0000-000000000000',
@@ -204,7 +204,7 @@ describe('locations', () => {
 
     it('lists pickup locations', async () => {
       const res = await request(app)
-        .get('/locations/pickup-points')
+        .get('/api/v1/locations/pickup-points')
         .set('Authorization', `Bearer ${adminToken}`);
       expect(res.status).toBe(200);
       expect(res.body.pickupLocations.length).toBeGreaterThanOrEqual(2);
@@ -212,7 +212,7 @@ describe('locations', () => {
 
     it('updates a pickup location', async () => {
       const res = await request(app)
-        .put(`/locations/pickup-points/${pickupId}`)
+        .put(`/api/v1/locations/pickup-points/${pickupId}`)
         .set('Authorization', `Bearer ${adminToken}`)
         .send({ name: 'City Centre Hub Point' });
       expect(res.status).toBe(200);
@@ -221,7 +221,7 @@ describe('locations', () => {
 
     it('soft-deletes a pickup location', async () => {
       const res = await request(app)
-        .delete(`/locations/pickup-points/${pickupId}`)
+        .delete(`/api/v1/locations/pickup-points/${pickupId}`)
         .set('Authorization', `Bearer ${adminToken}`);
       expect(res.status).toBe(200);
       expect(res.body.pickupLocation.isActive).toBe(false);
@@ -229,7 +229,7 @@ describe('locations', () => {
 
     it('returns 404 for non-existent pickup location', async () => {
       const res = await request(app)
-        .put('/locations/pickup-points/00000000-0000-0000-0000-000000000000')
+        .put('/api/v1/locations/pickup-points/00000000-0000-0000-0000-000000000000')
         .set('Authorization', `Bearer ${adminToken}`)
         .send({ name: 'Nope' });
       expect(res.status).toBe(404);
@@ -244,7 +244,7 @@ describe('locations', () => {
 
     beforeAll(async () => {
       const res = await request(app)
-        .post('/locations/hubs')
+        .post('/api/v1/locations/hubs')
         .set('Authorization', `Bearer ${adminToken}`)
         .send({ name: 'Birmingham Hub', code: 'BIR-01', address: '1 Victoria Square, Birmingham' });
       hubId = res.body.hub.id;
@@ -252,7 +252,7 @@ describe('locations', () => {
 
     it('creates a zone', async () => {
       const res = await request(app)
-        .post('/locations/zones')
+        .post('/api/v1/locations/zones')
         .set('Authorization', `Bearer ${adminToken}`)
         .send({ hubId, name: 'Zone A', description: 'Central Birmingham' });
       expect(res.status).toBe(201);
@@ -266,7 +266,7 @@ describe('locations', () => {
 
     it('rejects duplicate zone name per hub', async () => {
       const res = await request(app)
-        .post('/locations/zones')
+        .post('/api/v1/locations/zones')
         .set('Authorization', `Bearer ${adminToken}`)
         .send({ hubId, name: 'Zone A' });
       expect(res.status).toBe(409);
@@ -275,13 +275,13 @@ describe('locations', () => {
     it('allows same zone name on different hubs', async () => {
       // Create another hub
       const hubRes = await request(app)
-        .post('/locations/hubs')
+        .post('/api/v1/locations/hubs')
         .set('Authorization', `Bearer ${adminToken}`)
         .send({ name: 'Leeds Hub', code: 'LDS-01', address: '1 Calverley Street, Leeds' });
       const otherHubId = hubRes.body.hub.id;
 
       const res = await request(app)
-        .post('/locations/zones')
+        .post('/api/v1/locations/zones')
         .set('Authorization', `Bearer ${adminToken}`)
         .send({ hubId: otherHubId, name: 'Zone A' });
       expect(res.status).toBe(201);
@@ -289,7 +289,7 @@ describe('locations', () => {
 
     it('rejects invalid hub id', async () => {
       const res = await request(app)
-        .post('/locations/zones')
+        .post('/api/v1/locations/zones')
         .set('Authorization', `Bearer ${adminToken}`)
         .send({ hubId: 'not-a-uuid', name: 'Bad Zone' });
       expect(res.status).toBe(400);
@@ -297,7 +297,7 @@ describe('locations', () => {
 
     it('rejects non-existent hub', async () => {
       const res = await request(app)
-        .post('/locations/zones')
+        .post('/api/v1/locations/zones')
         .set('Authorization', `Bearer ${adminToken}`)
         .send({ hubId: '00000000-0000-0000-0000-000000000000', name: 'Ghost Zone' });
       expect(res.status).toBe(400);
@@ -305,7 +305,7 @@ describe('locations', () => {
 
     it('lists zones', async () => {
       const res = await request(app)
-        .get('/locations/zones')
+        .get('/api/v1/locations/zones')
         .set('Authorization', `Bearer ${adminToken}`);
       expect(res.status).toBe(200);
       expect(res.body.zones.length).toBeGreaterThanOrEqual(1);
@@ -313,7 +313,7 @@ describe('locations', () => {
 
     it('updates a zone', async () => {
       const res = await request(app)
-        .put(`/locations/zones/${zoneId}`)
+        .put(`/api/v1/locations/zones/${zoneId}`)
         .set('Authorization', `Bearer ${adminToken}`)
         .send({ description: 'Updated description' });
       expect(res.status).toBe(200);
@@ -322,7 +322,7 @@ describe('locations', () => {
 
     it('soft-deletes a zone', async () => {
       const res = await request(app)
-        .delete(`/locations/zones/${zoneId}`)
+        .delete(`/api/v1/locations/zones/${zoneId}`)
         .set('Authorization', `Bearer ${adminToken}`);
       expect(res.status).toBe(200);
       expect(res.body.zone.isActive).toBe(false);
@@ -330,7 +330,7 @@ describe('locations', () => {
 
     it('returns 404 for non-existent zone', async () => {
       const res = await request(app)
-        .put('/locations/zones/00000000-0000-0000-0000-000000000000')
+        .put('/api/v1/locations/zones/00000000-0000-0000-0000-000000000000')
         .set('Authorization', `Bearer ${adminToken}`)
         .send({ name: 'Nope' });
       expect(res.status).toBe(404);
@@ -347,26 +347,26 @@ describe('locations', () => {
     beforeAll(async () => {
       // Create test data
       const hubRes = await request(app)
-        .post('/locations/hubs')
+        .post('/api/v1/locations/hubs')
         .set('Authorization', `Bearer ${adminToken}`)
         .send({ name: 'Public Hub', code: 'PUB-01', address: '1 Public Lane, London' });
       hubId = hubRes.body.hub.id;
 
       const pickupRes = await request(app)
-        .post('/locations/pickup-points')
+        .post('/api/v1/locations/pickup-points')
         .set('Authorization', `Bearer ${adminToken}`)
         .send({ hubId, name: 'Public Pickup', address: '2 Public Road, London' });
       pickupId = pickupRes.body.pickupLocation.id;
 
       const zoneRes = await request(app)
-        .post('/locations/zones')
+        .post('/api/v1/locations/zones')
         .set('Authorization', `Bearer ${adminToken}`)
         .send({ hubId, name: 'Bravo Zone', description: 'Zone B area' });
       zoneId = zoneRes.body.zone.id;
     });
 
     it('public hubs returns active hubs without auth', async () => {
-      const res = await request(app).get('/locations/public/hubs');
+      const res = await request(app).get('/api/v1/locations/public/hubs');
       expect(res.status).toBe(200);
       expect(res.body.hubs.length).toBeGreaterThanOrEqual(1);
       const publicHub = res.body.hubs.find((h: { id: string }) => h.id === hubId);
@@ -380,7 +380,7 @@ describe('locations', () => {
     });
 
     it('public pickup-points returns active pickup locations', async () => {
-      const res = await request(app).get('/locations/public/pickup-points');
+      const res = await request(app).get('/api/v1/locations/public/pickup-points');
       expect(res.status).toBe(200);
       expect(res.body.pickupLocations.length).toBeGreaterThanOrEqual(1);
       const publicPickup = res.body.pickupLocations.find(
@@ -394,7 +394,7 @@ describe('locations', () => {
     });
 
     it('public zones returns active zones sorted alphabetically', async () => {
-      const res = await request(app).get('/locations/public/zones');
+      const res = await request(app).get('/api/v1/locations/public/zones');
       expect(res.status).toBe(200);
       expect(res.body.zones.length).toBeGreaterThanOrEqual(1);
       const publicZone = res.body.zones.find((z: { id: string }) => z.id === zoneId);
@@ -411,10 +411,10 @@ describe('locations', () => {
     it('public endpoints exclude inactive records', async () => {
       // Delete the hub
       await request(app)
-        .delete(`/locations/hubs/${hubId}`)
+        .delete(`/api/v1/locations/hubs/${hubId}`)
         .set('Authorization', `Bearer ${adminToken}`);
 
-      const res = await request(app).get('/locations/public/hubs');
+      const res = await request(app).get('/api/v1/locations/public/hubs');
       const deleted = res.body.hubs.find((h: { id: string }) => h.id === hubId);
       expect(deleted).toBeUndefined();
     });

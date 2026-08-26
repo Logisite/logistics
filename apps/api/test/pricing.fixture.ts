@@ -46,7 +46,7 @@ export async function setupPricingTest(roles: PricingRole[]): Promise<PricingFix
     const email = ROLE_EMAILS[role];
     await seedUserWithRoles(db, [role], email);
     const login = await request(app)
-      .post('/auth/login')
+      .post('/api/v1/auth/login')
       .send({ email, password: TEST_PASSWORD });
     if (!login.body.accessToken) {
       throw new Error(`setupPricingTest: login failed for ${role} (${email})`);
@@ -58,31 +58,31 @@ export async function setupPricingTest(roles: PricingRole[]): Promise<PricingFix
   if (!adminToken) throw new Error('setupPricingTest: ADMIN role is required');
 
   const hubRes = await request(app)
-    .post('/locations/hubs')
+    .post('/api/v1/locations/hubs')
     .set('Authorization', `Bearer ${adminToken}`)
     .send({ name: 'Test Hub', code: 'TST-01', address: '1 Test Street, London' });
   const hubId = hubRes.body.hub.id as string;
 
   const originZoneRes = await request(app)
-    .post('/locations/zones')
+    .post('/api/v1/locations/zones')
     .set('Authorization', `Bearer ${adminToken}`)
     .send({ hubId, name: 'Origin Zone' });
   const originZoneId = originZoneRes.body.zone.id as string;
 
   const destZoneRes = await request(app)
-    .post('/locations/zones')
+    .post('/api/v1/locations/zones')
     .set('Authorization', `Bearer ${adminToken}`)
     .send({ hubId, name: 'Dest Zone' });
   const destZoneId = destZoneRes.body.zone.id as string;
 
   const pickupRes = await request(app)
-    .post('/locations/pickup-points')
+    .post('/api/v1/locations/pickup-points')
     .set('Authorization', `Bearer ${adminToken}`)
     .send({ hubId, zoneId: originZoneId, name: 'Test Pickup', address: '2 Pickup Road, London' });
   const pickupLocationId = pickupRes.body.pickupLocation.id as string;
 
   const deliveryOptRes = await request(app)
-    .post('/pricing/delivery-options')
+    .post('/api/v1/pricing/delivery-options')
     .set('Authorization', `Bearer ${adminToken}`)
     .send({ code: 'STANDARD', name: 'Standard Delivery' });
   const deliveryOptionId = deliveryOptRes.body.deliveryOption.id as string;
@@ -98,7 +98,7 @@ export async function setupPricingTest(roles: PricingRole[]): Promise<PricingFix
     },
     async createRule(overrides: Record<string, unknown> = {}) {
       const res = await request(app)
-        .post('/pricing/rules')
+        .post('/api/v1/pricing/rules')
         .set('Authorization', `Bearer ${adminToken}`)
         .send({
           originZoneId,

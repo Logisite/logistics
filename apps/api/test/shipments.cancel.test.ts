@@ -20,7 +20,7 @@ describe('shipments state machine: cancel', () => {
 
   const cancel = (id: string, token: string) =>
     request(f.app)
-      .patch(`/shipments/${id}/cancel`)
+      .patch(`/api/v1/shipments/${id}/cancel`)
       .set('Authorization', `Bearer ${token}`)
       .send({ reason: 'test-cancel' });
 
@@ -90,10 +90,10 @@ describe('shipments state machine: cancel', () => {
 
   it('returns 401 unauthenticated, 404 unknown uuid', async () => {
     const id = f.ids.bookedShipmentId;
-    expect((await request(f.app).patch(`/shipments/${id}/cancel`)).status).toBe(401);
+    expect((await request(f.app).patch(`/api/v1/shipments/${id}/cancel`)).status).toBe(401);
 
     const missing = await request(f.app)
-      .patch('/shipments/00000000-0000-0000-0000-000000000000/cancel')
+      .patch('/api/v1/shipments/00000000-0000-0000-0000-000000000000/cancel')
       .set('Authorization', `Bearer ${f.token('ADMIN')}`);
     expect(missing.status).toBe(404);
   });

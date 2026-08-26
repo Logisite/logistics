@@ -21,24 +21,24 @@ describe('openapi', () => {
     await seedAuthData(db);
     app = createApp({ db, mailer: new FakeMailer() } satisfies AppDeps);
     await seedUserWithRoles(db, ['ADMIN'], 'admin-openapi@example.com');
-    adminToken = (await request(app).post('/auth/login').send({ email: 'admin-openapi@example.com', password: TEST_PASSWORD })).body.accessToken as string;
+    adminToken = (await request(app).post('/api/v1/auth/login').send({ email: 'admin-openapi@example.com', password: TEST_PASSWORD })).body.accessToken as string;
   });
 
   afterAll(async () => {
     await testDb.cleanup();
   });
 
-  it('GET /openapi.json is public and valid', async () => {
-    const r = await request(app).get('/openapi.json');
+  it('GET /api/v1/openapi.json is public and valid', async () => {
+    const r = await request(app).get('/api/v1/openapi.json');
     expect(r.status).toBe(200);
     expect(r.body.openapi).toBe('3.1.0');
-    expect(Object.keys(r.body.paths).length).toBeGreaterThanOrEqual(5);
+    expect(Object.keys(r.body.paths).length).toBeGreaterThanOrEqual(65);
   });
 
-  it('GET /docs requires admin', async () => {
-    const anon = await request(app).get('/docs');
+  it('GET /api/v1/docs requires admin', async () => {
+    const anon = await request(app).get('/api/v1/docs');
     expect(anon.status).toBe(401);
-    const ok = await request(app).get('/docs').set('Authorization', `Bearer ${adminToken}`);
+    const ok = await request(app).get('/api/v1/docs').set('Authorization', `Bearer ${adminToken}`);
     expect(ok.status).toBe(200);
     expect(ok.headers['content-type']).toContain('text/html');
   });

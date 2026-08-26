@@ -56,7 +56,7 @@ export async function setupShipmentsTest(roles: ShipmentsRole[]): Promise<Shipme
   const tokens = new Map<ShipmentsRole, string>();
   for (const role of roles) {
     const login = await request(app)
-      .post('/auth/login')
+      .post('/api/v1/auth/login')
       .send({ email: ROLE_EMAILS[role], password: TEST_PASSWORD });
     if (!login.body.accessToken) {
       throw new Error(`setupShipmentsTest: login failed for ${role}`);
@@ -68,25 +68,25 @@ export async function setupShipmentsTest(roles: ShipmentsRole[]): Promise<Shipme
   if (!adminToken) throw new Error('setupShipmentsTest: ADMIN role is required');
 
   const hubRes = await request(app)
-    .post('/locations/hubs')
+    .post('/api/v1/locations/hubs')
     .set('Authorization', `Bearer ${adminToken}`)
     .send({ name: 'Shipments Hub', code: 'SHP-01', address: '9 Hub Lane, London' });
   const hubId = hubRes.body.hub.id as string;
 
   const originZoneRes = await request(app)
-    .post('/locations/zones')
+    .post('/api/v1/locations/zones')
     .set('Authorization', `Bearer ${adminToken}`)
     .send({ hubId, name: 'Origin Zone' });
   const originZoneId = originZoneRes.body.zone.id as string;
 
   const destZoneRes = await request(app)
-    .post('/locations/zones')
+    .post('/api/v1/locations/zones')
     .set('Authorization', `Bearer ${adminToken}`)
     .send({ hubId, name: 'Dest Zone' });
   const destZoneId = destZoneRes.body.zone.id as string;
 
   const pickupRes = await request(app)
-    .post('/locations/pickup-points')
+    .post('/api/v1/locations/pickup-points')
     .set('Authorization', `Bearer ${adminToken}`)
     .send({
       hubId,
@@ -97,13 +97,13 @@ export async function setupShipmentsTest(roles: ShipmentsRole[]): Promise<Shipme
   const pickupLocationId = pickupRes.body.pickupLocation.id as string;
 
   const deliveryOptRes = await request(app)
-    .post('/pricing/delivery-options')
+    .post('/api/v1/pricing/delivery-options')
     .set('Authorization', `Bearer ${adminToken}`)
     .send({ code: 'STANDARD', name: 'Standard Delivery' });
   const deliveryOptionId = deliveryOptRes.body.deliveryOption.id as string;
 
   const ruleRes = await request(app)
-    .post('/pricing/rules')
+    .post('/api/v1/pricing/rules')
     .set('Authorization', `Bearer ${adminToken}`)
     .send({
       originZoneId,
@@ -121,7 +121,7 @@ export async function setupShipmentsTest(roles: ShipmentsRole[]): Promise<Shipme
 
   async function bookShipment(recipientName = 'Test Recipient'): Promise<string> {
     const res = await request(app)
-      .post('/pricing/book')
+      .post('/api/v1/pricing/book')
       .set('Authorization', `Bearer ${tokens.get('CUSTOMER1')}`)
       .send({
         recipientName,

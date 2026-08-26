@@ -39,7 +39,7 @@ describe('auth slice', () => {
   });
 
   function register(email: string, password = TEST_PASSWORD) {
-    return request(app).post('/auth/register').send({ email, password });
+    return request(app).post('/api/v1/auth/register').send({ email, password });
   }
 
   async function registerAndVerify(email: string, password = TEST_PASSWORD) {
@@ -47,14 +47,14 @@ describe('auth slice', () => {
     expect(res.status).toBe(201);
     const mail = mailer.sentTo('verification', email);
     expect(mail).toBeTruthy();
-    const verify = await request(app).post('/auth/verify-email').send({ token: mail!.token });
+    const verify = await request(app).post('/api/v1/auth/verify-email').send({ token: mail!.token });
     expect(verify.status).toBe(200);
   }
 
   function login(email: string, password = TEST_PASSWORD, role?: string) {
     const body: Record<string, string> = { email, password };
     if (role) body.role = role;
-    return request(app).post('/auth/login').send(body);
+    return request(app).post('/api/v1/auth/login').send(body);
   }
 
   async function getAdminToken(): Promise<string> {
@@ -71,10 +71,10 @@ describe('auth slice', () => {
       const badEmail = await register('not-an-email');
       expect(badEmail.status).toBe(400);
 
-      const shortPassword = await request(app).post('/auth/register').send({ email: 'a@b.com', password: 'x' });
+      const shortPassword = await request(app).post('/api/v1/auth/register').send({ email: 'a@b.com', password: 'x' });
       expect(shortPassword.status).toBe(400);
 
-      const empty = await request(app).post('/auth/register').send({});
+      const empty = await request(app).post('/api/v1/auth/register').send({});
       expect(empty.status).toBe(400);
     });
 
@@ -88,7 +88,7 @@ describe('auth slice', () => {
       expect(blocked.body.error.code).toBe('EMAIL_NOT_VERIFIED');
 
       const mail = mailer.sentTo('verification', 'gate@example.com');
-      const verify = await request(app).post('/auth/verify-email').send({ token: mail!.token });
+      const verify = await request(app).post('/api/v1/auth/verify-email').send({ token: mail!.token });
       expect(verify.status).toBe(200);
 
       const ok = await login('gate@example.com');
@@ -126,19 +126,19 @@ describe('auth slice', () => {
       expect(deviceB.status).toBe(200);
 
       const sessions = await request(app)
-        .get('/auth/sessions')
+        .get('/api/v1/auth/sessions')
         .set('Authorization', `Bearer ${deviceA.body.accessToken}`);
       expect(sessions.status).toBe(200);
       expect(sessions.body).toHaveLength(2);
 
       const refreshA = await request(app)
-        .post('/auth/refresh')
+        .post('/api/v1/auth/refresh')
         .send({ refreshToken: deviceA.body.refreshToken });
       expect(refreshA.status).toBe(200);
       expect(refreshA.body.refreshToken).not.toBe(deviceA.body.refreshToken);
 
       const replay = await request(app)
-        .post('/auth/refresh')
+        .post('/api/v1/auth/refresh')
         .send({ refreshToken: deviceA.body.refreshToken });
       expect(replay.status).toBe(401);
 
@@ -148,17 +148,17 @@ describe('auth slice', () => {
       expect(revokedRow?.revokedAt).not.toBeNull();
 
       const refreshAgain = await request(app)
-        .post('/auth/refresh')
+        .post('/api/v1/auth/refresh')
         .send({ refreshToken: refreshA.body.refreshToken });
       expect(refreshAgain.status).toBe(401);
 
       const revokeB = await request(app)
-        .post(`/auth/sessions/${deviceB.body.session.id}/revoke`)
+        .post(`/api/v1/auth/sessions/${deviceB.body.session.id}/revoke`)
         .set('Authorization', `Bearer ${deviceB.body.accessToken}`);
       expect(revokeB.status).toBe(204);
 
       const refreshB = await request(app)
-        .post('/auth/refresh')
+        .post('/api/v1/auth/refresh')
         .send({ refreshToken: deviceB.body.refreshToken });
       expect(refreshB.status).toBe(401);
     });
@@ -170,14 +170,14 @@ describe('auth slice', () => {
 
       let token = loginRes.body.refreshToken as string;
       for (let i = 0; i < 3; i += 1) {
-        const res = await request(app).post('/auth/refresh').send({ refreshToken: token });
+        const res = await request(app).post('/api/v1/auth/refresh').send({ refreshToken: token });
         expect(res.status).toBe(200);
         expect(res.body.refreshToken).not.toBe(token);
         token = res.body.refreshToken as string;
       }
 
       const sessionsRes = await request(app)
-        .get('/auth/sessions')
+        .get('/api/v1/auth/sessions')
         .set('Authorization', `Bearer ${loginRes.body.accessToken}`);
       expect(sessionsRes.status).toBe(200);
       expect(sessionsRes.body).toHaveLength(1);
@@ -189,12 +189,12 @@ describe('auth slice', () => {
       expect(loginRes.status).toBe(200);
 
       const revoke = await request(app)
-        .post(`/auth/sessions/${loginRes.body.session.id}/revoke`)
+        .post(`/api/v1/auth/sessions/${loginRes.body.session.id}/revoke`)
         .set('Authorization', `Bearer ${loginRes.body.accessToken}`);
       expect(revoke.status).toBe(204);
 
       const blocked = await request(app)
-        .get('/auth/sessions')
+        .get('/api/v1/auth/sessions')
         .set('Authorization', `Bearer ${loginRes.body.accessToken}`);
       expect(blocked.status).toBe(401);
     });
@@ -205,31 +205,31 @@ describe('auth slice', () => {
       expect(loginRes.status).toBe(200);
 
       const out = await request(app)
-        .post('/auth/logout')
+        .post('/api/v1/auth/logout')
         .send({ refreshToken: loginRes.body.refreshToken });
       expect(out.status).toBe(204);
 
       const refresh = await request(app)
-        .post('/auth/refresh')
+        .post('/api/v1/auth/refresh')
         .send({ refreshToken: loginRes.body.refreshToken });
       expect(refresh.status).toBe(401);
     });
 
     it('blocks protected routes without a valid session', async () => {
-      const noToken = await request(app).get('/auth/sessions');
+      const noToken = await request(app).get('/api/v1/auth/sessions');
       expect(noToken.status).toBe(401);
 
       const badToken = await request(app)
-        .get('/auth/sessions')
+        .get('/api/v1/auth/sessions')
         .set('Authorization', 'Bearer not-a-jwt');
       expect(badToken.status).toBe(401);
 
       const noAuthInvite = await request(app)
-        .post('/auth/invite')
+        .post('/api/v1/auth/invite')
         .send({ email: 'x@example.com', roleNames: ['DRIVER'] });
       expect(noAuthInvite.status).toBe(401);
 
-      const noAuthBundles = await request(app).get('/auth/bundles');
+      const noAuthBundles = await request(app).get('/api/v1/auth/bundles');
       expect(noAuthBundles.status).toBe(401);
     });
   });
@@ -241,13 +241,13 @@ describe('auth slice', () => {
       expect(customer.status).toBe(200);
 
       const denied = await request(app)
-        .post('/auth/invite')
+        .post('/api/v1/auth/invite')
         .set('Authorization', `Bearer ${customer.body.accessToken}`)
         .send({ email: 'someone@example.com', roleNames: ['DRIVER'] });
       expect(denied.status).toBe(403);
 
       const allowed = await request(app)
-        .post('/auth/invite')
+        .post('/api/v1/auth/invite')
         .set('Authorization', `Bearer ${await getAdminToken()}`)
         .send({ email: 'someone@example.com', roleNames: ['DRIVER'] });
       expect(allowed.status).toBe(201);
@@ -255,7 +255,7 @@ describe('auth slice', () => {
 
     it('seeds the Owner-Operator bundle and applies it in one click', async () => {
       const bundles = await request(app)
-        .get('/auth/bundles')
+        .get('/api/v1/auth/bundles')
         .set('Authorization', `Bearer ${await getAdminToken()}`);
       expect(bundles.status).toBe(200);
 
@@ -266,13 +266,13 @@ describe('auth slice', () => {
       );
 
       const invite = await request(app)
-        .post('/auth/invite')
+        .post('/api/v1/auth/invite')
         .set('Authorization', `Bearer ${await getAdminToken()}`)
         .send({ email: 'ops@example.com', roleNames: [] });
       expect(invite.status).toBe(201);
 
       const apply = await request(app)
-        .post(`/auth/bundles/${ownerOp.id}/apply`)
+        .post(`/api/v1/auth/bundles/${ownerOp.id}/apply`)
         .set('Authorization', `Bearer ${await getAdminToken()}`)
         .send({ userId: invite.body.user.id });
       expect(apply.status).toBe(200);
@@ -283,7 +283,7 @@ describe('auth slice', () => {
 
     it('lets an admin create, update and delete role bundles', async () => {
       const create = await request(app)
-        .post('/auth/bundles')
+        .post('/api/v1/auth/bundles')
         .set('Authorization', `Bearer ${await getAdminToken()}`)
         .send({
           name: 'Night Dispatcher',
@@ -294,19 +294,19 @@ describe('auth slice', () => {
       expect(create.body.bundle.roleNames).toContain('DISPATCHER');
 
       const update = await request(app)
-        .put(`/auth/bundles/${create.body.bundle.id}`)
+        .put(`/api/v1/auth/bundles/${create.body.bundle.id}`)
         .set('Authorization', `Bearer ${await getAdminToken()}`)
         .send({ name: 'Night Dispatcher', roleNames: ['DISPATCHER'] });
       expect(update.status).toBe(200);
       expect(update.body.bundle.roleNames).toEqual(['DISPATCHER']);
 
       const del = await request(app)
-        .delete(`/auth/bundles/${create.body.bundle.id}`)
+        .delete(`/api/v1/auth/bundles/${create.body.bundle.id}`)
         .set('Authorization', `Bearer ${await getAdminToken()}`);
       expect(del.status).toBe(204);
 
       const list = await request(app)
-        .get('/auth/bundles')
+        .get('/api/v1/auth/bundles')
         .set('Authorization', `Bearer ${await getAdminToken()}`);
       expect(list.status).toBe(200);
       expect(list.body.find((b: { id: string }) => b.id === create.body.bundle.id)).toBeUndefined();
@@ -318,7 +318,7 @@ describe('auth slice', () => {
       expect(customer.status).toBe(200);
 
       const create = await request(app)
-        .post('/auth/bundles')
+        .post('/api/v1/auth/bundles')
         .set('Authorization', `Bearer ${customer.body.accessToken}`)
         .send({ name: 'Sneaky', roleNames: ['ADMIN'] });
       expect(create.status).toBe(403);
@@ -326,13 +326,13 @@ describe('auth slice', () => {
 
     it('rejects bundles with unknown roles or empty names', async () => {
       const badRole = await request(app)
-        .post('/auth/bundles')
+        .post('/api/v1/auth/bundles')
         .set('Authorization', `Bearer ${await getAdminToken()}`)
         .send({ name: 'Bad', roleNames: ['GODMODE'] });
       expect(badRole.status).toBe(400);
 
       const emptyName = await request(app)
-        .post('/auth/bundles')
+        .post('/api/v1/auth/bundles')
         .set('Authorization', `Bearer ${await getAdminToken()}`)
         .send({ name: '', roleNames: ['DRIVER'] });
       expect(emptyName.status).toBe(400);
@@ -342,7 +342,7 @@ describe('auth slice', () => {
   describe('admin invite and password flows', () => {
     it('invites a staff member by email who then sets a password', async () => {
       const invite = await request(app)
-        .post('/auth/invite')
+        .post('/api/v1/auth/invite')
         .set('Authorization', `Bearer ${await getAdminToken()}`)
         .send({ email: 'dispatcher@example.com', roleNames: ['DISPATCHER'] });
       expect(invite.status).toBe(201);
@@ -351,7 +351,7 @@ describe('auth slice', () => {
       expect(mail).toBeTruthy();
 
       const setPw = await request(app)
-        .post('/auth/reset-password')
+        .post('/api/v1/auth/reset-password')
         .send({ token: mail!.token, newPassword: 'password456' });
       expect(setPw.status).toBe(200);
 
@@ -363,14 +363,14 @@ describe('auth slice', () => {
     it('resets a password through the email-only flow', async () => {
       await registerAndVerify('reset@example.com');
 
-      const forgot = await request(app).post('/auth/forgot-password').send({ email: 'reset@example.com' });
+      const forgot = await request(app).post('/api/v1/auth/forgot-password').send({ email: 'reset@example.com' });
       expect(forgot.status).toBe(202);
 
       const mail = mailer.sentTo('passwordReset', 'reset@example.com');
       expect(mail).toBeTruthy();
 
       const reset = await request(app)
-        .post('/auth/reset-password')
+        .post('/api/v1/auth/reset-password')
         .send({ token: mail!.token, newPassword: 'newpassword123' });
       expect(reset.status).toBe(200);
 
@@ -386,7 +386,7 @@ describe('auth slice', () => {
       await db.update(users).set({ isActive: false }).where(eq(users.id, user.id));
 
       const forgot = await request(app)
-        .post('/auth/forgot-password')
+        .post('/api/v1/auth/forgot-password')
         .send({ email: 'disabled@example.com' });
       expect(forgot.status).toBe(202);
       expect(mailer.sentTo('passwordReset', 'disabled@example.com')).toBeFalsy();
@@ -399,7 +399,7 @@ describe('auth slice', () => {
       });
 
       const reset = await request(app)
-        .post('/auth/reset-password')
+        .post('/api/v1/auth/reset-password')
         .send({ token, newPassword: 'newpassword123' });
       expect(reset.status).toBe(403);
       expect(reset.body.error.code).toBe('ACCOUNT_DISABLED');
@@ -474,13 +474,13 @@ describe('auth slice', () => {
       expect(asDriver.status).toBe(200);
 
       const inviteAsAdmin = await request(app)
-        .post('/auth/invite')
+        .post('/api/v1/auth/invite')
         .set('Authorization', `Bearer ${asAdmin.body.accessToken}`)
         .send({ email: 'driver@example.com', roleNames: ['DRIVER'] });
       expect(inviteAsAdmin.status).toBe(201);
 
       const inviteAsDriver = await request(app)
-        .post('/auth/invite')
+        .post('/api/v1/auth/invite')
         .set('Authorization', `Bearer ${asDriver.body.accessToken}`)
         .send({ email: 'blocked@example.com', roleNames: ['DRIVER'] });
       expect(inviteAsDriver.status).toBe(403);
@@ -506,8 +506,8 @@ describe('auth slice', () => {
       const token = first.body.refreshToken;
 
       const [a, b] = await Promise.all([
-        request(app).post('/auth/refresh').send({ refreshToken: token }),
-        request(app).post('/auth/refresh').send({ refreshToken: token }),
+        request(app).post('/api/v1/auth/refresh').send({ refreshToken: token }),
+        request(app).post('/api/v1/auth/refresh').send({ refreshToken: token }),
       ]);
 
       const successes = [a, b].filter((r) => r.status === 200).length;
@@ -521,18 +521,18 @@ describe('auth slice', () => {
       const oldRefresh = before.body.refreshToken;
 
       const forgot = await request(app)
-        .post('/auth/forgot-password')
+        .post('/api/v1/auth/forgot-password')
         .send({ email: 'resetrevoke@example.com' });
       expect(forgot.status).toBe(202);
       const mail = mailer.sentTo('passwordReset', 'resetrevoke@example.com');
       expect(mail).toBeTruthy();
 
       const reset = await request(app)
-        .post('/auth/reset-password')
+        .post('/api/v1/auth/reset-password')
         .send({ token: mail!.token, newPassword: 'newpassword123' });
       expect(reset.status).toBe(200);
 
-      const stale = await request(app).post('/auth/refresh').send({ refreshToken: oldRefresh });
+      const stale = await request(app).post('/api/v1/auth/refresh').send({ refreshToken: oldRefresh });
       expect(stale.status).toBe(401);
     });
 
@@ -564,7 +564,7 @@ describe('auth slice', () => {
       );
 
       const res = await request(app)
-        .get('/auth/sessions')
+        .get('/api/v1/auth/sessions')
         .set('Authorization', `Bearer ${forged}`);
       expect(res.status).toBe(401);
     });

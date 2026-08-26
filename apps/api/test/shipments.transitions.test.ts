@@ -7,7 +7,7 @@ import { auditLog, shipmentEvents } from '@logistics/db';
 import { seedShipmentAt, setupShipmentsTest } from './shipments.fixture.js';
 import type { ShipmentsFixture } from './shipments.fixture.js';
 
-// Mirrors modules/shipments/transitions.ts on purpose: if the gateway and this
+// Mirrors modules/api/v1/shipments/transitions.ts on purpose: if the gateway and this
 // table ever disagree, these tests fail and the diff IS the bug.
 const VALID: Record<string, string[]> = {
   DRAFT: ['BOOKED', 'CANCELLED'],
@@ -57,8 +57,8 @@ describe('shipments state machine: transitions', () => {
     const route = TARGET_ROUTES[target]!;
     const req =
       route.method === 'patch'
-        ? request(f.app).patch(`/shipments/${shipmentId}/${route.path}`)
-        : request(f.app).post(`/shipments/${shipmentId}/${route.path}`);
+        ? request(f.app).patch(`/api/v1/shipments/${shipmentId}/${route.path}`)
+        : request(f.app).post(`/api/v1/shipments/${shipmentId}/${route.path}`);
     return req.set('Authorization', `Bearer ${token}`).send(body);
   }
 
@@ -82,7 +82,7 @@ describe('shipments state machine: transitions', () => {
     let from = 'BOOKED';
     for (const [path, status] of steps) {
       const res = await request(f.app)
-        .post(`/shipments/${id}/${path}`)
+        .post(`/api/v1/shipments/${id}/${path}`)
         .set('Authorization', admin())
         .send({ locationLabel: `Hub @ ${status}` });
       expect(res.status).toBe(200);
@@ -95,7 +95,7 @@ describe('shipments state machine: transitions', () => {
     }
 
     const timeline = await request(f.app)
-      .get(`/shipments/${id}/events`)
+      .get(`/api/v1/shipments/${id}/events`)
       .set('Authorization', admin());
     expect(timeline.status).toBe(200);
     const seq = timeline.body.events.map((e: { toStatus: string }) => e.toStatus);
@@ -156,8 +156,8 @@ describe('shipments state machine: transitions', () => {
 
   it('rejects unauthenticated transition and read attempts', async () => {
     const id = f.ids.bookedShipmentId;
-    expect((await request(f.app).post(`/shipments/${id}/pickup`)).status).toBe(401);
-    expect((await request(f.app).get(`/shipments/${id}/events`)).status).toBe(401);
+    expect((await request(f.app).post(`/api/v1/shipments/${id}/pickup`)).status).toBe(401);
+    expect((await request(f.app).get(`/api/v1/shipments/${id}/events`)).status).toBe(401);
   });
 
   it('rejects non-staff roles on staff transitions and reads', async () => {
@@ -166,7 +166,7 @@ describe('shipments state machine: transitions', () => {
       const post = await callTransition(id, 'PICKED_UP', f.token(role));
       expect(post.status, role).toBe(403);
       const get = await request(f.app)
-        .get(`/shipments/${id}/events`)
+        .get(`/api/v1/shipments/${id}/events`)
         .set('Authorization', `Bearer ${f.token(role)}`);
       expect(get.status, role).toBe(403);
     }
@@ -174,17 +174,17 @@ describe('shipments state machine: transitions', () => {
 
   it('returns 400 for malformed ids and 404 for unknown uuids', async () => {
     const bad = await request(f.app)
-      .post('/shipments/not-a-uuid/pickup')
+      .post('/api/v1/shipments/not-a-uuid/pickup')
       .set('Authorization', admin());
     expect(bad.status).toBe(400);
 
     const missing = await request(f.app)
-      .post('/shipments/00000000-0000-0000-0000-000000000000/pickup')
+      .post('/api/v1/shipments/00000000-0000-0000-0000-000000000000/pickup')
       .set('Authorization', admin());
     expect(missing.status).toBe(404);
 
     const missingEvents = await request(f.app)
-      .get('/shipments/00000000-0000-0000-0000-000000000000/events')
+      .get('/api/v1/shipments/00000000-0000-0000-0000-000000000000/events')
       .set('Authorization', admin());
     expect(missingEvents.status).toBe(404);
   });

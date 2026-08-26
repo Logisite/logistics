@@ -20,7 +20,7 @@ describe('reporting exceptions', () => {
     await seedAuthData(db);
     app = createApp({ db, mailer: new FakeMailer() } satisfies AppDeps);
     await seedUserWithRoles(db, ['ADMIN'], 'admin-exc@example.com');
-    adminToken = (await request(app).post('/auth/login').send({ email: 'admin-exc@example.com', password: TEST_PASSWORD })).body.accessToken as string;
+    adminToken = (await request(app).post('/api/v1/auth/login').send({ email: 'admin-exc@example.com', password: TEST_PASSWORD })).body.accessToken as string;
   });
 
   afterAll(async () => {
@@ -28,10 +28,10 @@ describe('reporting exceptions', () => {
   });
 
   it('returns agingBuckets and enforces ageDays range', async () => {
-    const ok = await request(app).get('/reports/exceptions?ageDays=14').set('Authorization', `Bearer ${adminToken}`);
+    const ok = await request(app).get('/api/v1/reports/exceptions?ageDays=14').set('Authorization', `Bearer ${adminToken}`);
     expect(ok.status).toBe(200);
     expect(ok.body.agingBuckets).toBeDefined();
-    const bad = await request(app).get('/reports/exceptions?ageDays=100').set('Authorization', `Bearer ${adminToken}`);
+    const bad = await request(app).get('/api/v1/reports/exceptions?ageDays=100').set('Authorization', `Bearer ${adminToken}`);
     expect(bad.status).toBe(400);
   });
 });
