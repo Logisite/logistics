@@ -46,6 +46,10 @@ The dev device is memory-constrained (2.7 GiB RAM, often swapping). This shapes 
 
 Never hand-write SQL in `packages/db/drizzle/`. Schema changes live in `packages/db/src/schema/*.ts`; migrations are generated append-only via `pnpm --filter @logistics/db exec drizzle-kit generate` (reads `drizzle.config.ts`, writes `drizzle/*.sql` + `drizzle/meta/*`). Use `drizzle-kit push` only for ephemeral local experiments, never for committed history. See ADR 0012. Hand-written migrations caused `M-002` (0003/0004 duplicate columns, fresh-DB crash) — the generator is the single source of truth.
 
+## OpenAPI autonomy
+
+Every new route must be autonomous: define its Zod schema once and call `defineRoute` from `apps/api/src/openapi/registry.ts` at top level so the schema drives validation and `OpenAPIRegistry` at import time. `apps/api/src/openapi/generator.ts` side-effect imports all routers and `OpenApiGeneratorV31` emits `openapi: 3.1.0` to `apps/api/openapi.json`. Never maintain a second spec or hand-edit `openapi.json`. See ADR 0014. Error handling (400/401/403/404/409) is part of the route definition — include all expected responses in `defineRoute`.
+
 ## Test file conventions
 
 ### File size

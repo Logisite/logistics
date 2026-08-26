@@ -6,4 +6,6 @@ log_init
 
 cd "$(dirname "$(realpath "$0")")/.."
 
+export GIT_SHA=$(git rev-parse --short HEAD)
+
 run "pnpm build" pnpm build

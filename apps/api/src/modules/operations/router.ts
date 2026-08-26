@@ -9,6 +9,7 @@ import { PERMISSIONS } from '../../auth/permissions.js';
 import { parse } from '../../validate.js';
 
 import * as service from './service.js';
+import { defineRoute } from '../../openapi/registry.js';
 
 const createRunSchema = z.object({
   hubId: z.string().uuid().optional(),
@@ -20,6 +21,20 @@ const createRunSchema = z.object({
 const claimSchema = z.object({
   hubId: z.string().uuid().optional(),
   shipmentIds: z.array(z.string().uuid()).min(1),
+});
+
+defineRoute({ method: 'post', path: '/runs', request: { body: { content: { 'application/json': { schema: createRunSchema } } } }, responses: { 201: { description: 'created' }, 401: { description: 'unauthorized' }, 403: { description: 'forbidden' } } });
+defineRoute({ method: 'post', path: '/runs/claim', request: { body: { content: { 'application/json': { schema: claimSchema } } } }, responses: { 201: { description: 'created' } } });
+defineRoute({ method: 'post', path: '/runs/{id}/start', request: { params: z.object({ id: z.string().uuid() }) }, responses: { 200: { description: 'ok' } } });
+defineRoute({ method: 'post', path: '/runs/{id}/complete', request: { params: z.object({ id: z.string().uuid() }) }, responses: { 200: { description: 'ok' } } });
+defineRoute({ method: 'post', path: '/runs/{id}/cancel', request: { params: z.object({ id: z.string().uuid() }) }, responses: { 200: { description: 'ok' } } });
+defineRoute({ method: 'get', path: '/runs/mine', responses: { 200: { description: 'ok' } } });
+defineRoute({ method: 'get', path: '/runs/{id}', request: { params: z.object({ id: z.string().uuid() }) }, responses: { 200: { description: 'ok' } } });
+defineRoute({
+  method: 'post',
+  path: '/runs/{id}/gps',
+  request: { params: z.object({ id: z.string().uuid() }), body: { content: { 'application/json': { schema: z.object({ positions: z.array(z.object({ latitude: z.number(), longitude: z.number(), recordedAt: z.string().datetime().optional() })).min(1).max(100) }) } } } },
+  responses: { 200: { description: 'ok' } },
 });
 
 function runId(req: { params: Record<string, unknown> }): string {

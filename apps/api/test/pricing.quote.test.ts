@@ -31,13 +31,13 @@ describe('pricing quote', () => {
   });
 
   it('rejects unauthenticated requests', async () => {
-    const res = await request(f.app).post('/pricing/quote').send(quotePayload());
+    const res = await request(f.app).post('/api/v1/pricing/quote').send(quotePayload());
     expect(res.status).toBe(401);
   });
 
   it('rejects without QUOTE_CREATE permission', async () => {
     const res = await request(f.app)
-      .post('/pricing/quote')
+      .post('/api/v1/pricing/quote')
       .set('Authorization', dispatcher())
       .send(quotePayload());
     expect(res.status).toBe(403);
@@ -45,7 +45,7 @@ describe('pricing quote', () => {
 
   it('computes quote for single package', async () => {
     const res = await request(f.app)
-      .post('/pricing/quote')
+      .post('/api/v1/pricing/quote')
       .set('Authorization', customer())
       .send(quotePayload());
     expect(res.status).toBe(200);
@@ -58,7 +58,7 @@ describe('pricing quote', () => {
 
   it('computes quote with multiple packages', async () => {
     const res = await request(f.app)
-      .post('/pricing/quote')
+      .post('/api/v1/pricing/quote')
       .set('Authorization', customer())
       .send(
         quotePayload({
@@ -76,7 +76,7 @@ describe('pricing quote', () => {
 
   it('rejects when no pricing rule matches', async () => {
     const res = await request(f.app)
-      .post('/pricing/quote')
+      .post('/api/v1/pricing/quote')
       .set('Authorization', customer())
       .send(
         quotePayload({
@@ -89,7 +89,7 @@ describe('pricing quote', () => {
 
   it('rejects invalid zone IDs', async () => {
     const res = await request(f.app)
-      .post('/pricing/quote')
+      .post('/api/v1/pricing/quote')
       .set('Authorization', customer())
       .send(
         quotePayload({
@@ -101,7 +101,7 @@ describe('pricing quote', () => {
 
   it('rejects empty packages', async () => {
     const res = await request(f.app)
-      .post('/pricing/quote')
+      .post('/api/v1/pricing/quote')
       .set('Authorization', customer())
       .send(quotePayload({ packages: [] }));
     expect(res.status).toBe(400);
@@ -109,7 +109,7 @@ describe('pricing quote', () => {
 
   it('rejects invalid currency', async () => {
     const res = await request(f.app)
-      .post('/pricing/quote')
+      .post('/api/v1/pricing/quote')
       .set('Authorization', customer())
       .send(quotePayload({ currency: 'XYZ' }));
     expect(res.status).toBe(400);

@@ -3,6 +3,9 @@ import { or, sql } from 'drizzle-orm';
 
 import type { Db } from '../../db.js';
 import { requireAuth } from '../../auth/middleware.js';
+import { defineRoute } from '../../openapi/registry.js';
+
+defineRoute({ method: 'get', path: '/tracking/shipments', responses: { 200: { description: 'ok' }, 401: { description: 'unauthorized' } } });
 
 export function trackingRouter(db: Db): Router {
   const router = Router();

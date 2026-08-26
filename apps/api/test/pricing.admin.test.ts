@@ -24,13 +24,13 @@ describe('pricing admin: delivery options + rules', () => {
 
   describe('delivery options', () => {
     it('rejects unauthenticated requests', async () => {
-      const res = await request(f.app).get('/pricing/delivery-options');
+      const res = await request(f.app).get('/api/v1/pricing/delivery-options');
       expect(res.status).toBe(401);
     });
 
     it('lists delivery options (any authenticated user)', async () => {
       const res = await request(f.app)
-        .get('/pricing/delivery-options')
+        .get('/api/v1/pricing/delivery-options')
         .set('Authorization', customer());
       expect(res.status).toBe(200);
       expect(res.body.deliveryOptions).toHaveLength(1);
@@ -38,7 +38,7 @@ describe('pricing admin: delivery options + rules', () => {
 
     it('creates a delivery option (admin only)', async () => {
       const res = await request(f.app)
-        .post('/pricing/delivery-options')
+        .post('/api/v1/pricing/delivery-options')
         .set('Authorization', admin())
         .send({ code: 'EXPRESS', name: 'Express Delivery' });
       expect(res.status).toBe(201);
@@ -50,7 +50,7 @@ describe('pricing admin: delivery options + rules', () => {
 
     it('rejects non-admin on create', async () => {
       const res = await request(f.app)
-        .post('/pricing/delivery-options')
+        .post('/api/v1/pricing/delivery-options')
         .set('Authorization', merchant())
         .send({ code: 'SAME_DAY', name: 'Same Day' });
       expect(res.status).toBe(403);
@@ -58,7 +58,7 @@ describe('pricing admin: delivery options + rules', () => {
 
     it('rejects duplicate code', async () => {
       const res = await request(f.app)
-        .post('/pricing/delivery-options')
+        .post('/api/v1/pricing/delivery-options')
         .set('Authorization', admin())
         .send({ code: 'EXPRESS', name: 'Another Express' });
       expect(res.status).toBe(409);
@@ -66,12 +66,12 @@ describe('pricing admin: delivery options + rules', () => {
 
     it('updates a delivery option', async () => {
       const listRes = await request(f.app)
-        .get('/pricing/delivery-options')
+        .get('/api/v1/pricing/delivery-options')
         .set('Authorization', admin());
       const optionId = listRes.body.deliveryOptions[1].id;
 
       const res = await request(f.app)
-        .put(`/pricing/delivery-options/${optionId}`)
+        .put(`/api/v1/pricing/delivery-options/${optionId}`)
         .set('Authorization', admin())
         .send({ name: 'Express 2-Day' });
       expect(res.status).toBe(200);
@@ -84,14 +84,14 @@ describe('pricing admin: delivery options + rules', () => {
   describe('pricing rules', () => {
     it('rejects non-admin on list', async () => {
       const res = await request(f.app)
-        .get('/pricing/rules')
+        .get('/api/v1/pricing/rules')
         .set('Authorization', merchant());
       expect(res.status).toBe(403);
     });
 
     it('returns empty list initially', async () => {
       const res = await request(f.app)
-        .get('/pricing/rules')
+        .get('/api/v1/pricing/rules')
         .set('Authorization', admin());
       expect(res.status).toBe(200);
       expect(res.body.rules).toEqual([]);
@@ -99,7 +99,7 @@ describe('pricing admin: delivery options + rules', () => {
 
     it('creates a pricing rule', async () => {
       const res = await request(f.app)
-        .post('/pricing/rules')
+        .post('/api/v1/pricing/rules')
         .set('Authorization', admin())
         .send({
           originZoneId: f.ids.originZoneId,
@@ -123,7 +123,7 @@ describe('pricing admin: delivery options + rules', () => {
 
     it('rejects duplicate active rule for same tuple', async () => {
       const res = await request(f.app)
-        .post('/pricing/rules')
+        .post('/api/v1/pricing/rules')
         .set('Authorization', admin())
         .send({
           originZoneId: f.ids.originZoneId,
@@ -140,7 +140,7 @@ describe('pricing admin: delivery options + rules', () => {
 
     it('allows same config with different size class', async () => {
       const res = await request(f.app)
-        .post('/pricing/rules')
+        .post('/api/v1/pricing/rules')
         .set('Authorization', admin())
         .send({
           originZoneId: f.ids.originZoneId,
@@ -157,7 +157,7 @@ describe('pricing admin: delivery options + rules', () => {
 
     it('lists pricing rules', async () => {
       const res = await request(f.app)
-        .get('/pricing/rules')
+        .get('/api/v1/pricing/rules')
         .set('Authorization', admin());
       expect(res.status).toBe(200);
       expect(res.body.rules).toHaveLength(2);
@@ -165,7 +165,7 @@ describe('pricing admin: delivery options + rules', () => {
 
     it('lists pricing rules with filters', async () => {
       const res = await request(f.app)
-        .get(`/pricing/rules?sizeClass=SMALL`)
+        .get(`/api/v1/pricing/rules?sizeClass=SMALL`)
         .set('Authorization', admin());
       expect(res.status).toBe(200);
       expect(res.body.rules).toHaveLength(1);
@@ -173,7 +173,7 @@ describe('pricing admin: delivery options + rules', () => {
 
     it('updates a pricing rule', async () => {
       const res = await request(f.app)
-        .put(`/pricing/rules/${pricingRuleId}`)
+        .put(`/api/v1/pricing/rules/${pricingRuleId}`)
         .set('Authorization', admin())
         .send({ amountCents: 1800 });
       expect(res.status).toBe(200);
@@ -182,7 +182,7 @@ describe('pricing admin: delivery options + rules', () => {
 
     it('rejects non-admin on create', async () => {
       const res = await request(f.app)
-        .post('/pricing/rules')
+        .post('/api/v1/pricing/rules')
         .set('Authorization', merchant())
         .send({
           originZoneId: f.ids.originZoneId,
@@ -199,7 +199,7 @@ describe('pricing admin: delivery options + rules', () => {
 
     it('rejects invalid zone ID', async () => {
       const res = await request(f.app)
-        .post('/pricing/rules')
+        .post('/api/v1/pricing/rules')
         .set('Authorization', admin())
         .send({
           originZoneId: '00000000-0000-0000-0000-000000000000',

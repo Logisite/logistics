@@ -51,7 +51,7 @@ export async function setupCodTest(roles: CodRole[]): Promise<CodFixture> {
   const tokens = new Map<CodRole, string>();
   for (const role of roles) {
     const login = await request(app)
-      .post('/auth/login')
+      .post('/api/v1/auth/login')
       .send({ email: ROLE_EMAILS[role], password: TEST_PASSWORD });
     if (!login.body.accessToken) throw new Error(`setupCodTest: login failed for ${role}`);
     tokens.set(role, login.body.accessToken as string);
@@ -62,37 +62,37 @@ export async function setupCodTest(roles: CodRole[]): Promise<CodFixture> {
   const admin = () => `Bearer ${adminToken}`;
 
   const hubRes = await request(app)
-    .post('/locations/hubs')
+    .post('/api/v1/locations/hubs')
     .set('Authorization', admin())
     .send({ name: 'COD Hub', code: 'COD-01', address: '3 Cash Street, London' });
   const hubId = hubRes.body.hub.id as string;
 
   const zoneRes = await request(app)
-    .post('/locations/zones')
+    .post('/api/v1/locations/zones')
     .set('Authorization', admin())
     .send({ hubId, name: 'COD Origin' });
   const originZoneId = zoneRes.body.zone.id as string;
 
   const destRes = await request(app)
-    .post('/locations/zones')
+    .post('/api/v1/locations/zones')
     .set('Authorization', admin())
     .send({ hubId, name: 'COD Dest' });
   const destZoneId = destRes.body.zone.id as string;
 
   const pickupRes = await request(app)
-    .post('/locations/pickup-points')
+    .post('/api/v1/locations/pickup-points')
     .set('Authorization', admin())
     .send({ hubId, zoneId: originZoneId, name: 'COD Pickup', address: '4 Pickup Way, London' });
   const pickupLocationId = pickupRes.body.pickupLocation.id as string;
 
   const optRes = await request(app)
-    .post('/pricing/delivery-options')
+    .post('/api/v1/pricing/delivery-options')
     .set('Authorization', admin())
     .send({ code: 'STANDARD', name: 'Standard Delivery' });
   const deliveryOptionId = optRes.body.deliveryOption.id as string;
 
   await request(app)
-    .post('/pricing/rules')
+    .post('/api/v1/pricing/rules')
     .set('Authorization', admin())
     .send({
       originZoneId,
@@ -107,7 +107,7 @@ export async function setupCodTest(roles: CodRole[]): Promise<CodFixture> {
 
   async function bookAs(role: CodRole): Promise<string> {
     const res = await request(app)
-      .post('/pricing/book')
+      .post('/api/v1/pricing/book')
       .set('Authorization', `Bearer ${tokens.get(role)}`)
       .send({
         recipientName: 'COD Recipient',
@@ -123,7 +123,7 @@ export async function setupCodTest(roles: CodRole[]): Promise<CodFixture> {
   async function walkToDelivered(id: string): Promise<void> {
     for (const path of ['pickup', 'transit', 'out-for-delivery', 'deliver']) {
       const res = await request(app)
-        .post(`/shipments/${id}/${path}`)
+        .post(`/api/v1/shipments/${id}/${path}`)
         .set('Authorization', admin());
       if (res.status !== 200) throw new Error(`walkToDelivered failed at ${path}`);
     }

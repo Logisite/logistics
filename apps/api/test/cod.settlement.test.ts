@@ -25,13 +25,13 @@ describe('cod: settlements + dispute blocking', () => {
     const shipmentId =
       amountCents % 2 === 0 ? await f.deliveredShipment() : (await f.deliveredShipment());
     const c = await request(f.app)
-      .post('/cod/collections')
+      .post('/api/v1/cod/collections')
       .set('Authorization', branch())
       .send({ shipmentId, amountCents, currency: 'GBP', paymentMethod: 'CASH' });
     expect(c.status).toBe(201);
 
     const d = await request(f.app)
-      .post('/cod/deposits')
+      .post('/api/v1/cod/deposits')
       .set('Authorization', branch())
       .send({
         hubId: f.ids.hubId,
@@ -42,7 +42,7 @@ describe('cod: settlements + dispute blocking', () => {
     expect(d.status).toBe(201);
 
     const r = await request(f.app)
-      .post('/cod/reconciliations')
+      .post('/api/v1/cod/reconciliations')
       .set('Authorization', admin())
       .send({ depositId: d.body.deposit.id, collectionIds: [c.body.collection.id] });
     expect(r.status).toBe(201);
@@ -59,7 +59,7 @@ describe('cod: settlements + dispute blocking', () => {
     await reconciledPair(4500);
 
     const compute = await request(f.app)
-      .post('/cod/settlements/compute')
+      .post('/api/v1/cod/settlements/compute')
       .set('Authorization', admin())
       .send(window());
     expect(compute.status).toBe(201);
@@ -82,8 +82,8 @@ describe('cod: settlements + dispute blocking', () => {
   it('never settles the same reconciliation twice', async () => {
     const reconId = await reconciledPair(1111);
 
-    await request(f.app).post('/cod/settlements/compute').set('Authorization', admin()).send(window());
-    await request(f.app).post('/cod/settlements/compute').set('Authorization', admin()).send(window());
+    await request(f.app).post('/api/v1/cod/settlements/compute').set('Authorization', admin()).send(window());
+    await request(f.app).post('/api/v1/cod/settlements/compute').set('Authorization', admin()).send(window());
 
     const lines = await f.db.select().from(settlementLines);
     const uniqueRecons = new Set(lines.map((l) => l.reconciliationId));
@@ -99,7 +99,7 @@ describe('cod: settlements + dispute blocking', () => {
     expect(recon).toBeTruthy();
 
     const disputeRes = await request(f.app)
-      .post('/cod/disputes')
+      .post('/api/v1/cod/disputes')
       .set('Authorization', admin())
       .send({
         collectionId: recon!.collectionId,
@@ -110,30 +110,30 @@ describe('cod: settlements + dispute blocking', () => {
     expect(disputeRes.status).toBe(201);
     const disputeId = disputeRes.body.dispute.id as string;
 
-    await request(f.app).post('/cod/settlements/compute').set('Authorization', admin()).send(window());
+    await request(f.app).post('/api/v1/cod/settlements/compute').set('Authorization', admin()).send(window());
     let lines = await f.db.select().from(settlementLines).where(eq(settlementLines.reconciliationId, reconId));
     expect(lines).toHaveLength(0);
 
     const resolve = await request(f.app)
-      .patch(`/cod/disputes/${disputeId}/resolve`)
+      .patch(`/api/v1/cod/disputes/${disputeId}/resolve`)
       .set('Authorization', admin())
       .send({ resolution: 'RESOLVED' });
     expect(resolve.status).toBe(200);
 
-    await request(f.app).post('/cod/settlements/compute').set('Authorization', admin()).send(window());
+    await request(f.app).post('/api/v1/cod/settlements/compute').set('Authorization', admin()).send(window());
     lines = await f.db.select().from(settlementLines).where(eq(settlementLines.reconciliationId, reconId));
     expect(lines).toHaveLength(1);
   });
 
   it('marks settlements settled explicitly', async () => {
     await reconciledPair(3333);
-    await request(f.app).post('/cod/settlements/compute').set('Authorization', admin()).send(window());
+    await request(f.app).post('/api/v1/cod/settlements/compute').set('Authorization', admin()).send(window());
 
     const [pending] = await f.db.select().from(settlements).where(eq(settlements.status, 'PENDING'));
     if (!pending) return;
 
     const res = await request(f.app)
-      .patch(`/cod/settlements/${pending.id}/settle`)
+      .patch(`/api/v1/cod/settlements/${pending.id}/settle`)
       .set('Authorization', admin());
     expect(res.status).toBe(200);
     expect(res.body.settlement.status).toBe('SETTLED');
@@ -145,13 +145,13 @@ describe('cod: settlements + dispute blocking', () => {
 
   it('guards manage routes against non-admin roles', async () => {
     const res1 = await request(f.app)
-      .post('/cod/reconciliations')
+      .post('/api/v1/cod/reconciliations')
       .set('Authorization', branch())
       .send({ depositId: '00000000-0000-0000-0000-000000000000', collectionIds: [] });
     expect(res1.status).toBe(403);
 
     const res2 = await request(f.app)
-      .post('/cod/settlements/compute')
+      .post('/api/v1/cod/settlements/compute')
       .set('Authorization', branch())
       .send(window());
     expect(res2.status).toBe(403);

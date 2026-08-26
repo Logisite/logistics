@@ -7,6 +7,8 @@ import type { AuthContext } from '../auth/middleware.js';
 import { requireAuth } from '../auth/middleware.js';
 
 import * as service from './service.js';
+import { defineRoute } from '../openapi/registry.js';
+import { parse } from '../validate.js';
 
 const createProfileSchema = z.object({
   businessName: z.string().min(1).max(200),
@@ -20,11 +22,9 @@ const updateProfileSchema = z.object({
   phone: z.string().max(30).nullable().optional(),
 });
 
-function parse<T>(schema: z.ZodType<T>, body: unknown): T {
-  const result = schema.safeParse(body);
-  if (!result.success) throw badRequest('VALIDATION', 'Invalid request payload');
-  return result.data;
-}
+defineRoute({ method: 'post', path: '/merchants/me', request: { body: { content: { 'application/json': { schema: createProfileSchema } } } }, responses: { 201: { description: 'created' } } });
+defineRoute({ method: 'get', path: '/merchants/me', responses: { 200: { description: 'ok' } } });
+defineRoute({ method: 'put', path: '/merchants/me', request: { body: { content: { 'application/json': { schema: updateProfileSchema } } } }, responses: { 200: { description: 'ok' } } });
 
 export function merchantRouter(db: Db): Router {
   const router = Router();

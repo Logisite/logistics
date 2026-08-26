@@ -8,6 +8,8 @@ import { requireAuth, requirePermission } from '../auth/middleware.js';
 import { PERMISSIONS } from '../auth/permissions.js';
 
 import * as service from './service.js';
+import { defineRoute } from '../openapi/registry.js';
+import { parse } from '../validate.js';
 
 // ---------------------------------------------------------------------------
 // Zod schemas
@@ -53,11 +55,14 @@ const updateZoneSchema = z.object({
   isActive: z.boolean().optional(),
 });
 
-function parse<T>(schema: z.ZodType<T>, body: unknown): T {
-  const result = schema.safeParse(body);
-  if (!result.success) throw badRequest('VALIDATION', 'Invalid request payload');
-  return result.data;
-}
+defineRoute({ method: 'get', path: '/locations/hubs', responses: { 200: { description: 'ok' } } });
+defineRoute({ method: 'post', path: '/locations/hubs', request: { body: { content: { 'application/json': { schema: createHubSchema } } } }, responses: { 201: { description: 'created' } } });
+defineRoute({ method: 'put', path: '/locations/hubs/{id}', request: { params: z.object({ id: z.string().uuid() }), body: { content: { 'application/json': { schema: updateHubSchema } } } }, responses: { 200: { description: 'ok' } } });
+defineRoute({ method: 'delete', path: '/locations/hubs/{id}', request: { params: z.object({ id: z.string().uuid() }) }, responses: { 200: { description: 'ok' } } });
+defineRoute({ method: 'get', path: '/locations/pickup-points', responses: { 200: { description: 'ok' } } });
+defineRoute({ method: 'post', path: '/locations/pickup-points', request: { body: { content: { 'application/json': { schema: createPickupLocationSchema } } } }, responses: { 201: { description: 'created' } } });
+defineRoute({ method: 'get', path: '/locations/zones', responses: { 200: { description: 'ok' } } });
+defineRoute({ method: 'post', path: '/locations/zones', request: { body: { content: { 'application/json': { schema: createZoneSchema } } } }, responses: { 201: { description: 'created' } } });
 
 // ---------------------------------------------------------------------------
 // Router

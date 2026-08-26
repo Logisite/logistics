@@ -36,13 +36,13 @@ describe('pricing booking + cancel + immutability', () => {
 
   describe('booking', () => {
     it('rejects unauthenticated requests', async () => {
-      const res = await request(f.app).post('/pricing/book').send(bookingPayload());
+      const res = await request(f.app).post('/api/v1/pricing/book').send(bookingPayload());
       expect(res.status).toBe(401);
     });
 
     it('creates a booking', async () => {
       const res = await request(f.app)
-        .post('/pricing/book')
+        .post('/api/v1/pricing/book')
         .set('Authorization', customer())
         .send(
           bookingPayload({
@@ -62,7 +62,7 @@ describe('pricing booking + cancel + immutability', () => {
 
     it('booking has correct quote snapshot', async () => {
       const res = await request(f.app)
-        .post('/pricing/book')
+        .post('/api/v1/pricing/book')
         .set('Authorization', customer())
         .send(
           bookingPayload({
@@ -81,7 +81,7 @@ describe('pricing booking + cancel + immutability', () => {
 
     it('booking with custom price from merchant', async () => {
       const res = await request(f.app)
-        .post('/pricing/book')
+        .post('/api/v1/pricing/book')
         .set('Authorization', merchant())
         .send(bookingPayload({ customPriceCents: 1000 }));
       expect(res.status).toBe(201);
@@ -91,7 +91,7 @@ describe('pricing booking + cancel + immutability', () => {
 
     it('rejects custom price from customer', async () => {
       const res = await request(f.app)
-        .post('/pricing/book')
+        .post('/api/v1/pricing/book')
         .set('Authorization', customer())
         .send(bookingPayload({ customPriceCents: 100 }));
       expect(res.status).toBe(400);
@@ -99,7 +99,7 @@ describe('pricing booking + cancel + immutability', () => {
 
     it('rejects booking with invalid pickup location', async () => {
       const res = await request(f.app)
-        .post('/pricing/book')
+        .post('/api/v1/pricing/book')
         .set('Authorization', customer())
         .send(
           bookingPayload({
@@ -114,14 +114,14 @@ describe('pricing booking + cancel + immutability', () => {
       const payload = bookingPayload({ idempotencyKey });
 
       const res1 = await request(f.app)
-        .post('/pricing/book')
+        .post('/api/v1/pricing/book')
         .set('Authorization', customer())
         .send(payload);
       expect(res1.status).toBe(201);
       const shipmentId1 = res1.body.shipment.id;
 
       const res2 = await request(f.app)
-        .post('/pricing/book')
+        .post('/api/v1/pricing/book')
         .set('Authorization', customer())
         .send(payload);
       expect(res2.status).toBe(201);
@@ -132,12 +132,12 @@ describe('pricing booking + cancel + immutability', () => {
       const idempotencyKey = `test-conflict-${Date.now()}`;
 
       await request(f.app)
-        .post('/pricing/book')
+        .post('/api/v1/pricing/book')
         .set('Authorization', customer())
         .send(bookingPayload({ idempotencyKey }));
 
       const res = await request(f.app)
-        .post('/pricing/book')
+        .post('/api/v1/pricing/book')
         .set('Authorization', customer())
         .send(
           bookingPayload({
@@ -158,20 +158,20 @@ describe('pricing booking + cancel + immutability', () => {
     it('booking snapshot unchanged after rule update', async () => {
       // Create a booking
       const bookRes = await request(f.app)
-        .post('/pricing/book')
+        .post('/api/v1/pricing/book')
         .set('Authorization', customer())
         .send(bookingPayload({ recipientName: 'Immutability Test' }));
       const originalSnapshot = bookRes.body.shipment.quoteSnapshot;
 
       // Update the pricing rule
       await request(f.app)
-        .put(`/pricing/rules/${pricingRuleId}`)
+        .put(`/api/v1/pricing/rules/${pricingRuleId}`)
         .set('Authorization', admin())
         .send({ amountCents: 9999 });
 
       // A NEW booking gets the new price; the old snapshot is untouched
       const newBookRes = await request(f.app)
-        .post('/pricing/book')
+        .post('/api/v1/pricing/book')
         .set('Authorization', customer())
         .send(bookingPayload({ recipientName: 'After Update' }));
       expect(newBookRes.body.shipment.quoteAmountCents).toBe(9999);

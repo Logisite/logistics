@@ -1,48 +1,27 @@
-import { OpenApiGeneratorV3 } from '@asteasolutions/zod-to-openapi';
+import { OpenApiGeneratorV31 } from '@asteasolutions/zod-to-openapi';
 
 import { getConfig } from '../config.js';
-import { registry } from './registry.js';
+import { registry, API, defineRoute } from './registry.js';
+import pkg from '../../package.json' with { type: 'json' };
 
-import { z } from 'zod';
+import '../auth/router.js';
+import '../customers/router.js';
+import '../merchants/router.js';
+import '../locations/router.js';
+import '../pricing/router.js';
+import '../modules/shipments/index.js';
+import '../modules/operations/index.js';
+import '../modules/sync/index.js';
+import '../modules/reporting/index.js';
+import '../modules/cod/index.js';
 
-registry.registerPath({
-  method: 'get',
-  path: '/health',
-  responses: { 200: { description: 'ok' } },
-});
+defineRoute({ method: 'get', path: '/health', responses: { 200: { description: 'ok' } } });
 
-registry.registerPath({
-  method: 'post',
-  path: '/auth/login',
-  request: { body: { content: { 'application/json': { schema: z.object({ email: z.string().email(), password: z.string() }) } } } },
-  responses: { 200: { description: 'ok' }, 400: { description: 'validation' }, 401: { description: 'unauthorized' } },
-});
-
-registry.registerPath({
-  method: 'post',
-  path: '/runs',
-  request: { body: { content: { 'application/json': { schema: z.object({ driverUserId: z.string().uuid(), shipments: z.array(z.object({ shipmentId: z.string().uuid(), sequence: z.number() })) }) } } } },
-  responses: { 201: { description: 'created' }, 401: { description: 'unauthorized' }, 403: { description: 'forbidden' } },
-});
-
-registry.registerPath({
-  method: 'get',
-  path: '/reports/revenue',
-  responses: { 200: { description: 'ok' }, 401: { description: 'unauthorized' }, 403: { description: 'forbidden' } },
-});
-
-registry.registerPath({
-  method: 'post',
-  path: '/sync/push',
-  request: { body: { content: { 'application/json': { schema: z.object({ deviceId: z.string().uuid(), ops: z.array(z.object({ seq: z.number(), opId: z.string().uuid(), action: z.string(), entity: z.string() })) }) } } } },
-  responses: { 200: { description: 'ok' }, 400: { description: 'validation' } },
-});
-
-export function generateSpec(): ReturnType<OpenApiGeneratorV3['generateDocument']> {
-  const generator = new OpenApiGeneratorV3(registry.definitions);
+export function generateSpec(): ReturnType<OpenApiGeneratorV31['generateDocument']> {
+  const generator = new OpenApiGeneratorV31(registry.definitions);
   return generator.generateDocument({
     openapi: '3.1.0',
-    info: { title: 'Logistics OS', version: '0.1.0', description: 'Offline-first logistics platform' },
-    servers: [{ url: getConfig().appUrl }],
+    info: { title: 'Logistics OS', version: (pkg as { version: string }).version, description: 'Offline-first logistics platform' },
+    servers: [{ url: `${getConfig().appUrl}${API}` }],
   });
 }

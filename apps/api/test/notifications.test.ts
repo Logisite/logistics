@@ -42,7 +42,7 @@ describe('notifications: milestone fan-out', () => {
 
   it('sends email + in-app rows for registered sender on a milestone', async () => {
     const res = await request(f.app)
-      .post(`/shipments/${f.ids.bookedShipmentId}/pickup`)
+      .post(`/api/v1/shipments/${f.ids.bookedShipmentId}/pickup`)
       .set('Authorization', `Bearer ${f.token('ADMIN')}`);
     expect(res.status).toBe(200);
 
@@ -62,7 +62,7 @@ describe('notifications: milestone fan-out', () => {
   it('emails an unregistered recipient at the booking address with null userId', async () => {
     // A fresh booking whose recipient email has NO user account.
     const res = await request(f.app)
-      .post('/pricing/book')
+      .post('/api/v1/pricing/book')
       .set('Authorization', `Bearer ${f.token('CUSTOMER1')}`)
       .send({
         recipientName: 'Ghost Recipient',
@@ -76,7 +76,7 @@ describe('notifications: milestone fan-out', () => {
     const ghostId = res.body.shipment.id as string;
 
     await request(f.app)
-      .post(`/shipments/${ghostId}/pickup`)
+      .post(`/api/v1/shipments/${ghostId}/pickup`)
       .set('Authorization', `Bearer ${f.token('ADMIN')}`);
 
     const emails = await emailRows(ghostId, 'PICKED_UP');
@@ -88,7 +88,7 @@ describe('notifications: milestone fan-out', () => {
   it('skips IN_TRANSIT entirely', async () => {
     const before = await emailRows(f.ids.bookedShipmentId).execute().then((r) => r.length);
     const res = await request(f.app)
-      .post(`/shipments/${f.ids.bookedShipmentId}/transit`)
+      .post(`/api/v1/shipments/${f.ids.bookedShipmentId}/transit`)
       .set('Authorization', `Bearer ${f.token('ADMIN')}`);
     expect(res.status).toBe(200);
     const after = await emailRows(f.ids.bookedShipmentId).execute().then((r) => r.length);
@@ -98,13 +98,13 @@ describe('notifications: milestone fan-out', () => {
   it('never double-sends the same milestone', async () => {
     const id = await f.bookShipment('No Duplicate');
     const firstPost = await request(f.app)
-      .post(`/shipments/${id}/pickup`)
+      .post(`/api/v1/shipments/${id}/pickup`)
       .set('Authorization', `Bearer ${f.token('ADMIN')}`);
     expect(firstPost.status).toBe(200);
 
     // Same-state replay is a no-op event=null.
     const res = await request(f.app)
-      .post(`/shipments/${id}/pickup`)
+      .post(`/api/v1/shipments/${id}/pickup`)
       .set('Authorization', `Bearer ${f.token('ADMIN')}`);
     expect(res.status).toBe(200);
     expect(res.body.event).toBeNull();
@@ -119,14 +119,14 @@ describe('notifications: milestone fan-out', () => {
 
   it('notifies FAILED_ATTEMPT as an exception milestone', async () => {
     const id = await f.bookShipment('Failed Attempt Notify');
-    await request(f.app).post(`/shipments/${id}/pickup`).set('Authorization', `Bearer ${f.token('ADMIN')}`);
-    await request(f.app).post(`/shipments/${id}/transit`).set('Authorization', `Bearer ${f.token('ADMIN')}`);
+    await request(f.app).post(`/api/v1/shipments/${id}/pickup`).set('Authorization', `Bearer ${f.token('ADMIN')}`);
+    await request(f.app).post(`/api/v1/shipments/${id}/transit`).set('Authorization', `Bearer ${f.token('ADMIN')}`);
     await request(f.app)
-      .post(`/shipments/${id}/out-for-delivery`)
+      .post(`/api/v1/shipments/${id}/out-for-delivery`)
       .set('Authorization', `Bearer ${f.token('ADMIN')}`);
 
     const res = await request(f.app)
-      .post(`/shipments/${id}/fail-attempt`)
+      .post(`/api/v1/shipments/${id}/fail-attempt`)
       .set('Authorization', `Bearer ${f.token('ADMIN')}`)
       .send({ reason: 'recipient absent' });
     expect(res.status).toBe(200);

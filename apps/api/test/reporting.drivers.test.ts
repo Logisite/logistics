@@ -20,7 +20,7 @@ describe('reporting drivers', () => {
     await seedAuthData(db);
     app = createApp({ db, mailer: new FakeMailer() } satisfies AppDeps);
     await seedUserWithRoles(db, ['ADMIN'], 'admin-drv@example.com');
-    adminToken = (await request(app).post('/auth/login').send({ email: 'admin-drv@example.com', password: TEST_PASSWORD })).body.accessToken as string;
+    adminToken = (await request(app).post('/api/v1/auth/login').send({ email: 'admin-drv@example.com', password: TEST_PASSWORD })).body.accessToken as string;
   });
 
   afterAll(async () => {
@@ -28,10 +28,10 @@ describe('reporting drivers', () => {
   });
 
   it('returns driver performance with period filter', async () => {
-    const ok = await request(app).get('/reports/drivers').set('Authorization', `Bearer ${adminToken}`);
+    const ok = await request(app).get('/api/v1/reports/drivers').set('Authorization', `Bearer ${adminToken}`);
     expect(ok.status).toBe(200);
     expect(Array.isArray(ok.body.data)).toBe(true);
-    const filtered = await request(app).get('/reports/drivers?periodStart=2000-01-01T00:00:00.000Z&periodEnd=2000-01-02T00:00:00.000Z').set('Authorization', `Bearer ${adminToken}`);
+    const filtered = await request(app).get('/api/v1/reports/drivers?periodStart=2000-01-01T00:00:00.000Z&periodEnd=2000-01-02T00:00:00.000Z').set('Authorization', `Bearer ${adminToken}`);
     expect(filtered.status).toBe(200);
   });
 });

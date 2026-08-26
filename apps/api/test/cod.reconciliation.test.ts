@@ -23,7 +23,7 @@ describe('cod: capture + reconciliation', () => {
     overrides: Record<string, unknown> = {},
   ): Promise<request.Response> {
     return request(f.app)
-      .post('/cod/collections')
+      .post('/api/v1/cod/collections')
       .set('Authorization', branch())
       .send({
         shipmentId,
@@ -36,7 +36,7 @@ describe('cod: capture + reconciliation', () => {
 
   it('rejects collection capture on non-delivered shipments', async () => {
     const res = await request(f.app)
-      .post('/pricing/book')
+      .post('/api/v1/pricing/book')
       .set('Authorization', `Bearer ${f.token('CUSTOMER')}`)
       .send({
         recipientName: 'Not Delivered',
@@ -55,13 +55,13 @@ describe('cod: capture + reconciliation', () => {
   it('rejects customers and drivers from capture, allows branch operator', async () => {
     const id = await f.deliveredShipment();
     const customerRes = await request(f.app)
-      .post('/cod/collections')
+      .post('/api/v1/cod/collections')
       .set('Authorization', `Bearer ${f.token('CUSTOMER')}`)
       .send({ shipmentId: id, amountCents: 100, currency: 'GBP', paymentMethod: 'CASH' });
     expect(customerRes.status).toBe(403);
 
     const driverRes = await request(f.app)
-      .post('/cod/deposits')
+      .post('/api/v1/cod/deposits')
       .set('Authorization', `Bearer ${f.token('DRIVER')}`)
       .send({
         hubId: f.ids.hubId,
@@ -83,7 +83,7 @@ describe('cod: capture + reconciliation', () => {
   it('reconciles a mixed-currency batch to an exact functional sum', async () => {
     // fx: USD->GBP at 0.8 exactly. 5000 USD cents -> 4000 GBP cents.
     const rate = await request(f.app)
-      .post('/cod/fx-rates')
+      .post('/api/v1/cod/fx-rates')
       .set('Authorization', admin())
       .send({ fromCurrency: 'USD', toCurrency: 'GBP', rate: '0.80000000', rateDate: new Date(Date.now() - 86400000).toISOString() });
     expect(rate.status).toBe(201);
@@ -94,7 +94,7 @@ describe('cod: capture + reconciliation', () => {
     const c2 = await collect(id2, { amountCents: 2000, currency: 'GBP' });
 
     const deposit = await request(f.app)
-      .post('/cod/deposits')
+      .post('/api/v1/cod/deposits')
       .set('Authorization', branch())
       .send({
         hubId: f.ids.hubId,
@@ -105,7 +105,7 @@ describe('cod: capture + reconciliation', () => {
     expect(deposit.status).toBe(201);
 
     const recon = await request(f.app)
-      .post('/cod/reconciliations')
+      .post('/api/v1/cod/reconciliations')
       .set('Authorization', admin())
       .send({
         depositId: deposit.body.deposit.id,
@@ -122,7 +122,7 @@ describe('cod: capture + reconciliation', () => {
 
   it('rejects mismatched sums with 409 and refuses double reconciliation', async () => {
     const eurRate = await request(f.app)
-      .post('/cod/fx-rates')
+      .post('/api/v1/cod/fx-rates')
       .set('Authorization', admin())
       .send({
         fromCurrency: 'EUR',
@@ -141,7 +141,7 @@ describe('cod: capture + reconciliation', () => {
 
     // Deposit does not cover both collections (10000*0.85 + 2000 = 10500).
     const deposit = await request(f.app)
-      .post('/cod/deposits')
+      .post('/api/v1/cod/deposits')
       .set('Authorization', branch())
       .send({
         hubId: f.ids.hubId,
@@ -152,7 +152,7 @@ describe('cod: capture + reconciliation', () => {
     expect(deposit.status).toBe(201);
 
     const bad = await request(f.app)
-      .post('/cod/reconciliations')
+      .post('/api/v1/cod/reconciliations')
       .set('Authorization', admin())
       .send({
         depositId: deposit.body.deposit.id,
@@ -163,7 +163,7 @@ describe('cod: capture + reconciliation', () => {
 
     // Single collection that converts exactly: 10000 * 0.85 = 8500.
     const goodDeposit = await request(f.app)
-      .post('/cod/deposits')
+      .post('/api/v1/cod/deposits')
       .set('Authorization', branch())
       .send({
         hubId: f.ids.hubId,
@@ -174,13 +174,13 @@ describe('cod: capture + reconciliation', () => {
     expect(goodDeposit.status).toBe(201);
 
     const good = await request(f.app)
-      .post('/cod/reconciliations')
+      .post('/api/v1/cod/reconciliations')
       .set('Authorization', admin())
       .send({ depositId: goodDeposit.body.deposit.id, collectionIds: [c1.body.collection.id] });
     expect(good.status).toBe(201);
 
     const again = await request(f.app)
-      .post('/cod/reconciliations')
+      .post('/api/v1/cod/reconciliations')
       .set('Authorization', admin())
       .send({ depositId: goodDeposit.body.deposit.id, collectionIds: [c1.body.collection.id] });
     expect(again.status).toBe(409);
@@ -192,13 +192,13 @@ describe('cod: capture + reconciliation', () => {
     const c = await collect(id, { amountCents: 700, currency: 'GBP' });
 
     const dispute = await request(f.app)
-      .post('/cod/disputes')
+      .post('/api/v1/cod/disputes')
       .set('Authorization', admin())
       .send({ collectionId: c.body.collection.id, reason: 'short cash', amountCents: 700, currency: 'GBP' });
     expect(dispute.status).toBe(201);
 
     const deposit = await request(f.app)
-      .post('/cod/deposits')
+      .post('/api/v1/cod/deposits')
       .set('Authorization', branch())
       .send({
         hubId: f.ids.hubId,
@@ -208,7 +208,7 @@ describe('cod: capture + reconciliation', () => {
       });
 
     const recon = await request(f.app)
-      .post('/cod/reconciliations')
+      .post('/api/v1/cod/reconciliations')
       .set('Authorization', admin())
       .send({ depositId: deposit.body.deposit.id, collectionIds: [c.body.collection.id] });
     expect(recon.status).toBe(409);
@@ -220,7 +220,7 @@ describe('cod: capture + reconciliation', () => {
     const c = await collect(id, { amountCents: 12345, currency: 'USD' });
 
     const deposit = await request(f.app)
-      .post('/cod/deposits')
+      .post('/api/v1/cod/deposits')
       .set('Authorization', branch())
       .send({
         hubId: f.ids.hubId,
@@ -230,7 +230,7 @@ describe('cod: capture + reconciliation', () => {
       });
 
     const recon = await request(f.app)
-      .post('/cod/reconciliations')
+      .post('/api/v1/cod/reconciliations')
       .set('Authorization', admin())
       .send({ depositId: deposit.body.deposit.id, collectionIds: [c.body.collection.id] });
     // No USD->GBP rate dated before this fresh deposit in this DB? The first

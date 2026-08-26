@@ -6,9 +6,11 @@ import { badRequest } from '../errors.js';
 
 import type { Mailer } from './emails.js';
 import type { AuthContext } from './middleware.js';
+import { defineRoute } from '../openapi/registry.js';
 import { requireAuth, requirePermission } from './middleware.js';
 import { PERMISSIONS, ROLE_NAMES } from './permissions.js';
 import * as service from './service.js';
+import { parse } from '../validate.js';
 
 const registerSchema = z.object({
   email: z.string().email(),
@@ -44,11 +46,21 @@ const resetSchema = z.object({
   newPassword: z.string().min(8).max(72),
 });
 
-function parse<T>(schema: z.ZodType<T>, body: unknown): T {
-  const result = schema.safeParse(body);
-  if (!result.success) throw badRequest('VALIDATION', 'Invalid request payload');
-  return result.data;
-}
+defineRoute({ method: 'post', path: '/auth/register', request: { body: { content: { 'application/json': { schema: registerSchema } } } }, responses: { 201: { description: 'created' } } });
+defineRoute({ method: 'post', path: '/auth/verify-email', request: { body: { content: { 'application/json': { schema: tokenSchema } } } }, responses: { 200: { description: 'ok' } } });
+defineRoute({ method: 'post', path: '/auth/login', request: { body: { content: { 'application/json': { schema: loginSchema } } } }, responses: { 200: { description: 'ok' } } });
+defineRoute({ method: 'post', path: '/auth/refresh', request: { body: { content: { 'application/json': { schema: refreshSchema } } } }, responses: { 200: { description: 'ok' } } });
+defineRoute({ method: 'post', path: '/auth/logout', request: { body: { content: { 'application/json': { schema: refreshSchema } } } }, responses: { 204: { description: 'no content' } } });
+defineRoute({ method: 'get', path: '/auth/sessions', responses: { 200: { description: 'ok' } } });
+defineRoute({ method: 'post', path: '/auth/sessions/{id}/revoke', request: { params: z.object({ id: z.string() }) }, responses: { 204: { description: 'no content' } } });
+defineRoute({ method: 'post', path: '/auth/invite', request: { body: { content: { 'application/json': { schema: inviteSchema } } } }, responses: { 201: { description: 'created' } } });
+defineRoute({ method: 'get', path: '/auth/bundles', responses: { 200: { description: 'ok' } } });
+defineRoute({ method: 'post', path: '/auth/bundles', request: { body: { content: { 'application/json': { schema: bundleSchema } } } }, responses: { 201: { description: 'created' } } });
+defineRoute({ method: 'put', path: '/auth/bundles/{id}', request: { params: z.object({ id: z.string().uuid() }), body: { content: { 'application/json': { schema: bundleSchema } } } }, responses: { 200: { description: 'ok' } } });
+defineRoute({ method: 'delete', path: '/auth/bundles/{id}', request: { params: z.object({ id: z.string().uuid() }) }, responses: { 204: { description: 'no content' } } });
+defineRoute({ method: 'post', path: '/auth/bundles/{id}/apply', request: { params: z.object({ id: z.string().uuid() }), body: { content: { 'application/json': { schema: bundleApplySchema } } } }, responses: { 200: { description: 'ok' } } });
+defineRoute({ method: 'post', path: '/auth/forgot-password', request: { body: { content: { 'application/json': { schema: forgotSchema } } } }, responses: { 202: { description: 'accepted' } } });
+defineRoute({ method: 'post', path: '/auth/reset-password', request: { body: { content: { 'application/json': { schema: resetSchema } } } }, responses: { 200: { description: 'ok' } } });
 
 export function authRouter(db: Db, mailer: Mailer): Router {
   const router = Router();

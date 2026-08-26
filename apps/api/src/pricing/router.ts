@@ -8,6 +8,8 @@ import { requireAuth, requirePermission } from '../auth/middleware.js';
 import { PERMISSIONS } from '../auth/permissions.js';
 
 import * as service from './service.js';
+import { defineRoute } from '../openapi/registry.js';
+import { parse } from '../validate.js';
 
 // ---------------------------------------------------------------------------
 // Zod schemas
@@ -84,11 +86,14 @@ const updateDeliveryOptionSchema = z.object({
   isActive: z.boolean().optional(),
 });
 
-function parse<T>(schema: z.ZodType<T>, body: unknown): T {
-  const result = schema.safeParse(body);
-  if (!result.success) throw badRequest('VALIDATION', 'Invalid request payload');
-  return result.data;
-}
+defineRoute({ method: 'post', path: '/pricing/quote', request: { body: { content: { 'application/json': { schema: quoteSchema } } } }, responses: { 200: { description: 'ok' } } });
+defineRoute({ method: 'post', path: '/pricing/book', request: { body: { content: { 'application/json': { schema: bookingSchema } } } }, responses: { 201: { description: 'created' } } });
+defineRoute({ method: 'get', path: '/pricing/rules', responses: { 200: { description: 'ok' } } });
+defineRoute({ method: 'post', path: '/pricing/rules', request: { body: { content: { 'application/json': { schema: createPricingRuleSchema } } } }, responses: { 201: { description: 'created' } } });
+defineRoute({ method: 'put', path: '/pricing/rules/{id}', request: { params: z.object({ id: z.string().uuid() }), body: { content: { 'application/json': { schema: updatePricingRuleSchema } } } }, responses: { 200: { description: 'ok' } } });
+defineRoute({ method: 'get', path: '/pricing/delivery-options', responses: { 200: { description: 'ok' } } });
+defineRoute({ method: 'post', path: '/pricing/delivery-options', request: { body: { content: { 'application/json': { schema: createDeliveryOptionSchema } } } }, responses: { 201: { description: 'created' } } });
+defineRoute({ method: 'put', path: '/pricing/delivery-options/{id}', request: { params: z.object({ id: z.string().uuid() }), body: { content: { 'application/json': { schema: updateDeliveryOptionSchema } } } }, responses: { 200: { description: 'ok' } } });
 
 // ---------------------------------------------------------------------------
 // Router

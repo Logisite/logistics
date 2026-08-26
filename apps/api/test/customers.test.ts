@@ -30,12 +30,12 @@ describe('customer profiles', () => {
     const other = await seedUserWithRoles(db, ['CUSTOMER'], OTHER_EMAIL);
 
     const loginRes = await request(app)
-      .post('/auth/login')
+      .post('/api/v1/auth/login')
       .send({ email: CUSTOMER_EMAIL, password: TEST_PASSWORD });
     customerToken = loginRes.body.accessToken as string;
 
     const otherLoginRes = await request(app)
-      .post('/auth/login')
+      .post('/api/v1/auth/login')
       .send({ email: OTHER_EMAIL, password: TEST_PASSWORD });
     otherToken = otherLoginRes.body.accessToken as string;
   });
@@ -51,14 +51,14 @@ describe('customer profiles', () => {
   describe('profile', () => {
     it('returns 404 when no profile exists', async () => {
       const res = await request(app)
-        .get('/customers/me')
+        .get('/api/v1/customers/me')
         .set('Authorization', `Bearer ${customerToken}`);
       expect(res.status).toBe(404);
     });
 
     it('creates a profile', async () => {
       const res = await request(app)
-        .post('/customers/me')
+        .post('/api/v1/customers/me')
         .set('Authorization', `Bearer ${customerToken}`)
         .send({ phone: '+1234567890' });
       expect(res.status).toBe(201);
@@ -70,7 +70,7 @@ describe('customer profiles', () => {
 
     it('rejects duplicate profile creation', async () => {
       const res = await request(app)
-        .post('/customers/me')
+        .post('/api/v1/customers/me')
         .set('Authorization', `Bearer ${customerToken}`)
         .send({ phone: '+0000000000' });
       expect(res.status).toBe(409);
@@ -78,7 +78,7 @@ describe('customer profiles', () => {
 
     it('reads the profile', async () => {
       const res = await request(app)
-        .get('/customers/me')
+        .get('/api/v1/customers/me')
         .set('Authorization', `Bearer ${customerToken}`);
       expect(res.status).toBe(200);
       expect(res.body.profile.phone).toBe('+1234567890');
@@ -86,7 +86,7 @@ describe('customer profiles', () => {
 
     it('updates the profile', async () => {
       const res = await request(app)
-        .put('/customers/me')
+        .put('/api/v1/customers/me')
         .set('Authorization', `Bearer ${customerToken}`)
         .send({ phone: '+9999999999' });
       expect(res.status).toBe(200);
@@ -103,7 +103,7 @@ describe('customer profiles', () => {
 
     it('returns empty list initially', async () => {
       const res = await request(app)
-        .get('/customers/me/addresses')
+        .get('/api/v1/customers/me/addresses')
         .set('Authorization', `Bearer ${customerToken}`);
       expect(res.status).toBe(200);
       expect(res.body.addresses).toEqual([]);
@@ -111,7 +111,7 @@ describe('customer profiles', () => {
 
     it('creates an address', async () => {
       const res = await request(app)
-        .post('/customers/me/addresses')
+        .post('/api/v1/customers/me/addresses')
         .set('Authorization', `Bearer ${customerToken}`)
         .send({
           label: 'Home',
@@ -131,7 +131,7 @@ describe('customer profiles', () => {
 
     it('lists addresses', async () => {
       const res = await request(app)
-        .get('/customers/me/addresses')
+        .get('/api/v1/customers/me/addresses')
         .set('Authorization', `Bearer ${customerToken}`);
       expect(res.status).toBe(200);
       expect(res.body.addresses).toHaveLength(1);
@@ -139,7 +139,7 @@ describe('customer profiles', () => {
 
     it('updates an address', async () => {
       const res = await request(app)
-        .put(`/customers/me/addresses/${addressId}`)
+        .put(`/api/v1/customers/me/addresses/${addressId}`)
         .set('Authorization', `Bearer ${customerToken}`)
         .send({ line1: '456 New St' });
       expect(res.status).toBe(200);
@@ -148,7 +148,7 @@ describe('customer profiles', () => {
 
     it('clears previous default when setting new default', async () => {
       const createRes = await request(app)
-        .post('/customers/me/addresses')
+        .post('/api/v1/customers/me/addresses')
         .set('Authorization', `Bearer ${customerToken}`)
         .send({
           label: 'Office',
@@ -159,7 +159,7 @@ describe('customer profiles', () => {
       expect(createRes.status).toBe(201);
 
       const listRes = await request(app)
-        .get('/customers/me/addresses')
+        .get('/api/v1/customers/me/addresses')
         .set('Authorization', `Bearer ${customerToken}`);
       const defaults = listRes.body.addresses.filter((a: { isDefault: boolean }) => a.isDefault);
       expect(defaults).toHaveLength(1);
@@ -167,7 +167,7 @@ describe('customer profiles', () => {
 
     it('rejects updates to other users addresses', async () => {
       const res = await request(app)
-        .put(`/customers/me/addresses/${addressId}`)
+        .put(`/api/v1/customers/me/addresses/${addressId}`)
         .set('Authorization', `Bearer ${otherToken}`)
         .send({ line1: 'Hacked' });
       expect(res.status).toBe(404);
@@ -175,12 +175,12 @@ describe('customer profiles', () => {
 
     it('deletes an address', async () => {
       const res = await request(app)
-        .delete(`/customers/me/addresses/${addressId}`)
+        .delete(`/api/v1/customers/me/addresses/${addressId}`)
         .set('Authorization', `Bearer ${customerToken}`);
       expect(res.status).toBe(204);
 
       const listRes = await request(app)
-        .get('/customers/me/addresses')
+        .get('/api/v1/customers/me/addresses')
         .set('Authorization', `Bearer ${customerToken}`);
       expect(listRes.body.addresses).toHaveLength(1);
     });
@@ -195,7 +195,7 @@ describe('customer profiles', () => {
 
     it('returns empty list initially', async () => {
       const res = await request(app)
-        .get('/customers/me/emergency-contacts')
+        .get('/api/v1/customers/me/emergency-contacts')
         .set('Authorization', `Bearer ${customerToken}`);
       expect(res.status).toBe(200);
       expect(res.body.emergencyContacts).toEqual([]);
@@ -203,7 +203,7 @@ describe('customer profiles', () => {
 
     it('creates a contact', async () => {
       const res = await request(app)
-        .post('/customers/me/emergency-contacts')
+        .post('/api/v1/customers/me/emergency-contacts')
         .set('Authorization', `Bearer ${customerToken}`)
         .send({
           name: 'Jane Doe',
@@ -221,7 +221,7 @@ describe('customer profiles', () => {
 
     it('lists contacts', async () => {
       const res = await request(app)
-        .get('/customers/me/emergency-contacts')
+        .get('/api/v1/customers/me/emergency-contacts')
         .set('Authorization', `Bearer ${customerToken}`);
       expect(res.status).toBe(200);
       expect(res.body.emergencyContacts).toHaveLength(1);
@@ -229,7 +229,7 @@ describe('customer profiles', () => {
 
     it('updates a contact', async () => {
       const res = await request(app)
-        .put(`/customers/me/emergency-contacts/${contactId}`)
+        .put(`/api/v1/customers/me/emergency-contacts/${contactId}`)
         .set('Authorization', `Bearer ${customerToken}`)
         .send({ phone: '+111222333' });
       expect(res.status).toBe(200);
@@ -238,7 +238,7 @@ describe('customer profiles', () => {
 
     it('rejects updates to other users contacts', async () => {
       const res = await request(app)
-        .put(`/customers/me/emergency-contacts/${contactId}`)
+        .put(`/api/v1/customers/me/emergency-contacts/${contactId}`)
         .set('Authorization', `Bearer ${otherToken}`)
         .send({ name: 'Hacked' });
       expect(res.status).toBe(404);
@@ -246,12 +246,12 @@ describe('customer profiles', () => {
 
     it('deletes a contact', async () => {
       const res = await request(app)
-        .delete(`/customers/me/emergency-contacts/${contactId}`)
+        .delete(`/api/v1/customers/me/emergency-contacts/${contactId}`)
         .set('Authorization', `Bearer ${customerToken}`);
       expect(res.status).toBe(204);
 
       const listRes = await request(app)
-        .get('/customers/me/emergency-contacts')
+        .get('/api/v1/customers/me/emergency-contacts')
         .set('Authorization', `Bearer ${customerToken}`);
       expect(listRes.body.emergencyContacts).toHaveLength(0);
     });
@@ -263,7 +263,7 @@ describe('customer profiles', () => {
 
   describe('auth required', () => {
     it('rejects unauthenticated requests', async () => {
-      const res = await request(app).get('/customers/me');
+      const res = await request(app).get('/api/v1/customers/me');
       expect(res.status).toBe(401);
     });
   });
