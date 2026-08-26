@@ -7,7 +7,7 @@
   },
   "servers": [
     {
-      "url": "http://localhost:3000"
+      "url": "http://localhost:3000/api/v1"
     }
   ],
   "components": {
@@ -15,7 +15,7 @@
     "parameters": {}
   },
   "paths": {
-    "/auth/register": {
+    "/api/v1/auth/register": {
       "post": {
         "requestBody": {
           "content": {
@@ -48,7 +48,7 @@
         }
       }
     },
-    "/auth/verify-email": {
+    "/api/v1/auth/verify-email": {
       "post": {
         "requestBody": {
           "content": {
@@ -75,7 +75,7 @@
         }
       }
     },
-    "/auth/login": {
+    "/api/v1/auth/login": {
       "post": {
         "requestBody": {
           "content": {
@@ -121,7 +121,7 @@
         }
       }
     },
-    "/auth/refresh": {
+    "/api/v1/auth/refresh": {
       "post": {
         "requestBody": {
           "content": {
@@ -148,7 +148,7 @@
         }
       }
     },
-    "/auth/logout": {
+    "/api/v1/auth/logout": {
       "post": {
         "requestBody": {
           "content": {
@@ -175,7 +175,7 @@
         }
       }
     },
-    "/auth/sessions": {
+    "/api/v1/auth/sessions": {
       "get": {
         "responses": {
           "200": {
@@ -184,7 +184,7 @@
         }
       }
     },
-    "/auth/sessions/{id}/revoke": {
+    "/api/v1/auth/sessions/{id}/revoke": {
       "post": {
         "parameters": [
           {
@@ -203,7 +203,7 @@
         }
       }
     },
-    "/auth/invite": {
+    "/api/v1/auth/invite": {
       "post": {
         "requestBody": {
           "content": {
@@ -246,7 +246,7 @@
         }
       }
     },
-    "/auth/bundles": {
+    "/api/v1/auth/bundles": {
       "get": {
         "responses": {
           "200": {
@@ -267,8 +267,10 @@
                     "maxLength": 120
                   },
                   "description": {
-                    "type": "string",
-                    "nullable": true,
+                    "type": [
+                      "string",
+                      "null"
+                    ],
                     "maxLength": 500
                   },
                   "roleNames": {
@@ -302,7 +304,7 @@
         }
       }
     },
-    "/auth/bundles/{id}": {
+    "/api/v1/auth/bundles/{id}": {
       "put": {
         "parameters": [
           {
@@ -327,8 +329,10 @@
                     "maxLength": 120
                   },
                   "description": {
-                    "type": "string",
-                    "nullable": true,
+                    "type": [
+                      "string",
+                      "null"
+                    ],
                     "maxLength": 500
                   },
                   "roleNames": {
@@ -380,7 +384,7 @@
         }
       }
     },
-    "/auth/bundles/{id}/apply": {
+    "/api/v1/auth/bundles/{id}/apply": {
       "post": {
         "parameters": [
           {
@@ -418,7 +422,7 @@
         }
       }
     },
-    "/auth/forgot-password": {
+    "/api/v1/auth/forgot-password": {
       "post": {
         "requestBody": {
           "content": {
@@ -445,7 +449,7 @@
         }
       }
     },
-    "/auth/reset-password": {
+    "/api/v1/auth/reset-password": {
       "post": {
         "requestBody": {
           "content": {
@@ -478,7 +482,7 @@
         }
       }
     },
-    "/customers/me": {
+    "/api/v1/customers/me": {
       "post": {
         "requestBody": {
           "content": {
@@ -487,8 +491,10 @@
                 "type": "object",
                 "properties": {
                   "phone": {
-                    "type": "string",
-                    "nullable": true,
+                    "type": [
+                      "string",
+                      "null"
+                    ],
                     "maxLength": 30
                   }
                 }
@@ -520,8 +526,10 @@
                 "type": "object",
                 "properties": {
                   "phone": {
-                    "type": "string",
-                    "nullable": true,
+                    "type": [
+                      "string",
+                      "null"
+                    ],
                     "maxLength": 30
                   }
                 }
@@ -536,7 +544,7 @@
         }
       }
     },
-    "/customers/me/addresses": {
+    "/api/v1/customers/me/addresses": {
       "get": {
         "responses": {
           "200": {
@@ -562,8 +570,10 @@
                     "maxLength": 200
                   },
                   "line2": {
-                    "type": "string",
-                    "nullable": true,
+                    "type": [
+                      "string",
+                      "null"
+                    ],
                     "maxLength": 200
                   },
                   "city": {
@@ -572,18 +582,24 @@
                     "maxLength": 100
                   },
                   "zoneId": {
-                    "type": "string",
-                    "nullable": true,
+                    "type": [
+                      "string",
+                      "null"
+                    ],
                     "format": "uuid"
                   },
                   "hubId": {
-                    "type": "string",
-                    "nullable": true,
+                    "type": [
+                      "string",
+                      "null"
+                    ],
                     "format": "uuid"
                   },
                   "pickupLocationId": {
-                    "type": "string",
-                    "nullable": true,
+                    "type": [
+                      "string",
+                      "null"
+                    ],
                     "format": "uuid"
                   },
                   "isDefault": {
@@ -606,7 +622,7 @@
         }
       }
     },
-    "/customers/me/addresses/{id}": {
+    "/api/v1/customers/me/addresses/{id}": {
       "put": {
         "parameters": [
           {
@@ -636,8 +652,10 @@
                     "maxLength": 200
                   },
                   "line2": {
-                    "type": "string",
-                    "nullable": true,
+                    "type": [
+                      "string",
+                      "null"
+                    ],
                     "maxLength": 200
                   },
                   "city": {
@@ -646,18 +664,24 @@
                     "maxLength": 100
                   },
                   "zoneId": {
-                    "type": "string",
-                    "nullable": true,
+                    "type": [
+                      "string",
+                      "null"
+                    ],
                     "format": "uuid"
                   },
                   "hubId": {
-                    "type": "string",
-                    "nullable": true,
+                    "type": [
+                      "string",
+                      "null"
+                    ],
                     "format": "uuid"
                   },
                   "pickupLocationId": {
-                    "type": "string",
-                    "nullable": true,
+                    "type": [
+                      "string",
+                      "null"
+                    ],
                     "format": "uuid"
                   },
                   "isDefault": {
@@ -693,7 +717,7 @@
         }
       }
     },
-    "/customers/me/emergency-contacts": {
+    "/api/v1/customers/me/emergency-contacts": {
       "get": {
         "responses": {
           "200": {
@@ -719,8 +743,10 @@
                     "maxLength": 30
                   },
                   "email": {
-                    "type": "string",
-                    "nullable": true,
+                    "type": [
+                      "string",
+                      "null"
+                    ],
                     "format": "email"
                   },
                   "relationship": {
@@ -745,7 +771,7 @@
         }
       }
     },
-    "/customers/me/emergency-contacts/{id}": {
+    "/api/v1/customers/me/emergency-contacts/{id}": {
       "put": {
         "parameters": [
           {
@@ -775,8 +801,10 @@
                     "maxLength": 30
                   },
                   "email": {
-                    "type": "string",
-                    "nullable": true,
+                    "type": [
+                      "string",
+                      "null"
+                    ],
                     "format": "email"
                   },
                   "relationship": {
@@ -814,7 +842,7 @@
         }
       }
     },
-    "/merchants/me": {
+    "/api/v1/merchants/me": {
       "post": {
         "requestBody": {
           "content": {
@@ -828,13 +856,17 @@
                     "maxLength": 200
                   },
                   "email": {
-                    "type": "string",
-                    "nullable": true,
+                    "type": [
+                      "string",
+                      "null"
+                    ],
                     "format": "email"
                   },
                   "phone": {
-                    "type": "string",
-                    "nullable": true,
+                    "type": [
+                      "string",
+                      "null"
+                    ],
                     "maxLength": 30
                   }
                 },
@@ -871,13 +903,17 @@
                     "maxLength": 200
                   },
                   "email": {
-                    "type": "string",
-                    "nullable": true,
+                    "type": [
+                      "string",
+                      "null"
+                    ],
                     "format": "email"
                   },
                   "phone": {
-                    "type": "string",
-                    "nullable": true,
+                    "type": [
+                      "string",
+                      "null"
+                    ],
                     "maxLength": 30
                   }
                 }
@@ -892,7 +928,7 @@
         }
       }
     },
-    "/locations/hubs": {
+    "/api/v1/locations/hubs": {
       "get": {
         "responses": {
           "200": {
@@ -939,7 +975,7 @@
         }
       }
     },
-    "/locations/hubs/{id}": {
+    "/api/v1/locations/hubs/{id}": {
       "put": {
         "parameters": [
           {
@@ -1006,7 +1042,7 @@
         }
       }
     },
-    "/locations/pickup-points": {
+    "/api/v1/locations/pickup-points": {
       "get": {
         "responses": {
           "200": {
@@ -1022,13 +1058,17 @@
                 "type": "object",
                 "properties": {
                   "hubId": {
-                    "type": "string",
-                    "nullable": true,
+                    "type": [
+                      "string",
+                      "null"
+                    ],
                     "format": "uuid"
                   },
                   "zoneId": {
-                    "type": "string",
-                    "nullable": true,
+                    "type": [
+                      "string",
+                      "null"
+                    ],
                     "format": "uuid"
                   },
                   "name": {
@@ -1057,7 +1097,7 @@
         }
       }
     },
-    "/locations/zones": {
+    "/api/v1/locations/zones": {
       "get": {
         "responses": {
           "200": {
@@ -1082,8 +1122,10 @@
                     "maxLength": 200
                   },
                   "description": {
-                    "type": "string",
-                    "nullable": true,
+                    "type": [
+                      "string",
+                      "null"
+                    ],
                     "maxLength": 1000
                   }
                 },
@@ -1102,7 +1144,7 @@
         }
       }
     },
-    "/pricing/quote": {
+    "/api/v1/pricing/quote": {
       "post": {
         "requestBody": {
           "content": {
@@ -1185,7 +1227,7 @@
         }
       }
     },
-    "/pricing/book": {
+    "/api/v1/pricing/book": {
       "post": {
         "requestBody": {
           "content": {
@@ -1316,7 +1358,7 @@
         }
       }
     },
-    "/pricing/rules": {
+    "/api/v1/pricing/rules": {
       "get": {
         "responses": {
           "200": {
@@ -1378,8 +1420,10 @@
                     "format": "date-time"
                   },
                   "validTo": {
-                    "type": "string",
-                    "nullable": true,
+                    "type": [
+                      "string",
+                      "null"
+                    ],
                     "format": "date-time"
                   }
                 },
@@ -1404,7 +1448,7 @@
         }
       }
     },
-    "/pricing/rules/{id}": {
+    "/api/v1/pricing/rules/{id}": {
       "put": {
         "parameters": [
           {
@@ -1435,8 +1479,10 @@
                     "format": "date-time"
                   },
                   "validTo": {
-                    "type": "string",
-                    "nullable": true,
+                    "type": [
+                      "string",
+                      "null"
+                    ],
                     "format": "date-time"
                   }
                 }
@@ -1451,7 +1497,7 @@
         }
       }
     },
-    "/pricing/delivery-options": {
+    "/api/v1/pricing/delivery-options": {
       "get": {
         "responses": {
           "200": {
@@ -1502,7 +1548,7 @@
         }
       }
     },
-    "/pricing/delivery-options/{id}": {
+    "/api/v1/pricing/delivery-options/{id}": {
       "put": {
         "parameters": [
           {
@@ -1545,7 +1591,7 @@
         }
       }
     },
-    "/shipments/{id}/pickup": {
+    "/api/v1/shipments/{id}/pickup": {
       "post": {
         "parameters": [
           {
@@ -1574,9 +1620,7 @@
                   },
                   "metadata": {
                     "type": "object",
-                    "additionalProperties": {
-                      "nullable": true
-                    }
+                    "additionalProperties": {}
                   }
                 }
               }
@@ -1599,7 +1643,7 @@
         }
       }
     },
-    "/shipments/{id}/transit": {
+    "/api/v1/shipments/{id}/transit": {
       "post": {
         "parameters": [
           {
@@ -1628,9 +1672,7 @@
                   },
                   "metadata": {
                     "type": "object",
-                    "additionalProperties": {
-                      "nullable": true
-                    }
+                    "additionalProperties": {}
                   }
                 }
               }
@@ -1653,7 +1695,7 @@
         }
       }
     },
-    "/shipments/{id}/out-for-delivery": {
+    "/api/v1/shipments/{id}/out-for-delivery": {
       "post": {
         "parameters": [
           {
@@ -1682,9 +1724,7 @@
                   },
                   "metadata": {
                     "type": "object",
-                    "additionalProperties": {
-                      "nullable": true
-                    }
+                    "additionalProperties": {}
                   }
                 }
               }
@@ -1707,7 +1747,7 @@
         }
       }
     },
-    "/shipments/{id}/deliver": {
+    "/api/v1/shipments/{id}/deliver": {
       "post": {
         "parameters": [
           {
@@ -1736,9 +1776,7 @@
                   },
                   "metadata": {
                     "type": "object",
-                    "additionalProperties": {
-                      "nullable": true
-                    }
+                    "additionalProperties": {}
                   }
                 }
               }
@@ -1761,7 +1799,7 @@
         }
       }
     },
-    "/shipments/{id}/fail-attempt": {
+    "/api/v1/shipments/{id}/fail-attempt": {
       "post": {
         "parameters": [
           {
@@ -1790,9 +1828,7 @@
                   },
                   "metadata": {
                     "type": "object",
-                    "additionalProperties": {
-                      "nullable": true
-                    }
+                    "additionalProperties": {}
                   }
                 }
               }
@@ -1815,7 +1851,7 @@
         }
       }
     },
-    "/shipments/{id}/return": {
+    "/api/v1/shipments/{id}/return": {
       "post": {
         "parameters": [
           {
@@ -1844,9 +1880,7 @@
                   },
                   "metadata": {
                     "type": "object",
-                    "additionalProperties": {
-                      "nullable": true
-                    }
+                    "additionalProperties": {}
                   }
                 }
               }
@@ -1869,7 +1903,7 @@
         }
       }
     },
-    "/shipments/{id}/returned": {
+    "/api/v1/shipments/{id}/returned": {
       "post": {
         "parameters": [
           {
@@ -1898,9 +1932,7 @@
                   },
                   "metadata": {
                     "type": "object",
-                    "additionalProperties": {
-                      "nullable": true
-                    }
+                    "additionalProperties": {}
                   }
                 }
               }
@@ -1923,7 +1955,7 @@
         }
       }
     },
-    "/shipments/{id}/cancel": {
+    "/api/v1/shipments/{id}/cancel": {
       "patch": {
         "parameters": [
           {
@@ -1952,9 +1984,7 @@
                   },
                   "metadata": {
                     "type": "object",
-                    "additionalProperties": {
-                      "nullable": true
-                    }
+                    "additionalProperties": {}
                   }
                 }
               }
@@ -1971,7 +2001,7 @@
         }
       }
     },
-    "/shipments/{id}/events": {
+    "/api/v1/shipments/{id}/events": {
       "get": {
         "parameters": [
           {
@@ -1997,7 +2027,7 @@
         }
       }
     },
-    "/shipments/{id}": {
+    "/api/v1/shipments/{id}": {
       "patch": {
         "parameters": [
           {
@@ -2017,13 +2047,17 @@
                 "type": "object",
                 "properties": {
                   "specialInstructions": {
-                    "type": "string",
-                    "nullable": true,
+                    "type": [
+                      "string",
+                      "null"
+                    ],
                     "maxLength": 2000
                   },
                   "category": {
-                    "type": "string",
-                    "nullable": true,
+                    "type": [
+                      "string",
+                      "null"
+                    ],
                     "maxLength": 200
                   },
                   "destinationZoneId": {
@@ -2035,14 +2069,18 @@
                     "maxLength": 200
                   },
                   "recipientEmail": {
-                    "type": "string",
-                    "nullable": true,
+                    "type": [
+                      "string",
+                      "null"
+                    ],
                     "maxLength": 200,
                     "format": "email"
                   },
                   "recipientPhone": {
-                    "type": "string",
-                    "nullable": true,
+                    "type": [
+                      "string",
+                      "null"
+                    ],
                     "maxLength": 50
                   },
                   "deliveryOptionId": {
@@ -2071,7 +2109,7 @@
         }
       }
     },
-    "/tracking/shipments": {
+    "/api/v1/tracking/shipments": {
       "get": {
         "responses": {
           "200": {
@@ -2083,7 +2121,7 @@
         }
       }
     },
-    "/runs": {
+    "/api/v1/runs": {
       "post": {
         "requestBody": {
           "content": {
@@ -2146,7 +2184,7 @@
         }
       }
     },
-    "/runs/claim": {
+    "/api/v1/runs/claim": {
       "post": {
         "requestBody": {
           "content": {
@@ -2181,7 +2219,7 @@
         }
       }
     },
-    "/runs/{id}/start": {
+    "/api/v1/runs/{id}/start": {
       "post": {
         "parameters": [
           {
@@ -2201,7 +2239,7 @@
         }
       }
     },
-    "/runs/{id}/complete": {
+    "/api/v1/runs/{id}/complete": {
       "post": {
         "parameters": [
           {
@@ -2221,7 +2259,7 @@
         }
       }
     },
-    "/runs/{id}/cancel": {
+    "/api/v1/runs/{id}/cancel": {
       "post": {
         "parameters": [
           {
@@ -2241,7 +2279,7 @@
         }
       }
     },
-    "/runs/mine": {
+    "/api/v1/runs/mine": {
       "get": {
         "responses": {
           "200": {
@@ -2250,7 +2288,7 @@
         }
       }
     },
-    "/runs/{id}": {
+    "/api/v1/runs/{id}": {
       "get": {
         "parameters": [
           {
@@ -2270,7 +2308,7 @@
         }
       }
     },
-    "/runs/{id}/gps": {
+    "/api/v1/runs/{id}/gps": {
       "post": {
         "parameters": [
           {
@@ -2328,7 +2366,7 @@
         }
       }
     },
-    "/sync/push": {
+    "/api/v1/sync/push": {
       "post": {
         "requestBody": {
           "content": {
@@ -2363,9 +2401,7 @@
                           "type": "string",
                           "format": "uuid"
                         },
-                        "payload": {
-                          "nullable": true
-                        }
+                        "payload": {}
                       },
                       "required": [
                         "seq",
@@ -2392,7 +2428,7 @@
         }
       }
     },
-    "/sync/pending/{deviceId}": {
+    "/api/v1/sync/pending/{deviceId}": {
       "get": {
         "parameters": [
           {
@@ -2412,7 +2448,7 @@
         }
       }
     },
-    "/sync/static": {
+    "/api/v1/sync/static": {
       "get": {
         "responses": {
           "200": {
@@ -2421,7 +2457,7 @@
         }
       }
     },
-    "/cod/collections": {
+    "/api/v1/cod/collections": {
       "post": {
         "requestBody": {
           "content": {
@@ -2439,8 +2475,7 @@
                   },
                   "amountCents": {
                     "type": "integer",
-                    "minimum": 0,
-                    "exclusiveMinimum": true
+                    "exclusiveMinimum": 0
                   },
                   "currency": {
                     "type": "string",
@@ -2485,7 +2520,7 @@
         }
       }
     },
-    "/cod/deposits": {
+    "/api/v1/cod/deposits": {
       "post": {
         "requestBody": {
           "content": {
@@ -2503,8 +2538,7 @@
                   },
                   "amountCents": {
                     "type": "integer",
-                    "minimum": 0,
-                    "exclusiveMinimum": true
+                    "exclusiveMinimum": 0
                   },
                   "currency": {
                     "type": "string",
@@ -2540,7 +2574,7 @@
         }
       }
     },
-    "/cod/pending": {
+    "/api/v1/cod/pending": {
       "get": {
         "responses": {
           "200": {
@@ -2549,7 +2583,7 @@
         }
       }
     },
-    "/cod/reconciliations": {
+    "/api/v1/cod/reconciliations": {
       "post": {
         "requestBody": {
           "content": {
@@ -2585,7 +2619,7 @@
         }
       }
     },
-    "/cod/settlements/compute": {
+    "/api/v1/cod/settlements/compute": {
       "post": {
         "requestBody": {
           "content": {
@@ -2617,7 +2651,7 @@
         }
       }
     },
-    "/cod/settlements/{id}/settle": {
+    "/api/v1/cod/settlements/{id}/settle": {
       "patch": {
         "parameters": [
           {
@@ -2637,7 +2671,7 @@
         }
       }
     },
-    "/cod/disputes": {
+    "/api/v1/cod/disputes": {
       "post": {
         "requestBody": {
           "content": {
@@ -2656,8 +2690,7 @@
                   },
                   "amountCents": {
                     "type": "integer",
-                    "minimum": 0,
-                    "exclusiveMinimum": true
+                    "exclusiveMinimum": 0
                   },
                   "currency": {
                     "type": "string",
@@ -2685,7 +2718,7 @@
         }
       }
     },
-    "/cod/disputes/{id}/resolve": {
+    "/api/v1/cod/disputes/{id}/resolve": {
       "patch": {
         "parameters": [
           {
@@ -2726,7 +2759,7 @@
         }
       }
     },
-    "/cod/fx-rates": {
+    "/api/v1/cod/fx-rates": {
       "post": {
         "requestBody": {
           "content": {
@@ -2775,7 +2808,7 @@
         }
       }
     },
-    "/reports/revenue": {
+    "/api/v1/reports/revenue": {
       "get": {
         "parameters": [
           {
@@ -2822,7 +2855,7 @@
         }
       }
     },
-    "/reports/cod": {
+    "/api/v1/reports/cod": {
       "get": {
         "parameters": [
           {
@@ -2851,7 +2884,7 @@
         }
       }
     },
-    "/reports/drivers": {
+    "/api/v1/reports/drivers": {
       "get": {
         "parameters": [
           {
@@ -2880,7 +2913,7 @@
         }
       }
     },
-    "/reports/exceptions": {
+    "/api/v1/reports/exceptions": {
       "get": {
         "parameters": [
           {
@@ -2901,7 +2934,7 @@
         }
       }
     },
-    "/health": {
+    "/api/v1/health": {
       "get": {
         "responses": {
           "200": {
@@ -2910,5 +2943,6 @@
         }
       }
     }
-  }
+  },
+  "webhooks": {}
 }

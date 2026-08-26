@@ -16,8 +16,10 @@ import { generateSpec } from './openapi/generator.js';
 import { requireAuth, requirePermission } from './auth/middleware.js';
 import { PERMISSIONS } from './auth/permissions.js';
 import type { Db } from './db.js';
+import { API } from './openapi/registry.js';
 import pkg from '../package.json' with { type: 'json' };
 import { HttpError } from './errors.js';
+import { getConfig } from './config.js';
 
 export interface AppDeps {
   db: Db;
@@ -38,15 +40,31 @@ export function createApp({ db, mailer }: AppDeps): Express {
 
   app.use(express.json());
 
-  app.get('/health', (_req, res) => {
+  app.use((req, res, next) => {
+    const origin = req.headers.origin;
+    const allowed = getConfig().appUrl;
+    if (origin && origin === allowed) {
+      res.setHeader('Access-Control-Allow-Origin', origin);
+      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+      res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+      res.setHeader('Access-Control-Allow-Credentials', 'true');
+    }
+    if (req.method === 'OPTIONS') {
+      res.status(204).end();
+      return;
+    }
+    next();
+  });
+
+  app.get(`${API}/health`, (_req, res) => {
     res.json({ status: 'ok', version: (pkg as { version: string }).version, sha: process.env.GIT_SHA ?? 'dev' });
   });
 
-  app.get('/openapi.json', (_req, res) => {
+  app.get(`${API}/openapi.json`, (_req, res) => {
     res.json(generateSpec());
   });
 
-  app.get('/docs', requireAuth(db), requirePermission(PERMISSIONS.AUDIT_READ), async (req, res) => {
+  app.get(`${API}/docs`, requireAuth(db), requirePermission(PERMISSIONS.AUDIT_READ), async (req, res) => {
     const { default: swaggerUi } = await import('swagger-ui-express');
     const spec = generateSpec();
     const html = swaggerUi.generateHTML(spec);
@@ -54,17 +72,17 @@ export function createApp({ db, mailer }: AppDeps): Express {
     res.send(html);
   });
 
-  app.use('/auth', authRouter(db, mailer));
-  app.use('/customers', customerRouter(db));
-  app.use('/locations', locationRouter(db));
-  app.use('/merchants', merchantRouter(db));
-  app.use('/pricing', pricingRouter(db));
-  app.use('/shipments', shipmentsRouter(db, mailer));
-  app.use('/tracking', trackingRouter(db));
-  app.use('/cod', codRouter(db));
-  app.use('/runs', operationsRouter(db));
-  app.use('/sync', syncRouter(db));
-  app.use('/reports', reportingRouter(db));
+  app.use(`${API}/auth`, authRouter(db, mailer));
+  app.use(`${API}/customers`, customerRouter(db));
+  app.use(`${API}/locations`, locationRouter(db));
+  app.use(`${API}/merchants`, merchantRouter(db));
+  app.use(`${API}/pricing`, pricingRouter(db));
+  app.use(`${API}/shipments`, shipmentsRouter(db, mailer));
+  app.use(`${API}/tracking`, trackingRouter(db));
+  app.use(`${API}/cod`, codRouter(db));
+  app.use(`${API}/runs`, operationsRouter(db));
+  app.use(`${API}/sync`, syncRouter(db));
+  app.use(`${API}/reports`, reportingRouter(db));
 
   app.use(errorHandler);
 

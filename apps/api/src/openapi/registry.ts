@@ -6,7 +6,9 @@ extendZodWithOpenApi(z);
 
 export const registry = new OpenAPIRegistry();
 
+export const API = '/api/v1';
+
 export function defineRoute(config: RouteConfig): RouteConfig {
-  registry.registerPath(config);
+  registry.registerPath({ ...config, path: `${API}${config.path}` });
   return config;
 }
