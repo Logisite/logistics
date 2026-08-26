@@ -1,0 +1,191 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Logistics OS",
+    "version": "0.1.0",
+    "description": "Offline-first logistics platform"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000"
+    }
+  ],
+  "components": {
+    "schemas": {},
+    "parameters": {}
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "ok"
+          }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "password": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "email",
+                  "password"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "ok"
+          },
+          "400": {
+            "description": "validation"
+          },
+          "401": {
+            "description": "unauthorized"
+          }
+        }
+      }
+    },
+    "/runs": {
+      "post": {
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "driverUserId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "shipments": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "shipmentId": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "sequence": {
+                          "type": "number"
+                        }
+                      },
+                      "required": [
+                        "shipmentId",
+                        "sequence"
+                      ]
+                    }
+                  }
+                },
+                "required": [
+                  "driverUserId",
+                  "shipments"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "created"
+          },
+          "401": {
+            "description": "unauthorized"
+          },
+          "403": {
+            "description": "forbidden"
+          }
+        }
+      }
+    },
+    "/reports/revenue": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "ok"
+          },
+          "401": {
+            "description": "unauthorized"
+          },
+          "403": {
+            "description": "forbidden"
+          }
+        }
+      }
+    },
+    "/sync/push": {
+      "post": {
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "deviceId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "ops": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "seq": {
+                          "type": "number"
+                        },
+                        "opId": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "action": {
+                          "type": "string"
+                        },
+                        "entity": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "seq",
+                        "opId",
+                        "action",
+                        "entity"
+                      ]
+                    }
+                  }
+                },
+                "required": [
+                  "deviceId",
+                  "ops"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "ok"
+          },
+          "400": {
+            "description": "validation"
+          }
+        }
+      }
+    }
+  }
+}

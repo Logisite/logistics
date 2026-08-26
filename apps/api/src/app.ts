@@ -12,6 +12,9 @@ import { codRouter } from './modules/cod/index.js';
 import { operationsRouter } from './modules/operations/index.js';
 import { reportingRouter } from './modules/reporting/index.js';
 import { syncRouter } from './modules/sync/index.js';
+import { generateSpec } from './openapi/generator.js';
+import { requireAuth, requirePermission } from './auth/middleware.js';
+import { PERMISSIONS } from './auth/permissions.js';
 import type { Db } from './db.js';
 import { HttpError } from './errors.js';
 
@@ -36,6 +39,18 @@ export function createApp({ db, mailer }: AppDeps): Express {
 
   app.get('/health', (_req, res) => {
     res.json({ status: 'ok' });
+  });
+
+  app.get('/openapi.json', (_req, res) => {
+    res.json(generateSpec());
+  });
+
+  app.get('/docs', requireAuth(db), requirePermission(PERMISSIONS.AUDIT_READ), async (req, res) => {
+    const { default: swaggerUi } = await import('swagger-ui-express');
+    const spec = generateSpec();
+    const html = swaggerUi.generateHTML(spec);
+    res.setHeader('content-type', 'text/html');
+    res.send(html);
   });
 
   app.use('/auth', authRouter(db, mailer));
