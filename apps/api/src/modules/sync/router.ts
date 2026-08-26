@@ -6,11 +6,16 @@ import { badRequest } from '../../errors.js';
 import { requireAuth } from '../../auth/middleware.js';
 
 import * as service from './service.js';
+import { defineRoute } from '../../openapi/registry.js';
 
 const pushSchema = z.object({
   deviceId: z.string().uuid(),
   ops: z.array(z.object({ seq: z.number().int().min(0), opId: z.string().uuid(), action: z.string(), entity: z.string(), entityId: z.string().uuid().optional(), payload: z.unknown() })).min(1),
 });
+
+defineRoute({ method: 'post', path: '/sync/push', request: { body: { content: { 'application/json': { schema: pushSchema } } } }, responses: { 200: { description: 'ok' } } });
+defineRoute({ method: 'get', path: '/sync/pending/{deviceId}', request: { params: z.object({ deviceId: z.string().uuid() }) }, responses: { 200: { description: 'ok' } } });
+defineRoute({ method: 'get', path: '/sync/static', responses: { 200: { description: 'ok' } } });
 
 export function syncRouter(db: Db): Router {
   const router = Router();
