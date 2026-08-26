@@ -1,4 +1,8 @@
-# Autonomous OpenAPI via express-zod-api
+# Status: Superseded by ADR 0014
+
+> **Superseded by [ADR 0014](./0014-autonomous-openapi-via-defineRoute.md)** — we keep Express + supertest and use `defineRoute` (`@asteasolutions/zod-to-openapi`) instead of `express-zod-api` `EndpointsFactory`. The `express-zod-api` dependency has been removed (0 hits in `src/`).
+
+# Autonomous OpenAPI via express-zod-api (superseded)
 
 We replace manual `registry.registerPath` calls with `express-zod-api`'s `EndpointsFactory` + `Routing` + `Documentation`. Endpoints are declared once as `factory.build({input: z.object({}), output: z.object({}), handler})` in a single `Routing` object; input/output Zod schemas are validated at runtime and the same schemas are crawled by `Documentation` to emit `openapi: 3.1.0` with no second spec file.
 
