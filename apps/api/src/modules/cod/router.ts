@@ -7,6 +7,7 @@ import { requireAuth, requirePermission } from '../../auth/middleware.js';
 import { PERMISSIONS } from '../../auth/permissions.js';
 
 import * as service from './service.js';
+import { defineRoute } from '../../openapi/registry.js';
 
 const currencySchema = z.enum(['USD', 'EUR', 'GBP']);
 
@@ -53,6 +54,16 @@ const fxRateSchema = z.object({
   rate: z.string(),
   rateDate: z.string().datetime(),
 });
+
+defineRoute({ method: 'post', path: '/cod/collections', request: { body: { content: { 'application/json': { schema: collectionSchema } } } }, responses: { 201: { description: 'created' }, 401: { description: 'unauthorized' }, 403: { description: 'forbidden' } } });
+defineRoute({ method: 'post', path: '/cod/deposits', request: { body: { content: { 'application/json': { schema: depositSchema } } } }, responses: { 201: { description: 'created' } } });
+defineRoute({ method: 'get', path: '/cod/pending', responses: { 200: { description: 'ok' } } });
+defineRoute({ method: 'post', path: '/cod/reconciliations', request: { body: { content: { 'application/json': { schema: reconcileSchema } } } }, responses: { 201: { description: 'created' } } });
+defineRoute({ method: 'post', path: '/cod/settlements/compute', request: { body: { content: { 'application/json': { schema: settlementSchema } } } }, responses: { 201: { description: 'created' } } });
+defineRoute({ method: 'patch', path: '/cod/settlements/{id}/settle', request: { params: z.object({ id: z.string().uuid() }) }, responses: { 200: { description: 'ok' } } });
+defineRoute({ method: 'post', path: '/cod/disputes', request: { body: { content: { 'application/json': { schema: disputeSchema } } } }, responses: { 201: { description: 'created' } } });
+defineRoute({ method: 'patch', path: '/cod/disputes/{id}/resolve', request: { params: z.object({ id: z.string().uuid() }), body: { content: { 'application/json': { schema: resolveSchema } } } }, responses: { 200: { description: 'ok' } } });
+defineRoute({ method: 'post', path: '/cod/fx-rates', request: { body: { content: { 'application/json': { schema: fxRateSchema } } } }, responses: { 201: { description: 'created' } } });
 
 function parse<T>(schema: z.ZodType<T>, body: unknown): T {
   const result = schema.safeParse(body);

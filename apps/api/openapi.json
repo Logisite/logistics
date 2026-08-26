@@ -478,6 +478,420 @@
         }
       }
     },
+    "/customers/me": {
+      "post": {
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "phone": {
+                    "type": "string",
+                    "nullable": true,
+                    "maxLength": 30
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "created"
+          },
+          "401": {
+            "description": "unauthorized"
+          }
+        }
+      },
+      "get": {
+        "responses": {
+          "200": {
+            "description": "ok"
+          }
+        }
+      },
+      "put": {
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "phone": {
+                    "type": "string",
+                    "nullable": true,
+                    "maxLength": 30
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "ok"
+          }
+        }
+      }
+    },
+    "/customers/me/addresses": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "ok"
+          }
+        }
+      },
+      "post": {
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "label": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  "line1": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "line2": {
+                    "type": "string",
+                    "nullable": true,
+                    "maxLength": 200
+                  },
+                  "city": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  "zoneId": {
+                    "type": "string",
+                    "nullable": true,
+                    "format": "uuid"
+                  },
+                  "hubId": {
+                    "type": "string",
+                    "nullable": true,
+                    "format": "uuid"
+                  },
+                  "pickupLocationId": {
+                    "type": "string",
+                    "nullable": true,
+                    "format": "uuid"
+                  },
+                  "isDefault": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "label",
+                  "line1",
+                  "city"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "created"
+          }
+        }
+      }
+    },
+    "/customers/me/addresses/{id}": {
+      "put": {
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "label": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  "line1": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "line2": {
+                    "type": "string",
+                    "nullable": true,
+                    "maxLength": 200
+                  },
+                  "city": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  "zoneId": {
+                    "type": "string",
+                    "nullable": true,
+                    "format": "uuid"
+                  },
+                  "hubId": {
+                    "type": "string",
+                    "nullable": true,
+                    "format": "uuid"
+                  },
+                  "pickupLocationId": {
+                    "type": "string",
+                    "nullable": true,
+                    "format": "uuid"
+                  },
+                  "isDefault": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "ok"
+          }
+        }
+      },
+      "delete": {
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "no content"
+          }
+        }
+      }
+    },
+    "/customers/me/emergency-contacts": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "ok"
+          }
+        }
+      },
+      "post": {
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  "phone": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 30
+                  },
+                  "email": {
+                    "type": "string",
+                    "nullable": true,
+                    "format": "email"
+                  },
+                  "relationship": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  }
+                },
+                "required": [
+                  "name",
+                  "phone",
+                  "relationship"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "created"
+          }
+        }
+      }
+    },
+    "/customers/me/emergency-contacts/{id}": {
+      "put": {
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  "phone": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 30
+                  },
+                  "email": {
+                    "type": "string",
+                    "nullable": true,
+                    "format": "email"
+                  },
+                  "relationship": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "ok"
+          }
+        }
+      },
+      "delete": {
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "no content"
+          }
+        }
+      }
+    },
+    "/merchants/me": {
+      "post": {
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "businessName": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "email": {
+                    "type": "string",
+                    "nullable": true,
+                    "format": "email"
+                  },
+                  "phone": {
+                    "type": "string",
+                    "nullable": true,
+                    "maxLength": 30
+                  }
+                },
+                "required": [
+                  "businessName"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "created"
+          }
+        }
+      },
+      "get": {
+        "responses": {
+          "200": {
+            "description": "ok"
+          }
+        }
+      },
+      "put": {
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "businessName": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "email": {
+                    "type": "string",
+                    "nullable": true,
+                    "format": "email"
+                  },
+                  "phone": {
+                    "type": "string",
+                    "nullable": true,
+                    "maxLength": 30
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "ok"
+          }
+        }
+      }
+    },
     "/locations/hubs": {
       "get": {
         "responses": {
@@ -684,6 +1098,449 @@
         "responses": {
           "201": {
             "description": "created"
+          }
+        }
+      }
+    },
+    "/pricing/quote": {
+      "post": {
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "originZoneId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "destinationZoneId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "packages": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "sizeClass": {
+                          "type": "string",
+                          "enum": [
+                            "SMALL",
+                            "MEDIUM",
+                            "LARGE",
+                            "EXTRA_LARGE"
+                          ]
+                        },
+                        "weightClass": {
+                          "type": "string",
+                          "enum": [
+                            "LIGHT",
+                            "MEDIUM",
+                            "HEAVY",
+                            "EXTRA_HEAVY"
+                          ]
+                        },
+                        "quantity": {
+                          "type": "integer",
+                          "minimum": 1
+                        }
+                      },
+                      "required": [
+                        "sizeClass",
+                        "weightClass",
+                        "quantity"
+                      ]
+                    },
+                    "minItems": 1
+                  },
+                  "deliveryOptionId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "currency": {
+                    "type": "string",
+                    "enum": [
+                      "USD",
+                      "EUR",
+                      "GBP"
+                    ]
+                  }
+                },
+                "required": [
+                  "originZoneId",
+                  "destinationZoneId",
+                  "packages",
+                  "deliveryOptionId",
+                  "currency"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "ok"
+          }
+        }
+      }
+    },
+    "/pricing/book": {
+      "post": {
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "senderName": {
+                    "type": "string",
+                    "maxLength": 200
+                  },
+                  "senderEmail": {
+                    "type": "string",
+                    "maxLength": 200,
+                    "format": "email"
+                  },
+                  "senderPhone": {
+                    "type": "string",
+                    "maxLength": 50
+                  },
+                  "recipientName": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "recipientEmail": {
+                    "type": "string",
+                    "maxLength": 200,
+                    "format": "email"
+                  },
+                  "recipientPhone": {
+                    "type": "string",
+                    "maxLength": 50
+                  },
+                  "pickupLocationId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "destinationZoneId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "deliveryOptionId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "packages": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "sizeClass": {
+                          "type": "string",
+                          "enum": [
+                            "SMALL",
+                            "MEDIUM",
+                            "LARGE",
+                            "EXTRA_LARGE"
+                          ]
+                        },
+                        "weightClass": {
+                          "type": "string",
+                          "enum": [
+                            "LIGHT",
+                            "MEDIUM",
+                            "HEAVY",
+                            "EXTRA_HEAVY"
+                          ]
+                        },
+                        "quantity": {
+                          "type": "integer",
+                          "minimum": 1
+                        }
+                      },
+                      "required": [
+                        "sizeClass",
+                        "weightClass",
+                        "quantity"
+                      ]
+                    },
+                    "minItems": 1
+                  },
+                  "currency": {
+                    "type": "string",
+                    "enum": [
+                      "USD",
+                      "EUR",
+                      "GBP"
+                    ],
+                    "default": "GBP"
+                  },
+                  "category": {
+                    "type": "string",
+                    "maxLength": 200
+                  },
+                  "specialInstructions": {
+                    "type": "string",
+                    "maxLength": 2000
+                  },
+                  "scheduledFor": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "customPriceCents": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "idempotencyKey": {
+                    "type": "string",
+                    "maxLength": 200
+                  }
+                },
+                "required": [
+                  "recipientName",
+                  "pickupLocationId",
+                  "destinationZoneId",
+                  "deliveryOptionId",
+                  "packages"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "created"
+          }
+        }
+      }
+    },
+    "/pricing/rules": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "ok"
+          }
+        }
+      },
+      "post": {
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "originZoneId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "destinationZoneId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "sizeClass": {
+                    "type": "string",
+                    "enum": [
+                      "SMALL",
+                      "MEDIUM",
+                      "LARGE",
+                      "EXTRA_LARGE"
+                    ]
+                  },
+                  "weightClass": {
+                    "type": "string",
+                    "enum": [
+                      "LIGHT",
+                      "MEDIUM",
+                      "HEAVY",
+                      "EXTRA_HEAVY"
+                    ]
+                  },
+                  "deliveryOptionId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "currency": {
+                    "type": "string",
+                    "enum": [
+                      "USD",
+                      "EUR",
+                      "GBP"
+                    ]
+                  },
+                  "amountCents": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "validFrom": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "validTo": {
+                    "type": "string",
+                    "nullable": true,
+                    "format": "date-time"
+                  }
+                },
+                "required": [
+                  "originZoneId",
+                  "destinationZoneId",
+                  "sizeClass",
+                  "weightClass",
+                  "deliveryOptionId",
+                  "currency",
+                  "amountCents",
+                  "validFrom"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "created"
+          }
+        }
+      }
+    },
+    "/pricing/rules/{id}": {
+      "put": {
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "amountCents": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "isActive": {
+                    "type": "boolean"
+                  },
+                  "validFrom": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "validTo": {
+                    "type": "string",
+                    "nullable": true,
+                    "format": "date-time"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "ok"
+          }
+        }
+      }
+    },
+    "/pricing/delivery-options": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "ok"
+          }
+        }
+      },
+      "post": {
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "code": {
+                    "type": "string",
+                    "enum": [
+                      "STANDARD",
+                      "EXPRESS",
+                      "SAME_DAY",
+                      "SCHEDULED",
+                      "PICKUP_AT_LOCATION",
+                      "DROP_OFF_AT_LOCATION"
+                    ]
+                  },
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "description": {
+                    "type": "string",
+                    "maxLength": 1000
+                  }
+                },
+                "required": [
+                  "code",
+                  "name"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "created"
+          }
+        }
+      }
+    },
+    "/pricing/delivery-options/{id}": {
+      "put": {
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "description": {
+                    "type": "string",
+                    "maxLength": 1000
+                  },
+                  "isActive": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "ok"
           }
         }
       }
@@ -1214,6 +2071,18 @@
         }
       }
     },
+    "/tracking/shipments": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "ok"
+          },
+          "401": {
+            "description": "unauthorized"
+          }
+        }
+      }
+    },
     "/runs": {
       "post": {
         "requestBody": {
@@ -1548,6 +2417,360 @@
         "responses": {
           "200": {
             "description": "ok"
+          }
+        }
+      }
+    },
+    "/cod/collections": {
+      "post": {
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "shipmentId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "driverUserId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "amountCents": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "exclusiveMinimum": true
+                  },
+                  "currency": {
+                    "type": "string",
+                    "enum": [
+                      "USD",
+                      "EUR",
+                      "GBP"
+                    ]
+                  },
+                  "paymentMethod": {
+                    "type": "string",
+                    "enum": [
+                      "CASH",
+                      "CARD"
+                    ]
+                  },
+                  "collectedAt": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                },
+                "required": [
+                  "shipmentId",
+                  "amountCents",
+                  "currency",
+                  "paymentMethod"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "created"
+          },
+          "401": {
+            "description": "unauthorized"
+          },
+          "403": {
+            "description": "forbidden"
+          }
+        }
+      }
+    },
+    "/cod/deposits": {
+      "post": {
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "hubId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "driverUserId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "amountCents": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "exclusiveMinimum": true
+                  },
+                  "currency": {
+                    "type": "string",
+                    "enum": [
+                      "USD",
+                      "EUR",
+                      "GBP"
+                    ]
+                  },
+                  "depositedAt": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "notes": {
+                    "type": "string",
+                    "maxLength": 1000
+                  }
+                },
+                "required": [
+                  "hubId",
+                  "driverUserId",
+                  "amountCents",
+                  "currency"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "created"
+          }
+        }
+      }
+    },
+    "/cod/pending": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "ok"
+          }
+        }
+      }
+    },
+    "/cod/reconciliations": {
+      "post": {
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "depositId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "collectionIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "minItems": 1
+                  }
+                },
+                "required": [
+                  "depositId",
+                  "collectionIds"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "created"
+          }
+        }
+      }
+    },
+    "/cod/settlements/compute": {
+      "post": {
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "periodStart": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "periodEnd": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                },
+                "required": [
+                  "periodStart",
+                  "periodEnd"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "created"
+          }
+        }
+      }
+    },
+    "/cod/settlements/{id}/settle": {
+      "patch": {
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "ok"
+          }
+        }
+      }
+    },
+    "/cod/disputes": {
+      "post": {
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "collectionId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "reason": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500
+                  },
+                  "amountCents": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "exclusiveMinimum": true
+                  },
+                  "currency": {
+                    "type": "string",
+                    "enum": [
+                      "USD",
+                      "EUR",
+                      "GBP"
+                    ]
+                  }
+                },
+                "required": [
+                  "collectionId",
+                  "reason",
+                  "amountCents",
+                  "currency"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "created"
+          }
+        }
+      }
+    },
+    "/cod/disputes/{id}/resolve": {
+      "patch": {
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "resolution": {
+                    "type": "string",
+                    "enum": [
+                      "RESOLVED",
+                      "REJECTED"
+                    ]
+                  }
+                },
+                "required": [
+                  "resolution"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "ok"
+          }
+        }
+      }
+    },
+    "/cod/fx-rates": {
+      "post": {
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "fromCurrency": {
+                    "type": "string",
+                    "enum": [
+                      "USD",
+                      "EUR",
+                      "GBP"
+                    ]
+                  },
+                  "toCurrency": {
+                    "type": "string",
+                    "enum": [
+                      "USD",
+                      "EUR",
+                      "GBP"
+                    ]
+                  },
+                  "rate": {
+                    "type": "string"
+                  },
+                  "rateDate": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                },
+                "required": [
+                  "fromCurrency",
+                  "toCurrency",
+                  "rate",
+                  "rateDate"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "created"
           }
         }
       }

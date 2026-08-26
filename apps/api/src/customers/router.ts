@@ -7,6 +7,7 @@ import type { AuthContext } from '../auth/middleware.js';
 import { requireAuth } from '../auth/middleware.js';
 
 import * as service from './service.js';
+import { defineRoute } from '../openapi/registry.js';
 
 const updateProfileSchema = z.object({
   phone: z.string().max(30).nullable().optional(),
@@ -47,6 +48,18 @@ const updateContactSchema = z.object({
   email: z.string().email().nullable().optional(),
   relationship: z.string().min(1).max(100).optional(),
 });
+
+defineRoute({ method: 'post', path: '/customers/me', request: { body: { content: { 'application/json': { schema: updateProfileSchema } } } }, responses: { 201: { description: 'created' }, 401: { description: 'unauthorized' } } });
+defineRoute({ method: 'get', path: '/customers/me', responses: { 200: { description: 'ok' } } });
+defineRoute({ method: 'put', path: '/customers/me', request: { body: { content: { 'application/json': { schema: updateProfileSchema } } } }, responses: { 200: { description: 'ok' } } });
+defineRoute({ method: 'get', path: '/customers/me/addresses', responses: { 200: { description: 'ok' } } });
+defineRoute({ method: 'post', path: '/customers/me/addresses', request: { body: { content: { 'application/json': { schema: createAddressSchema } } } }, responses: { 201: { description: 'created' } } });
+defineRoute({ method: 'put', path: '/customers/me/addresses/{id}', request: { params: z.object({ id: z.string().uuid() }), body: { content: { 'application/json': { schema: updateAddressSchema } } } }, responses: { 200: { description: 'ok' } } });
+defineRoute({ method: 'delete', path: '/customers/me/addresses/{id}', request: { params: z.object({ id: z.string().uuid() }) }, responses: { 204: { description: 'no content' } } });
+defineRoute({ method: 'get', path: '/customers/me/emergency-contacts', responses: { 200: { description: 'ok' } } });
+defineRoute({ method: 'post', path: '/customers/me/emergency-contacts', request: { body: { content: { 'application/json': { schema: createContactSchema } } } }, responses: { 201: { description: 'created' } } });
+defineRoute({ method: 'put', path: '/customers/me/emergency-contacts/{id}', request: { params: z.object({ id: z.string().uuid() }), body: { content: { 'application/json': { schema: updateContactSchema } } } }, responses: { 200: { description: 'ok' } } });
+defineRoute({ method: 'delete', path: '/customers/me/emergency-contacts/{id}', request: { params: z.object({ id: z.string().uuid() }) }, responses: { 204: { description: 'no content' } } });
 
 function parse<T>(schema: z.ZodType<T>, body: unknown): T {
   const result = schema.safeParse(body);

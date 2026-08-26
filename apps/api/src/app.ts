@@ -16,6 +16,7 @@ import { generateSpec } from './openapi/generator.js';
 import { requireAuth, requirePermission } from './auth/middleware.js';
 import { PERMISSIONS } from './auth/permissions.js';
 import type { Db } from './db.js';
+import pkg from '../package.json' with { type: 'json' };
 import { HttpError } from './errors.js';
 
 export interface AppDeps {
@@ -38,7 +39,7 @@ export function createApp({ db, mailer }: AppDeps): Express {
   app.use(express.json());
 
   app.get('/health', (_req, res) => {
-    res.json({ status: 'ok' });
+    res.json({ status: 'ok', version: (pkg as { version: string }).version, sha: process.env.GIT_SHA ?? 'dev' });
   });
 
   app.get('/openapi.json', (_req, res) => {
