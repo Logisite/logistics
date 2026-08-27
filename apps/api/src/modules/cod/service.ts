@@ -13,8 +13,8 @@ import {
 } from '@logistics/db';
 
 import { getConfig } from '../../shared/config.js';
-import { writeAudit } from '../../auth/audit.js';
-import type { AuthContext } from '../../auth/middleware.js';
+import { writeAudit } from '../auth/audit.js';
+import type { AuthContext } from '../auth/middleware.js';
 import type { Db } from '../../shared/db.js';
 import { badRequest, conflict, notFound } from '../../shared/errors.js';
 

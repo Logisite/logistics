@@ -1,13 +1,13 @@
 import { Router } from 'express';
 import { z } from 'zod';
 
-import type { Db } from '../shared/db.js';
+import type { Db } from '../../shared/db.js';
 import type { AuthContext } from '../auth/middleware.js';
 import { requireAuth } from '../auth/middleware.js';
 
 import * as service from './service.js';
-import { defineRoute } from '../openapi/registry.js';
-import { parse } from '../shared/validate.js';
+import { defineRoute } from '../../openapi/registry.js';
+import { parse } from '../../shared/validate.js';
 
 const MerchantProfileResponse = z.object({
   id: z.string().uuid(),

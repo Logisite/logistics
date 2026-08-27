@@ -1,9 +1,9 @@
 import { and, eq } from 'drizzle-orm';
 import { users, roleGrants } from '@logistics/db';
 
-import { getConfig } from '../shared/config.js';
-import type { Db } from '../shared/db.js';
-import { forbidden } from '../shared/errors.js';
+import { getConfig } from '../../shared/config.js';
+import type { Db } from '../../shared/db.js';
+import { forbidden } from '../../shared/errors.js';
 
 import { writeAudit } from './audit.js';
 

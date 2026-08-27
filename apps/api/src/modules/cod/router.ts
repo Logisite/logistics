@@ -3,8 +3,8 @@ import { z } from 'zod';
 
 import type { Db } from '../../shared/db.js';
 import { badRequest } from '../../shared/errors.js';
-import { requireAuth, requirePermission } from '../../auth/middleware.js';
-import { PERMISSIONS } from '../../auth/permissions.js';
+import { requireAuth, requirePermission } from '../auth/middleware.js';
+import { PERMISSIONS } from '../auth/permissions.js';
 
 import * as service from './service.js';
 import { defineRoute } from '../../openapi/registry.js';

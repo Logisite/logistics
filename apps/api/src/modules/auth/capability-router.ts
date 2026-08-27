@@ -3,9 +3,9 @@ import { z } from 'zod';
 
 import { contactIdentities, sessions } from '@logistics/db';
 
-import type { Db } from '../shared/db.js';
-import { defineRoute } from '../openapi/registry.js';
-import { getConfig } from '../shared/config.js';
+import type { Db } from '../../shared/db.js';
+import { defineRoute } from '../../openapi/registry.js';
+import { getConfig } from '../../shared/config.js';
 import { ROLE_PRIORITY, type RoleName } from './permissions.js';
 import { signAccessToken, generateOpaqueToken, hashOpaqueToken } from './tokens.js';
 import type { AuthContext } from './middleware.js';

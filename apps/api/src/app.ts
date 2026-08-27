@@ -1,21 +1,18 @@
 import express from 'express';
 import type { ErrorRequestHandler, Express } from 'express';
 
-import { authRouter } from './auth/router.js';
-import type { Mailer } from './auth/emails.js';
-import { capabilityRouter } from './auth/capability-router.js';
-import { customerRouter } from './customers/router.js';
-import { locationRouter } from './locations/router.js';
-import { merchantRouter } from './merchants/router.js';
-import { pricingRouter } from './pricing/router.js';
+import { authRouter, capabilityRouter, requireAuth, requirePermission, PERMISSIONS } from './modules/auth/index.js';
+import type { Mailer } from './modules/auth/index.js';
+import { customerRouter } from './modules/customers/index.js';
+import { locationRouter } from './modules/locations/index.js';
+import { merchantRouter } from './modules/merchants/index.js';
+import { pricingRouter } from './modules/pricing/index.js';
 import { shipmentsRouter, trackingRouter } from './modules/shipments/index.js';
 import { codRouter } from './modules/cod/index.js';
 import { operationsRouter } from './modules/operations/index.js';
 import { reportingRouter } from './modules/reporting/index.js';
 import { syncRouter } from './modules/sync/index.js';
 import { generateSpec } from './openapi/generator.js';
-import { requireAuth, requirePermission } from './auth/middleware.js';
-import { PERMISSIONS } from './auth/permissions.js';
 import type { Db } from './shared/db.js';
 import { API } from './openapi/registry.js';
 import pkg from '../package.json' with { type: 'json' };

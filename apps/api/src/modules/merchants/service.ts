@@ -4,8 +4,8 @@ import { merchantProfiles } from '@logistics/db';
 
 import { writeAudit } from '../auth/audit.js';
 import type { AuthContext } from '../auth/middleware.js';
-import type { Db } from '../shared/db.js';
-import { conflict, notFound } from '../shared/errors.js';
+import type { Db } from '../../shared/db.js';
+import { conflict, notFound } from '../../shared/errors.js';
 
 export async function getProfile(db: Db, userId: string) {
   const profile = await db.query.merchantProfiles.findFirst({

@@ -1,6 +1,6 @@
 import { Resend } from 'resend';
 
-import { getConfig } from '../shared/config.js';
+import { getConfig } from '../../shared/config.js';
 
 export interface Mailer {
   sendVerificationEmail(to: string, token: string): Promise<void>;

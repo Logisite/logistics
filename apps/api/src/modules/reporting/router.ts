@@ -2,8 +2,8 @@ import { Router } from 'express';
 import { z } from 'zod';
 
 import type { Db } from '../../shared/db.js';
-import { requireAuth, requirePermission } from '../../auth/middleware.js';
-import { PERMISSIONS } from '../../auth/permissions.js';
+import { requireAuth, requirePermission } from '../auth/middleware.js';
+import { PERMISSIONS } from '../auth/permissions.js';
 import { parse } from '../../shared/validate.js';
 
 import * as service from './service.js';

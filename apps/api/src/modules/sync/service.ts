@@ -2,8 +2,8 @@ import { and, eq, inArray, sql } from 'drizzle-orm';
 
 import { devices, runSheetEntries, runs, shipmentEvents, shipments, syncLedger } from '@logistics/db';
 
-import { writeAudit } from '../../auth/audit.js';
-import type { AuthContext } from '../../auth/middleware.js';
+import { writeAudit } from '../auth/audit.js';
+import type { AuthContext } from '../auth/middleware.js';
 import { getConfig } from '../../shared/config.js';
 import type { Db } from '../../shared/db.js';
 import { badRequest } from '../../shared/errors.js';

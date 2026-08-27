@@ -3,9 +3,9 @@ import { z } from 'zod';
 
 import type { Db } from '../../shared/db.js';
 import { badRequest, forbidden } from '../../shared/errors.js';
-import type { AuthContext } from '../../auth/middleware.js';
-import { requireAuth, requirePermission } from '../../auth/middleware.js';
-import { PERMISSIONS } from '../../auth/permissions.js';
+import type { AuthContext } from '../auth/middleware.js';
+import { requireAuth, requirePermission } from '../auth/middleware.js';
+import { PERMISSIONS } from '../auth/permissions.js';
 import { parse } from '../../shared/validate.js';
 
 import * as service from './service.js';

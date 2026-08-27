@@ -4,7 +4,7 @@ import { or, sql, eq, and } from 'drizzle-orm';
 import { contactIdentities } from '@logistics/db';
 
 import type { Db } from '../../shared/db.js';
-import { requireAuth } from '../../auth/middleware.js';
+import { requireAuth } from '../auth/middleware.js';
 import { defineRoute } from '../../openapi/registry.js';
 
 defineRoute({ method: 'get', path: '/tracking/shipments', responses: { 200: { description: 'ok' }, 401: { description: 'unauthorized' } } });

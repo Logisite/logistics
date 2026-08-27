@@ -2,7 +2,7 @@ import { and, eq } from 'drizzle-orm';
 
 import { notificationLogs, users } from '@logistics/db';
 
-import type { Mailer } from '../../auth/emails.js';
+import type { Mailer } from '../auth/emails.js';
 import type { Db } from '../../shared/db.js';
 
 import type { ShipmentStatus } from '../shipments/index.js';

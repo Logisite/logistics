@@ -1,7 +1,7 @@
 import isValid from 'libphonenumber-js';
 import { parsePhoneNumber } from 'libphonenumber-js';
 
-import { badRequest } from '../shared/errors.js';
+import { badRequest } from '../../shared/errors.js';
 
 export interface ParsedPhone {
   phone: string;

@@ -1,4 +1,4 @@
-import { getConfig } from '../shared/config.js';
+import { getConfig } from '../../shared/config.js';
 
 interface MapboxFeature {
   geometry: {

@@ -4,8 +4,7 @@ import postgres from 'postgres';
 import * as schema from '@logistics/db';
 
 import { createApp } from './app.js';
-import { ResendMailer } from './auth/emails.js';
-import { ensureOwner, seedAuthData } from './auth/seed.js';
+import { ResendMailer, ensureOwner, seedAuthData } from './modules/auth/index.js';
 
 const isProd = (process.env.NODE_ENV ?? 'development') === 'production';
 const databaseUrl = process.env.DATABASE_URL;

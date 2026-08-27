@@ -4,12 +4,11 @@ import { getConfig } from '../shared/config.js';
 import { registry, API, defineRoute } from './registry.js';
 import pkg from '../../package.json' with { type: 'json' };
 
-import '../auth/router.js';
-import '../auth/capability-router.js';
-import '../customers/router.js';
-import '../merchants/router.js';
-import '../locations/router.js';
-import '../pricing/router.js';
+import '../modules/auth/index.js';
+import '../modules/customers/index.js';
+import '../modules/merchants/index.js';
+import '../modules/locations/index.js';
+import '../modules/pricing/index.js';
 import '../modules/shipments/index.js';
 import '../modules/operations/index.js';
 import '../modules/sync/index.js';
