@@ -55,4 +55,21 @@ export default tseslint.config(
       ],
     },
   },
+  {
+    // Cross-module imports within modules: prefer barrel, allow ../auth/audit.js
+    files: ['apps/api/src/modules/**/*.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['**/modules/*/*', '!**/modules/*/index.*', '!**/modules/auth/audit.js'],
+              message: 'Import via the module barrel (modules/<name>/index.js).',
+            },
+          ],
+        },
+      ],
+    },
+  },
 );
