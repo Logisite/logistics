@@ -11,9 +11,9 @@ import { signAccessToken, generateOpaqueToken, hashOpaqueToken } from './tokens.
 import type { AuthContext } from './middleware.js';
 import { requireAuth } from './middleware.js';
 import { loadGrantedRoles } from './service.js';
-import { verifyCapabilityLink, revokeCapabilityLink } from './capability-links.js';
-import { mintShadow, isShadowExpired } from './shadows.js';
-import { parsePhone } from './phone.js';
+import { verifyCapabilityLink, revokeCapabilityLink } from '../identity/capability-links.js';
+import { mintShadow, isShadowExpired } from '../identity/shadows.js';
+import { parsePhone } from '../identity/phone.js';
 import { writeAudit } from './audit.js';
 
 const revokeSchema = z.object({ reason: z.string().max(500).optional() }).openapi('CapabilityRevokeRequest');

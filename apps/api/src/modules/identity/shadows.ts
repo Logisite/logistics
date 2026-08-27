@@ -5,7 +5,7 @@ import { getConfig } from '../../shared/config.js';
 import type { Db } from '../../shared/db.js';
 import { forbidden } from '../../shared/errors.js';
 
-import { writeAudit } from './audit.js';
+import { writeAudit } from '../auth/audit.js';
 
 export interface ShadowUser {
   id: string;

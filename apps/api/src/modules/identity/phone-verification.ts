@@ -10,7 +10,7 @@ import type { Db } from '../../shared/db.js';
 import { badRequest, unauthorized } from '../../shared/errors.js';
 import { HttpError } from '../../shared/errors.js';
 
-import { writeAudit } from './audit.js';
+import { writeAudit } from '../auth/audit.js';
 import type { SmsProvider } from './sms.js';
 
 const OTP_LENGTH = 6;

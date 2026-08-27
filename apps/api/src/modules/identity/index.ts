@@ -1,0 +1,10 @@
+export { parsePhone } from './phone.js';
+export type { ParsedPhone } from './phone.js';
+export { requestOtp, verifyOtp } from './phone-verification.js';
+export type { RequestOtpResult, VerifyOtpResult } from './phone-verification.js';
+export { createSmsProvider, FakeSmsProvider } from './sms.js';
+export type { SmsProvider } from './sms.js';
+export { mintShadow, upgradeShadow, isShadowExpired, markLastVerified } from './shadows.js';
+export type { ShadowUser } from './shadows.js';
+export { issueCapabilityLink, verifyCapabilityLink, consumeCapabilityLink, revokeCapabilityLink } from './capability-links.js';
+export type { CapabilityAction, IssueCapabilityLinkInput, IssuedCapabilityLink, VerifiedCapabilityLink } from './capability-links.js';

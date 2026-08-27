@@ -6,7 +6,7 @@ import { capabilityLinks } from '@logistics/db';
 import { getConfig } from '../../shared/config.js';
 import type { Db } from '../../shared/db.js';
 import { badRequest, conflict, forbidden, notFound } from '../../shared/errors.js';
-import { writeAudit } from './audit.js';
+import { writeAudit } from '../auth/audit.js';
 
 export type CapabilityAction = 'BOOKING' | 'TRACKING' | 'CLAIM';
 

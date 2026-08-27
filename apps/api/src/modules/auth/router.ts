@@ -14,12 +14,12 @@ import { PERMISSIONS, ROLE_NAMES, ROLE_PRIORITY, type RoleName } from './permiss
 import * as service from './service.js';
 import { loadGrantedRoles } from './service.js';
 import { parse } from '../../shared/validate.js';
-import { requestOtp, verifyOtp } from './phone-verification.js';
-import { parsePhone } from './phone.js';
-import { upgradeShadow, markLastVerified } from './shadows.js';
+import { requestOtp, verifyOtp } from '../identity/phone-verification.js';
+import { parsePhone } from '../identity/phone.js';
+import { upgradeShadow, markLastVerified } from '../identity/shadows.js';
 import { signAccessToken, generateOpaqueToken, hashOpaqueToken } from './tokens.js';
 import { hashPassword } from './passwords.js';
-import { createSmsProvider } from './sms.js';
+import { createSmsProvider } from '../identity/sms.js';
 import { getConfig } from '../../shared/config.js';
 
 const registerSchema = z.object({
