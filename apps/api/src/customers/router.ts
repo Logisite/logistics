@@ -12,7 +12,7 @@ import { parse } from '../validate.js';
 
 const updateProfileSchema = z.object({
   phone: z.string().max(30).nullable().optional(),
-});
+}).openapi('CustomerUpdateRequest');
 
 const createAddressSchema = z.object({
   label: z.string().min(1).max(100),
@@ -23,7 +23,7 @@ const createAddressSchema = z.object({
   hubId: z.string().uuid().nullable().optional(),
   pickupLocationId: z.string().uuid().nullable().optional(),
   isDefault: z.boolean().optional(),
-});
+}).openapi('CustomerAddressRequest');
 
 const updateAddressSchema = z.object({
   label: z.string().min(1).max(100).optional(),
@@ -34,33 +34,113 @@ const updateAddressSchema = z.object({
   hubId: z.string().uuid().nullable().optional(),
   pickupLocationId: z.string().uuid().nullable().optional(),
   isDefault: z.boolean().optional(),
-});
+}).openapi('CustomerAddressUpdateRequest');
 
 const createContactSchema = z.object({
   name: z.string().min(1).max(100),
   phone: z.string().min(1).max(30),
   email: z.string().email().nullable().optional(),
   relationship: z.string().min(1).max(100),
-});
+}).openapi('CustomerContactRequest');
 
 const updateContactSchema = z.object({
   name: z.string().min(1).max(100).optional(),
   phone: z.string().min(1).max(30).optional(),
   email: z.string().email().nullable().optional(),
   relationship: z.string().min(1).max(100).optional(),
+}).openapi('CustomerContactUpdateRequest');
+
+defineRoute({
+  method: 'post',
+  path: '/customers/me',
+  request: { body: { content: { 'application/json': { schema: updateProfileSchema } } } },
+  responses: {
+    201: { description: 'Profile created', content: { 'application/json': { schema: z.object({ profile: z.object({ id: z.string().uuid(), userId: z.string().uuid(), phone: z.string().nullable(), createdAt: z.string().datetime(), updatedAt: z.string().datetime() }) }) } } },
+  },
 });
 
-defineRoute({ method: 'post', path: '/customers/me', request: { body: { content: { 'application/json': { schema: updateProfileSchema } } } }, responses: { 201: { description: 'created' }, 401: { description: 'unauthorized' } } });
-defineRoute({ method: 'get', path: '/customers/me', responses: { 200: { description: 'ok' } } });
-defineRoute({ method: 'put', path: '/customers/me', request: { body: { content: { 'application/json': { schema: updateProfileSchema } } } }, responses: { 200: { description: 'ok' } } });
-defineRoute({ method: 'get', path: '/customers/me/addresses', responses: { 200: { description: 'ok' } } });
-defineRoute({ method: 'post', path: '/customers/me/addresses', request: { body: { content: { 'application/json': { schema: createAddressSchema } } } }, responses: { 201: { description: 'created' } } });
-defineRoute({ method: 'put', path: '/customers/me/addresses/{id}', request: { params: z.object({ id: z.string().uuid() }), body: { content: { 'application/json': { schema: updateAddressSchema } } } }, responses: { 200: { description: 'ok' } } });
-defineRoute({ method: 'delete', path: '/customers/me/addresses/{id}', request: { params: z.object({ id: z.string().uuid() }) }, responses: { 204: { description: 'no content' } } });
-defineRoute({ method: 'get', path: '/customers/me/emergency-contacts', responses: { 200: { description: 'ok' } } });
-defineRoute({ method: 'post', path: '/customers/me/emergency-contacts', request: { body: { content: { 'application/json': { schema: createContactSchema } } } }, responses: { 201: { description: 'created' } } });
-defineRoute({ method: 'put', path: '/customers/me/emergency-contacts/{id}', request: { params: z.object({ id: z.string().uuid() }), body: { content: { 'application/json': { schema: updateContactSchema } } } }, responses: { 200: { description: 'ok' } } });
-defineRoute({ method: 'delete', path: '/customers/me/emergency-contacts/{id}', request: { params: z.object({ id: z.string().uuid() }) }, responses: { 204: { description: 'no content' } } });
+defineRoute({
+  method: 'get',
+  path: '/customers/me',
+  responses: {
+    200: { description: 'Profile retrieved', content: { 'application/json': { schema: z.object({ profile: z.object({ id: z.string().uuid(), userId: z.string().uuid(), phone: z.string().nullable(), createdAt: z.string().datetime(), updatedAt: z.string().datetime() }) }) } } },
+  },
+});
+
+defineRoute({
+  method: 'put',
+  path: '/customers/me',
+  request: { body: { content: { 'application/json': { schema: updateProfileSchema } } } },
+  responses: {
+    200: { description: 'Profile updated', content: { 'application/json': { schema: z.object({ profile: z.object({ id: z.string().uuid(), userId: z.string().uuid(), phone: z.string().nullable(), createdAt: z.string().datetime(), updatedAt: z.string().datetime() }) }) } } },
+  },
+});
+
+defineRoute({
+  method: 'get',
+  path: '/customers/me/addresses',
+  responses: {
+    200: { description: 'Addresses listed', content: { 'application/json': { schema: z.object({ addresses: z.array(z.object({ id: z.string().uuid(), customerId: z.string().uuid(), label: z.string(), line1: z.string(), line2: z.string().nullable(), city: z.string(), zoneId: z.string().uuid().nullable(), hubId: z.string().uuid().nullable(), pickupLocationId: z.string().uuid().nullable(), isDefault: z.boolean(), createdAt: z.string().datetime() })) }) } } },
+  },
+});
+
+defineRoute({
+  method: 'post',
+  path: '/customers/me/addresses',
+  request: { body: { content: { 'application/json': { schema: createAddressSchema } } } },
+  responses: {
+    201: { description: 'Address created', content: { 'application/json': { schema: z.object({ address: z.object({ id: z.string().uuid(), customerId: z.string().uuid(), label: z.string(), line1: z.string(), line2: z.string().nullable(), city: z.string(), zoneId: z.string().uuid().nullable(), hubId: z.string().uuid().nullable(), pickupLocationId: z.string().uuid().nullable(), isDefault: z.boolean(), createdAt: z.string().datetime() }) }) } } },
+  },
+});
+
+defineRoute({
+  method: 'put',
+  path: '/customers/me/addresses/{id}',
+  request: { params: z.object({ id: z.string().uuid() }), body: { content: { 'application/json': { schema: updateAddressSchema } } } },
+  responses: {
+    200: { description: 'Address updated', content: { 'application/json': { schema: z.object({ address: z.object({ id: z.string().uuid(), customerId: z.string().uuid(), label: z.string(), line1: z.string(), line2: z.string().nullable(), city: z.string(), zoneId: z.string().uuid().nullable(), hubId: z.string().uuid().nullable(), pickupLocationId: z.string().uuid().nullable(), isDefault: z.boolean(), createdAt: z.string().datetime() }) }) } } },
+  },
+});
+
+defineRoute({
+  method: 'delete',
+  path: '/customers/me/addresses/{id}',
+  request: { params: z.object({ id: z.string().uuid() }) },
+  responses: { 204: { description: 'Address deleted' } },
+});
+
+defineRoute({
+  method: 'get',
+  path: '/customers/me/emergency-contacts',
+  responses: {
+    200: { description: 'Emergency contacts listed', content: { 'application/json': { schema: z.object({ emergencyContacts: z.array(z.object({ id: z.string().uuid(), customerId: z.string().uuid(), name: z.string(), phone: z.string(), email: z.string().nullable(), relationship: z.string(), createdAt: z.string().datetime() })) }) } } },
+  },
+});
+
+defineRoute({
+  method: 'post',
+  path: '/customers/me/emergency-contacts',
+  request: { body: { content: { 'application/json': { schema: createContactSchema } } } },
+  responses: {
+    201: { description: 'Emergency contact created', content: { 'application/json': { schema: z.object({ contact: z.object({ id: z.string().uuid(), customerId: z.string().uuid(), name: z.string(), phone: z.string(), email: z.string().nullable(), relationship: z.string(), createdAt: z.string().datetime() }) }) } } },
+  },
+});
+
+defineRoute({
+  method: 'put',
+  path: '/customers/me/emergency-contacts/{id}',
+  request: { params: z.object({ id: z.string().uuid() }), body: { content: { 'application/json': { schema: updateContactSchema } } } },
+  responses: {
+    200: { description: 'Emergency contact updated', content: { 'application/json': { schema: z.object({ contact: z.object({ id: z.string().uuid(), customerId: z.string().uuid(), name: z.string(), phone: z.string(), email: z.string().nullable(), relationship: z.string(), createdAt: z.string().datetime() }) }) } } },
+  },
+});
+
+defineRoute({
+  method: 'delete',
+  path: '/customers/me/emergency-contacts/{id}',
+  request: { params: z.object({ id: z.string().uuid() }) },
+  responses: { 204: { description: 'Emergency contact deleted' } },
+});
 
 export function customerRouter(db: Db): Router {
   const router = Router();

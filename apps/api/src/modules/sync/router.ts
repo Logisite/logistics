@@ -11,11 +11,11 @@ import { defineRoute } from '../../openapi/registry.js';
 const pushSchema = z.object({
   deviceId: z.string().uuid(),
   ops: z.array(z.object({ seq: z.number().int().min(0), opId: z.string().uuid(), action: z.string(), entity: z.string(), entityId: z.string().uuid().optional(), payload: z.unknown() })).min(1),
-});
+}).openapi('SyncPushRequest');
 
-defineRoute({ method: 'post', path: '/sync/push', request: { body: { content: { 'application/json': { schema: pushSchema } } } }, responses: { 200: { description: 'ok' } } });
-defineRoute({ method: 'get', path: '/sync/pending/{deviceId}', request: { params: z.object({ deviceId: z.string().uuid() }) }, responses: { 200: { description: 'ok' } } });
-defineRoute({ method: 'get', path: '/sync/static', responses: { 200: { description: 'ok' } } });
+defineRoute({ method: 'post', path: '/sync/push', request: { body: { content: { 'application/json': { schema: pushSchema } } } }, responses: { 200: { description: 'Push results', content: { 'application/json': { schema: z.object({ results: z.array(z.object({ seq: z.number(), opId: z.string(), status: z.string() })) }).openapi('SyncPushResponse') } } } } });
+defineRoute({ method: 'get', path: '/sync/pending/{deviceId}', request: { params: z.object({ deviceId: z.string().uuid() }) }, responses: { 200: { description: 'Pending operations', content: { 'application/json': { schema: z.object({ ops: z.array(z.object({ id: z.string(), deviceId: z.string(), seq: z.number(), opId: z.string(), action: z.string(), entity: z.string(), entityId: z.string().nullable(), payload: z.unknown(), status: z.string(), createdAt: z.string() })) }).openapi('SyncPendingResponse') } } } } });
+defineRoute({ method: 'get', path: '/sync/static', responses: { 200: { description: 'Static reference data', content: { 'application/json': { schema: z.object({ hubs: z.array(z.unknown()), zones: z.array(z.unknown()), pricingRules: z.array(z.unknown()), deliveryOptions: z.array(z.unknown()), version: z.string().nullable() }).openapi('SyncStaticResponse') } } } } });
 
 export function syncRouter(db: Db): Router {
   const router = Router();

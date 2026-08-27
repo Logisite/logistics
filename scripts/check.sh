@@ -33,3 +33,4 @@ run "openapi drift gate" bash -c '
     exit 1
   }
 '
+run "openapi quality gate" bash scripts/validate-openapi.sh

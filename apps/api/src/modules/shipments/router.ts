@@ -14,11 +14,31 @@ import type { ShipmentStatus } from './transitions.js';
 import { notifyTransition } from '../notifications/index.js';
 import { defineRoute } from '../../openapi/registry.js';
 
+const ShipmentRowSchema = z.object({
+  id: z.string().uuid(),
+  status: z.string(),
+  senderName: z.string(),
+  recipientName: z.string(),
+  senderUserId: z.string().uuid(),
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
+}).openapi('ShipmentResponse');
+
+const ShipmentEventRowSchema = z.object({
+  id: z.string().uuid(),
+  shipmentId: z.string().uuid(),
+  fromStatus: z.string(),
+  toStatus: z.string(),
+  locationLabel: z.string().nullable(),
+  reason: z.string().nullable(),
+  occurredAt: z.string().datetime(),
+}).openapi('ShipmentEventResponse');
+
 const transitionBodySchema = z.object({
   locationLabel: z.string().max(500).optional(),
   reason: z.string().max(500).optional(),
   metadata: z.record(z.unknown()).optional(),
-});
+}).openapi('ShipmentTransitionRequest');
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -49,33 +69,53 @@ const patchSchema = z.object({
   recipientPhone: z.string().max(50).nullable().optional(),
   deliveryOptionId: z.string().uuid().optional(),
   pickupLocationId: z.string().uuid().optional(),
-});
+}).openapi('ShipmentPatchRequest');
 
 for (const [path] of ACTION_ROUTES) {
   defineRoute({
     method: 'post',
     path: `/shipments/{id}/${path}`,
     request: { params: z.object({ id: z.string().uuid() }), body: { content: { 'application/json': { schema: transitionBodySchema } } } },
-    responses: { 200: { description: 'ok' }, 401: { description: 'unauthorized' }, 403: { description: 'forbidden' }, 409: { description: 'invalid transition' } },
+    responses: {
+      200: {
+        description: 'Transition result',
+        content: { 'application/json': { schema: z.object({ shipment: ShipmentRowSchema, event: ShipmentEventRowSchema.nullable() }) } },
+      },
+    },
   });
 }
 defineRoute({
   method: 'patch',
   path: '/shipments/{id}/cancel',
   request: { params: z.object({ id: z.string().uuid() }), body: { content: { 'application/json': { schema: transitionBodySchema } } } },
-  responses: { 200: { description: 'ok' }, 401: { description: 'unauthorized' } },
+  responses: {
+    200: {
+      description: 'Cancel result',
+      content: { 'application/json': { schema: z.object({ shipment: ShipmentRowSchema, event: ShipmentEventRowSchema.nullable() }) } },
+    },
+  },
 });
 defineRoute({
   method: 'get',
   path: '/shipments/{id}/events',
   request: { params: z.object({ id: z.string().uuid() }) },
-  responses: { 200: { description: 'ok' }, 401: { description: 'unauthorized' }, 404: { description: 'not found' } },
+  responses: {
+    200: {
+      description: 'Shipment with events',
+      content: { 'application/json': { schema: z.object({ shipment: ShipmentRowSchema, events: ShipmentEventRowSchema.array() }) } },
+    },
+  },
 });
 defineRoute({
   method: 'patch',
   path: '/shipments/{id}',
   request: { params: z.object({ id: z.string().uuid() }), body: { content: { 'application/json': { schema: patchSchema } } } },
-  responses: { 200: { description: 'ok' }, 401: { description: 'unauthorized' }, 409: { description: 'locked' } },
+  responses: {
+    200: {
+      description: 'Patched shipment',
+      content: { 'application/json': { schema: z.object({ shipment: ShipmentRowSchema }) } },
+    },
+  },
 });
 
 export function shipmentsRouter(db: Db, mailer?: Mailer): Router {

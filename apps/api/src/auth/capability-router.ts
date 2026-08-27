@@ -16,12 +16,12 @@ import { mintShadow, isShadowExpired } from './shadows.js';
 import { parsePhone } from './phone.js';
 import { writeAudit } from './audit.js';
 
-const revokeSchema = z.object({ reason: z.string().max(500).optional() });
+const revokeSchema = z.object({ reason: z.string().max(500).optional() }).openapi('CapabilityRevokeRequest');
 
-defineRoute({ method: 'get', path: '/capability/{nonce}', responses: { 200: { description: 'ok' }, 404: { description: 'not found' } } });
-defineRoute({ method: 'post', path: '/capability/{nonce}/book', responses: { 200: { description: 'ok' }, 409: { description: 'conflict' } } });
-defineRoute({ method: 'get', path: '/capability/{nonce}/track', responses: { 200: { description: 'ok' }, 404: { description: 'not found' } } });
-defineRoute({ method: 'post', path: '/capability/{nonce}/revoke', request: { body: { content: { 'application/json': { schema: revokeSchema } } } }, responses: { 204: { description: 'revoked' } } });
+defineRoute({ method: 'get', path: '/capability/{nonce}', summary: 'Inspect capability link', security: [], request: { params: z.object({ nonce: z.string() }) }, responses: { 200: { description: 'ok', content: { 'application/json': { schema: z.object({ action: z.string(), expiresAt: z.string() }).openapi('CapabilityInspectResponse') } } } } });
+defineRoute({ method: 'post', path: '/capability/{nonce}/book', summary: 'Book via capability link', security: [], request: { params: z.object({ nonce: z.string() }) }, responses: { 200: { description: 'ok', content: { 'application/json': { schema: z.object({ accessToken: z.string(), refreshToken: z.string(), session: z.object({ id: z.string(), createdAt: z.string() }), shadowUser: z.object({ id: z.string(), isNew: z.boolean() }) }).openapi('CapabilityBookResponse') } } } } });
+defineRoute({ method: 'get', path: '/capability/{nonce}/track', summary: 'Track shipment via capability link', security: [], request: { params: z.object({ nonce: z.string() }) }, responses: { 200: { description: 'ok', content: { 'application/json': { schema: z.object({ shipment: z.object({ id: z.string(), status: z.string(), senderName: z.string(), recipientName: z.string(), createdAt: z.string(), updatedAt: z.string() }) }).openapi('CapabilityTrackResponse') } } } } });
+defineRoute({ method: 'post', path: '/capability/{nonce}/revoke', summary: 'Revoke capability link', request: { params: z.object({ nonce: z.string() }), body: { content: { 'application/json': { schema: revokeSchema } } } }, responses: { 204: { description: 'revoked' } } });
 
 export function capabilityRouter(db: Db): Router {
   const router = Router();

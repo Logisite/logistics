@@ -19,21 +19,21 @@ const createHubSchema = z.object({
   name: z.string().min(1).max(200),
   code: z.string().min(1).max(50),
   address: z.string().min(1).max(500),
-});
+}).openapi('HubRequest');
 
 const updateHubSchema = z.object({
   name: z.string().min(1).max(200).optional(),
   code: z.string().min(1).max(50).optional(),
   address: z.string().min(1).max(500).optional(),
   isActive: z.boolean().optional(),
-});
+}).openapi('HubUpdateRequest');
 
 const createPickupLocationSchema = z.object({
   hubId: z.string().uuid().nullable().optional(),
   zoneId: z.string().uuid().nullable().optional(),
   name: z.string().min(1).max(200),
   address: z.string().min(1).max(500),
-});
+}).openapi('PickupLocationRequest');
 
 const updatePickupLocationSchema = z.object({
   hubId: z.string().uuid().nullable().optional(),
@@ -41,28 +41,151 @@ const updatePickupLocationSchema = z.object({
   name: z.string().min(1).max(200).optional(),
   address: z.string().min(1).max(500).optional(),
   isActive: z.boolean().optional(),
-});
+}).openapi('PickupLocationUpdateRequest');
 
 const createZoneSchema = z.object({
   hubId: z.string().uuid(),
   name: z.string().min(1).max(200),
   description: z.string().max(1000).nullable().optional(),
-});
+}).openapi('ZoneRequest');
 
 const updateZoneSchema = z.object({
   name: z.string().min(1).max(200).optional(),
   description: z.string().max(1000).nullable().optional(),
   isActive: z.boolean().optional(),
+}).openapi('ZoneUpdateRequest');
+
+defineRoute({
+  method: 'get',
+  path: '/locations/hubs',
+  responses: {
+    200: { description: 'List hubs', content: { 'application/json': { schema: z.object({ hubs: z.array(z.object({ id: z.string().uuid(), name: z.string(), code: z.string(), address: z.string(), isActive: z.boolean(), location: z.any().nullable(), createdAt: z.string().datetime(), updatedAt: z.string().datetime() })) }) } } },
+  },
 });
 
-defineRoute({ method: 'get', path: '/locations/hubs', responses: { 200: { description: 'ok' } } });
-defineRoute({ method: 'post', path: '/locations/hubs', request: { body: { content: { 'application/json': { schema: createHubSchema } } } }, responses: { 201: { description: 'created' } } });
-defineRoute({ method: 'put', path: '/locations/hubs/{id}', request: { params: z.object({ id: z.string().uuid() }), body: { content: { 'application/json': { schema: updateHubSchema } } } }, responses: { 200: { description: 'ok' } } });
-defineRoute({ method: 'delete', path: '/locations/hubs/{id}', request: { params: z.object({ id: z.string().uuid() }) }, responses: { 200: { description: 'ok' } } });
-defineRoute({ method: 'get', path: '/locations/pickup-points', responses: { 200: { description: 'ok' } } });
-defineRoute({ method: 'post', path: '/locations/pickup-points', request: { body: { content: { 'application/json': { schema: createPickupLocationSchema } } } }, responses: { 201: { description: 'created' } } });
-defineRoute({ method: 'get', path: '/locations/zones', responses: { 200: { description: 'ok' } } });
-defineRoute({ method: 'post', path: '/locations/zones', request: { body: { content: { 'application/json': { schema: createZoneSchema } } } }, responses: { 201: { description: 'created' } } });
+defineRoute({
+  method: 'post',
+  path: '/locations/hubs',
+  request: { body: { content: { 'application/json': { schema: createHubSchema } } } },
+  responses: {
+    201: { description: 'Hub created', content: { 'application/json': { schema: z.object({ hub: z.object({ id: z.string().uuid(), name: z.string(), code: z.string(), address: z.string(), isActive: z.boolean(), location: z.any().nullable(), createdAt: z.string().datetime(), updatedAt: z.string().datetime() }) }) } } },
+  },
+});
+
+defineRoute({
+  method: 'put',
+  path: '/locations/hubs/{id}',
+  request: { params: z.object({ id: z.string().uuid() }), body: { content: { 'application/json': { schema: updateHubSchema } } } },
+  responses: {
+    200: { description: 'Hub updated', content: { 'application/json': { schema: z.object({ hub: z.object({ id: z.string().uuid(), name: z.string(), code: z.string(), address: z.string(), isActive: z.boolean(), location: z.any().nullable(), createdAt: z.string().datetime(), updatedAt: z.string().datetime() }) }) } } },
+  },
+});
+
+defineRoute({
+  method: 'delete',
+  path: '/locations/hubs/{id}',
+  request: { params: z.object({ id: z.string().uuid() }) },
+  responses: {
+    200: { description: 'Hub deleted', content: { 'application/json': { schema: z.object({ hub: z.object({ id: z.string().uuid(), name: z.string(), code: z.string(), address: z.string(), isActive: z.boolean() }) }) } } },
+  },
+});
+
+defineRoute({
+  method: 'get',
+  path: '/locations/pickup-points',
+  responses: {
+    200: { description: 'List pickup locations', content: { 'application/json': { schema: z.object({ pickupLocations: z.array(z.object({ id: z.string().uuid(), hubId: z.string().uuid().nullable(), zoneId: z.string().uuid().nullable(), name: z.string(), address: z.string(), isActive: z.boolean(), location: z.any().nullable(), createdAt: z.string().datetime(), updatedAt: z.string().datetime() })) }) } } },
+  },
+});
+
+defineRoute({
+  method: 'post',
+  path: '/locations/pickup-points',
+  request: { body: { content: { 'application/json': { schema: createPickupLocationSchema } } } },
+  responses: {
+    201: { description: 'Pickup location created', content: { 'application/json': { schema: z.object({ pickupLocation: z.object({ id: z.string().uuid(), hubId: z.string().uuid().nullable(), zoneId: z.string().uuid().nullable(), name: z.string(), address: z.string(), isActive: z.boolean(), location: z.any().nullable(), createdAt: z.string().datetime(), updatedAt: z.string().datetime() }) }) } } },
+  },
+});
+
+defineRoute({
+  method: 'get',
+  path: '/locations/zones',
+  responses: {
+    200: { description: 'List zones', content: { 'application/json': { schema: z.object({ zones: z.array(z.object({ id: z.string().uuid(), hubId: z.string().uuid(), name: z.string(), description: z.string().nullable(), isActive: z.boolean(), createdAt: z.string().datetime(), updatedAt: z.string().datetime() })) }) } } },
+  },
+});
+
+defineRoute({
+  method: 'post',
+  path: '/locations/zones',
+  request: { body: { content: { 'application/json': { schema: createZoneSchema } } } },
+  responses: {
+    201: { description: 'Zone created', content: { 'application/json': { schema: z.object({ zone: z.object({ id: z.string().uuid(), hubId: z.string().uuid(), name: z.string(), description: z.string().nullable(), isActive: z.boolean(), createdAt: z.string().datetime(), updatedAt: z.string().datetime() }) }) } } },
+  },
+});
+
+defineRoute({
+  method: 'put',
+  path: '/locations/pickup-points/{id}',
+  request: { params: z.object({ id: z.string().uuid() }), body: { content: { 'application/json': { schema: updatePickupLocationSchema } } } },
+  responses: {
+    200: { description: 'Pickup location updated', content: { 'application/json': { schema: z.object({ pickupLocation: z.object({ id: z.string().uuid(), hubId: z.string().uuid().nullable(), zoneId: z.string().uuid().nullable(), name: z.string(), address: z.string(), isActive: z.boolean(), location: z.any().nullable(), createdAt: z.string().datetime(), updatedAt: z.string().datetime() }) }) } } },
+  },
+});
+
+defineRoute({
+  method: 'delete',
+  path: '/locations/pickup-points/{id}',
+  request: { params: z.object({ id: z.string().uuid() }) },
+  responses: {
+    200: { description: 'Pickup location deleted', content: { 'application/json': { schema: z.object({ pickupLocation: z.object({ id: z.string().uuid(), hubId: z.string().uuid().nullable(), zoneId: z.string().uuid().nullable(), name: z.string(), address: z.string(), isActive: z.boolean() }) }) } } },
+  },
+});
+
+defineRoute({
+  method: 'put',
+  path: '/locations/zones/{id}',
+  request: { params: z.object({ id: z.string().uuid() }), body: { content: { 'application/json': { schema: updateZoneSchema } } } },
+  responses: {
+    200: { description: 'Zone updated', content: { 'application/json': { schema: z.object({ zone: z.object({ id: z.string().uuid(), hubId: z.string().uuid(), name: z.string(), description: z.string().nullable(), isActive: z.boolean(), createdAt: z.string().datetime(), updatedAt: z.string().datetime() }) }) } } },
+  },
+});
+
+defineRoute({
+  method: 'delete',
+  path: '/locations/zones/{id}',
+  request: { params: z.object({ id: z.string().uuid() }) },
+  responses: {
+    200: { description: 'Zone deleted', content: { 'application/json': { schema: z.object({ zone: z.object({ id: z.string().uuid(), hubId: z.string().uuid(), name: z.string(), description: z.string().nullable(), isActive: z.boolean() }) }) } } },
+  },
+});
+
+defineRoute({
+  method: 'get',
+  path: '/locations/public/hubs',
+  security: [],
+  responses: {
+    200: { description: 'List active hubs', content: { 'application/json': { schema: z.object({ hubs: z.array(z.object({ id: z.string().uuid(), name: z.string(), code: z.string(), address: z.string() })) }) } } },
+  },
+});
+
+defineRoute({
+  method: 'get',
+  path: '/locations/public/pickup-points',
+  security: [],
+  responses: {
+    200: { description: 'List active pickup locations', content: { 'application/json': { schema: z.object({ pickupLocations: z.array(z.object({ id: z.string().uuid(), name: z.string(), address: z.string(), hubId: z.string().uuid().nullable(), zoneId: z.string().uuid().nullable() })) }) } } },
+  },
+});
+
+defineRoute({
+  method: 'get',
+  path: '/locations/public/zones',
+  security: [],
+  responses: {
+    200: { description: 'List active zones', content: { 'application/json': { schema: z.object({ zones: z.array(z.object({ id: z.string().uuid(), name: z.string(), hubId: z.string().uuid(), description: z.string().nullable() })) }) } } },
+  },
+});
 
 // ---------------------------------------------------------------------------
 // Router
