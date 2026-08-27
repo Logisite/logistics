@@ -4,8 +4,8 @@ import { addresses, customerProfiles, emergencyContacts } from '@logistics/db';
 
 import { writeAudit } from '../auth/audit.js';
 import type { AuthContext } from '../auth/middleware.js';
-import type { Db } from '../db.js';
-import { conflict, notFound } from '../errors.js';
+import type { Db } from '../shared/db.js';
+import { conflict, notFound } from '../shared/errors.js';
 
 // ---------------------------------------------------------------------------
 // Profile

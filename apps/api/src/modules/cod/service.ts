@@ -12,11 +12,11 @@ import {
   shipments,
 } from '@logistics/db';
 
-import { getConfig } from '../../config.js';
+import { getConfig } from '../../shared/config.js';
 import { writeAudit } from '../../auth/audit.js';
 import type { AuthContext } from '../../auth/middleware.js';
-import type { Db } from '../../db.js';
-import { badRequest, conflict, notFound } from '../../errors.js';
+import type { Db } from '../../shared/db.js';
+import { badRequest, conflict, notFound } from '../../shared/errors.js';
 
 import { convertCents } from './fx.js';
 

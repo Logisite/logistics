@@ -4,8 +4,8 @@ import { shipments, shipmentEvents } from '@logistics/db';
 
 import { writeAudit } from '../../auth/audit.js';
 import type { AuthContext } from '../../auth/middleware.js';
-import type { Db } from '../../db.js';
-import { conflict, forbidden, notFound } from '../../errors.js';
+import type { Db } from '../../shared/db.js';
+import { conflict, forbidden, notFound } from '../../shared/errors.js';
 
 import { canTransition } from './transitions.js';
 import type { ShipmentStatus } from './transitions.js';

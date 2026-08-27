@@ -1,8 +1,8 @@
 import { Router } from 'express';
 import { z } from 'zod';
 
-import type { Db } from '../../db.js';
-import { badRequest } from '../../errors.js';
+import type { Db } from '../../shared/db.js';
+import { badRequest } from '../../shared/errors.js';
 import { requireAuth } from '../../auth/middleware.js';
 
 import * as service from './service.js';

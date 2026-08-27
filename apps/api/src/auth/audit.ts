@@ -1,6 +1,6 @@
 import { auditLog } from '@logistics/db';
 
-import type { Db } from '../db.js';
+import type { Db } from '../shared/db.js';
 
 export interface AuditEntry {
   action: string;

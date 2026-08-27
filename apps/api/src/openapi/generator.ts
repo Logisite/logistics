@@ -1,6 +1,6 @@
 import { OpenApiGeneratorV31 } from '@asteasolutions/zod-to-openapi';
 
-import { getConfig } from '../config.js';
+import { getConfig } from '../shared/config.js';
 import { registry, API, defineRoute } from './registry.js';
 import pkg from '../../package.json' with { type: 'json' };
 

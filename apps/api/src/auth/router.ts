@@ -3,8 +3,8 @@ import { z } from 'zod';
 import { eq } from 'drizzle-orm';
 import { sessions, users } from '@logistics/db';
 
-import type { Db } from '../db.js';
-import { badRequest } from '../errors.js';
+import type { Db } from '../shared/db.js';
+import { badRequest } from '../shared/errors.js';
 
 import type { Mailer } from './emails.js';
 import type { AuthContext } from './middleware.js';
@@ -13,14 +13,14 @@ import { requireAuth, requirePermission } from './middleware.js';
 import { PERMISSIONS, ROLE_NAMES, ROLE_PRIORITY, type RoleName } from './permissions.js';
 import * as service from './service.js';
 import { loadGrantedRoles } from './service.js';
-import { parse } from '../validate.js';
+import { parse } from '../shared/validate.js';
 import { requestOtp, verifyOtp } from './phone-verification.js';
 import { parsePhone } from './phone.js';
 import { upgradeShadow, markLastVerified } from './shadows.js';
 import { signAccessToken, generateOpaqueToken, hashOpaqueToken } from './tokens.js';
 import { hashPassword } from './passwords.js';
 import { createSmsProvider } from './sms.js';
-import { getConfig } from '../config.js';
+import { getConfig } from '../shared/config.js';
 
 const registerSchema = z.object({
   email: z.string().email(),

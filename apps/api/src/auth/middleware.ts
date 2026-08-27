@@ -4,9 +4,9 @@ import { and, eq } from 'drizzle-orm';
 
 import { roleGrants, roles, users } from '@logistics/db';
 
-import { getConfig } from '../config.js';
-import type { Db } from '../db.js';
-import { forbidden, unauthorized } from '../errors.js';
+import { getConfig } from '../shared/config.js';
+import type { Db } from '../shared/db.js';
+import { forbidden, unauthorized } from '../shared/errors.js';
 
 import type { Permission, RoleName } from './permissions.js';
 import { verifyAccessToken } from './tokens.js';

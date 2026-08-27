@@ -3,7 +3,7 @@ import { or, sql, eq, and } from 'drizzle-orm';
 
 import { contactIdentities } from '@logistics/db';
 
-import type { Db } from '../../db.js';
+import type { Db } from '../../shared/db.js';
 import { requireAuth } from '../../auth/middleware.js';
 import { defineRoute } from '../../openapi/registry.js';
 

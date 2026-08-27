@@ -2,8 +2,8 @@ import { and, eq } from 'drizzle-orm';
 
 import { roleBundles, roleGrants, roles, users } from '@logistics/db';
 
-import { getConfig } from '../config.js';
-import type { Db } from '../db.js';
+import { getConfig } from '../shared/config.js';
+import type { Db } from '../shared/db.js';
 
 import { writeAudit } from './audit.js';
 import { hashPassword } from './passwords.js';

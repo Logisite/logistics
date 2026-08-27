@@ -3,9 +3,9 @@ import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 import { and, eq, isNull } from 'drizzle-orm';
 import { capabilityLinks } from '@logistics/db';
 
-import { getConfig } from '../config.js';
-import type { Db } from '../db.js';
-import { badRequest, conflict, forbidden, notFound } from '../errors.js';
+import { getConfig } from '../shared/config.js';
+import type { Db } from '../shared/db.js';
+import { badRequest, conflict, forbidden, notFound } from '../shared/errors.js';
 import { writeAudit } from './audit.js';
 
 export type CapabilityAction = 'BOOKING' | 'TRACKING' | 'CLAIM';

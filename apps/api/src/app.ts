@@ -16,11 +16,11 @@ import { syncRouter } from './modules/sync/index.js';
 import { generateSpec } from './openapi/generator.js';
 import { requireAuth, requirePermission } from './auth/middleware.js';
 import { PERMISSIONS } from './auth/permissions.js';
-import type { Db } from './db.js';
+import type { Db } from './shared/db.js';
 import { API } from './openapi/registry.js';
 import pkg from '../package.json' with { type: 'json' };
-import { HttpError } from './errors.js';
-import { getConfig } from './config.js';
+import { HttpError } from './shared/errors.js';
+import { getConfig } from './shared/config.js';
 
 export interface AppDeps {
   db: Db;
