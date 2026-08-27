@@ -1,5 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
+import { eq } from 'drizzle-orm';
+import { sessions, users } from '@logistics/db';
 
 import type { Db } from '../db.js';
 import { badRequest } from '../errors.js';
@@ -8,9 +10,17 @@ import type { Mailer } from './emails.js';
 import type { AuthContext } from './middleware.js';
 import { defineRoute } from '../openapi/registry.js';
 import { requireAuth, requirePermission } from './middleware.js';
-import { PERMISSIONS, ROLE_NAMES } from './permissions.js';
+import { PERMISSIONS, ROLE_NAMES, ROLE_PRIORITY, type RoleName } from './permissions.js';
 import * as service from './service.js';
+import { loadGrantedRoles } from './service.js';
 import { parse } from '../validate.js';
+import { requestOtp, verifyOtp } from './phone-verification.js';
+import { parsePhone } from './phone.js';
+import { upgradeShadow, markLastVerified } from './shadows.js';
+import { signAccessToken, generateOpaqueToken, hashOpaqueToken } from './tokens.js';
+import { hashPassword } from './passwords.js';
+import { createSmsProvider } from './sms.js';
+import { getConfig } from '../config.js';
 
 const registerSchema = z.object({
   email: z.string().email(),
@@ -61,6 +71,14 @@ defineRoute({ method: 'delete', path: '/auth/bundles/{id}', request: { params: z
 defineRoute({ method: 'post', path: '/auth/bundles/{id}/apply', request: { params: z.object({ id: z.string().uuid() }), body: { content: { 'application/json': { schema: bundleApplySchema } } } }, responses: { 200: { description: 'ok' } } });
 defineRoute({ method: 'post', path: '/auth/forgot-password', request: { body: { content: { 'application/json': { schema: forgotSchema } } } }, responses: { 202: { description: 'accepted' } } });
 defineRoute({ method: 'post', path: '/auth/reset-password', request: { body: { content: { 'application/json': { schema: resetSchema } } } }, responses: { 200: { description: 'ok' } } });
+
+const otpRequestSchema = z.object({ phone: z.string().min(1) });
+const otpVerifySchema = z.object({ phone: z.string().min(1), code: z.string().length(6) });
+const otpUpgradeSchema = z.object({ password: z.string().min(8).max(72) });
+
+defineRoute({ method: 'post', path: '/auth/otp/request', request: { body: { content: { 'application/json': { schema: otpRequestSchema } } } }, responses: { 200: { description: 'ok' }, 429: { description: 'rate limited' } } });
+defineRoute({ method: 'post', path: '/auth/otp/verify', request: { body: { content: { 'application/json': { schema: otpVerifySchema } } } }, responses: { 200: { description: 'ok' }, 400: { description: 'invalid code' } } });
+defineRoute({ method: 'post', path: '/auth/otp/upgrade', request: { body: { content: { 'application/json': { schema: otpUpgradeSchema } } } }, responses: { 200: { description: 'ok' }, 403: { description: 'not a shadow' } } });
 
 export function authRouter(db: Db, mailer: Mailer): Router {
   const router = Router();
@@ -189,6 +207,67 @@ export function authRouter(db: Db, mailer: Mailer): Router {
     const { token, newPassword } = parse(resetSchema, req.body);
     await service.resetPassword(db, token, newPassword);
     res.json({ ok: true });
+  });
+
+  router.post('/otp/request', async (req, res) => {
+    const { phone } = parse(otpRequestSchema, req.body);
+    const parsed = parsePhone(phone);
+    const sms = createSmsProvider();
+    const result = await requestOtp(db, sms, parsed.phone, 'login');
+    res.json(result);
+  });
+
+  router.post('/otp/verify', async (req, res) => {
+    const { phone, code } = parse(otpVerifySchema, req.body);
+    const parsed = parsePhone(phone);
+    const result = await verifyOtp(db, parsed.phone, code, 'login', parsed.country);
+
+    const config = getConfig();
+    const granted = await loadGrantedRoles(db, result.userId);
+    const actingRole = granted
+      .map((g) => ({ name: g.name, priority: ROLE_PRIORITY.indexOf(g.name) }))
+      .filter((e) => e.priority !== -1)
+      .sort((a, b) => a.priority - b.priority)[0]?.name;
+
+    if (!actingRole) {
+      res.status(403).json({ error: { code: 'NO_ROLE', message: 'Account has no roles' } });
+      return;
+    }
+
+    await markLastVerified(db, result.userId);
+
+    const refreshToken = generateOpaqueToken();
+    const sessionRows = await db.insert(sessions).values({
+      userId: result.userId,
+      refreshTokenHash: hashOpaqueToken(refreshToken, config.jwtRefreshSecret),
+      roleName: actingRole as RoleName,
+      expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+      lastUsedAt: new Date(),
+    }).returning({ id: sessions.id, createdAt: sessions.createdAt });
+
+    const session = sessionRows[0];
+    if (!session) {
+      res.status(500).json({ error: { code: 'INTERNAL', message: 'Failed to create session' } });
+      return;
+    }
+
+    const accessToken = await signAccessToken(
+      { sub: result.userId, email: '', role: actingRole as RoleName, jti: session.id },
+      config.jwtAccessSecret,
+      config.jwtAccessTtl,
+    );
+
+    res.json({ accessToken, refreshToken, session: { id: session.id, createdAt: session.createdAt } });
+  });
+
+  router.post('/otp/upgrade', requireAuth(db), async (req, res) => {
+    const ctx = res.locals.auth as AuthContext;
+    const { password } = parse(otpUpgradeSchema, req.body);
+
+    const passwordHash = await hashPassword(password);
+    await db.update(users).set({ passwordHash }).where(eq(users.id, ctx.userId));
+    await upgradeShadow(db, ctx.userId);
+    res.json({ upgraded: true });
   });
 
   return router;

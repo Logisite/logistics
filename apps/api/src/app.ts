@@ -3,6 +3,7 @@ import type { ErrorRequestHandler, Express } from 'express';
 
 import { authRouter } from './auth/router.js';
 import type { Mailer } from './auth/emails.js';
+import { capabilityRouter } from './auth/capability-router.js';
 import { customerRouter } from './customers/router.js';
 import { locationRouter } from './locations/router.js';
 import { merchantRouter } from './merchants/router.js';
@@ -73,6 +74,7 @@ export function createApp({ db, mailer }: AppDeps): Express {
   });
 
   app.use(`${API}/auth`, authRouter(db, mailer));
+  app.use(`${API}/capability`, capabilityRouter(db));
   app.use(`${API}/customers`, customerRouter(db));
   app.use(`${API}/locations`, locationRouter(db));
   app.use(`${API}/merchants`, merchantRouter(db));

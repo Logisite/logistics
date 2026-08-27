@@ -12,6 +12,11 @@ export interface AppConfig {
   bootstrapOwnerEmail?: string;
   bootstrapOwnerPassword?: string;
   mapboxAccessToken: string;
+  capabilityLinkSecret: string;
+  shadowAccountTtlDays: number;
+  smsAccountSid?: string;
+  smsAuthToken?: string;
+  smsFromNumber?: string;
 }
 
 export function getConfig(): AppConfig {
@@ -23,6 +28,7 @@ export function getConfig(): AppConfig {
   const appUrl = process.env.APP_URL;
   const mailFrom = process.env.MAIL_FROM;
   const resendApiKey = process.env.RESEND_API_KEY;
+  const capabilityLinkSecret = process.env.CAPABILITY_LINK_SECRET;
 
   if (isProd) {
     const missing = [
@@ -31,6 +37,7 @@ export function getConfig(): AppConfig {
       !appUrl && 'APP_URL',
       !mailFrom && 'MAIL_FROM',
       !resendApiKey && 'RESEND_API_KEY',
+      !capabilityLinkSecret && 'CAPABILITY_LINK_SECRET',
     ].filter(Boolean);
     if (missing.length > 0) {
       throw new Error(`Missing required env vars when NODE_ENV=production: ${missing.join(', ')}`);
@@ -58,5 +65,10 @@ export function getConfig(): AppConfig {
     bootstrapOwnerEmail: process.env.BOOTSTRAP_OWNER_EMAIL,
     bootstrapOwnerPassword: process.env.BOOTSTRAP_OWNER_PASSWORD,
     mapboxAccessToken: process.env.MAPBOX_ACCESS_TOKEN ?? '',
+    capabilityLinkSecret: process.env.CAPABILITY_LINK_SECRET ?? '',
+    shadowAccountTtlDays: Number(process.env.SHADOW_ACCOUNT_TTL_DAYS ?? 90),
+    smsAccountSid: process.env.SMS_ACCOUNT_SID,
+    smsAuthToken: process.env.SMS_AUTH_TOKEN,
+    smsFromNumber: process.env.SMS_FROM_NUMBER,
   };
 }

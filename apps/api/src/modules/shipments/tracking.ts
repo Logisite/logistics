@@ -1,5 +1,7 @@
 import { Router } from 'express';
-import { or, sql } from 'drizzle-orm';
+import { or, sql, eq, and } from 'drizzle-orm';
+
+import { contactIdentities } from '@logistics/db';
 
 import type { Db } from '../../db.js';
 import { requireAuth } from '../../auth/middleware.js';
@@ -14,12 +16,27 @@ export function trackingRouter(db: Db): Router {
     const ctx = res.locals.auth as { userId: string; email: string };
     const email = ctx.email.toLowerCase();
 
+    const phoneRows = await db
+      .select({ identifier: contactIdentities.identifier })
+      .from(contactIdentities)
+      .where(
+        and(
+          eq(contactIdentities.userId, ctx.userId),
+          eq(contactIdentities.channel, 'PHONE'),
+        ),
+      );
+
+    const phones = phoneRows.map((r) => r.identifier);
+    const phoneSet = new Set(phones.map((p) => p.toLowerCase()));
+
     const rows = await db.query.shipments.findMany({
       where: (t, { eq: eq }) =>
         or(
           eq(t.senderUserId, ctx.userId),
           sql`lower(${t.senderEmail}) = ${email}`,
           sql`lower(${t.recipientEmail}) = ${email}`,
+          phones.length > 0 ? sql`${t.senderPhone} = ANY(${phones})` : sql`false`,
+          phones.length > 0 ? sql`${t.recipientPhone} = ANY(${phones})` : sql`false`,
         ),
       orderBy: (t, { desc }) => [desc(t.createdAt)],
     });
@@ -27,7 +44,8 @@ export function trackingRouter(db: Db): Router {
     const tagged = rows.map((shipment) => ({
       role:
         shipment.senderUserId === ctx.userId ||
-        shipment.senderEmail?.toLowerCase() === email
+        shipment.senderEmail?.toLowerCase() === email ||
+        (shipment.senderPhone && phoneSet.has(shipment.senderPhone.toLowerCase()))
           ? ('sender' as const)
           : ('recipient' as const),
       shipment,

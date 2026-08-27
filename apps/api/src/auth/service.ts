@@ -33,7 +33,7 @@ function parseTtlMs(ttl: string): number {
   return amount * multiplier[unit]!;
 }
 
-async function loadGrantedRoles(db: Db, userId: string): Promise<Array<{ id: string; name: RoleName }>> {
+export async function loadGrantedRoles(db: Db, userId: string): Promise<Array<{ id: string; name: RoleName }>> {
   const rows = await db
     .select({ id: roles.id, name: roles.name })
     .from(roleGrants)

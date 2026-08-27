@@ -46,3 +46,17 @@ export const deliveryOptionEnum = pgEnum('delivery_option', [
   'PICKUP_AT_LOCATION',
   'DROP_OFF_AT_LOCATION',
 ]);
+
+export const contactChannelEnum = pgEnum('contact_channel', [
+  'PHONE',
+  'EMAIL',
+  'WHATSAPP',
+  'MESSENGER',
+  'WEB',
+]);
+
+export const capabilityActionEnum = pgEnum('capability_action', [
+  'BOOKING',
+  'TRACKING',
+  'CLAIM',
+]);

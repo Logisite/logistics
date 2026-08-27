@@ -37,6 +37,7 @@
     "drizzle-orm": "^0.36.4",
     "express": "^5.0.0",
     "jose": "^6.2.9",
+    "libphonenumber-js": "^1.11.0",
     "postgres": "^3.4.9",
     "resend": "^6.20.0",
     "swagger-ui-express": "^5.0.1",

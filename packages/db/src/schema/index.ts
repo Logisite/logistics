@@ -10,3 +10,6 @@ export * from './operations.js';
 export * from './cod.js';
 export * from './notifications.js';
 export * from './sync.js';
+export * from './contact-identities.js';
+export * from './capability-links.js';
+export * from './phone-otps.js';

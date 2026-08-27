@@ -6,10 +6,8 @@ import {
   pgTable,
   text,
   timestamp,
-  unique,
   uuid,
 } from 'drizzle-orm/pg-core';
-import { sql } from 'drizzle-orm';
 
 import { users } from './identity.js';
 import { zones, pickupLocations } from './locations.js';
@@ -102,7 +100,6 @@ export const shipmentEvents = pgTable(
   (t) => [
     index('shipment_events_shipment_id_idx').on(t.shipmentId),
     index('shipment_events_shipment_occurred_idx').on(t.shipmentId, t.occurredAt),
-    unique('shipment_events_device_op_unique').on(t.deviceId, t.opId).where(sql`${t.deviceId} IS NOT NULL AND ${t.opId} IS NOT NULL`),
   ],
 );
 

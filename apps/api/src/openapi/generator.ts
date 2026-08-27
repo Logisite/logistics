@@ -5,6 +5,7 @@ import { registry, API, defineRoute } from './registry.js';
 import pkg from '../../package.json' with { type: 'json' };
 
 import '../auth/router.js';
+import '../auth/capability-router.js';
 import '../customers/router.js';
 import '../merchants/router.js';
 import '../locations/router.js';
