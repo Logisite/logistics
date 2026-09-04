@@ -1,4 +1,6 @@
 // rates are 8dp decimal strings, math stays integer, one half-even rounding here
+import { logger } from '../../shared/logger.js';
+
 const RATE_SCALE_DIGITS = 8;
 const RATE_SCALE = 10n ** BigInt(RATE_SCALE_DIGITS);
 
@@ -24,6 +26,9 @@ function divRoundHalfEven(num: bigint, den: bigint): bigint {
 export function convertCents(amountCents: number, rate: string): number {
   const converted = divRoundHalfEven(BigInt(amountCents) * parseRateToScaledBigInt(rate), RATE_SCALE);
   const asNumber = Number(converted);
-  if (!Number.isSafeInteger(asNumber)) throw new Error('convertCents overflow');
+  if (!Number.isSafeInteger(asNumber)) {
+    logger.error({ amountCents, rate }, 'cod.fx-conversion-overflow');
+    throw new Error('convertCents overflow');
+  }
   return asNumber;
 }

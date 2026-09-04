@@ -1,7 +1,14 @@
+import { createHash } from 'node:crypto';
+
 import { getConfig } from '../../shared/config.js';
+import { logger } from '../../shared/logger.js';
 
 export interface SmsProvider {
   sendOtp(phone: string, code: string): Promise<void>;
+}
+
+function phoneHash(phone: string): string {
+  return createHash('sha256').update(phone).digest('hex');
 }
 
 export class TwilioSmsProvider implements SmsProvider {
@@ -12,6 +19,7 @@ export class TwilioSmsProvider implements SmsProvider {
   constructor() {
     const config = getConfig();
     if (!config.smsAccountSid || !config.smsAuthToken || !config.smsFromNumber) {
+      logger.error('identity.sms-not-configured');
       throw new Error('Twilio SMS requires SMS_ACCOUNT_SID, SMS_AUTH_TOKEN, and SMS_FROM_NUMBER');
     }
     this.accountSid = config.smsAccountSid;
@@ -38,6 +46,10 @@ export class TwilioSmsProvider implements SmsProvider {
 
     if (!response.ok) {
       const error = await response.text();
+      logger.error(
+        { phoneHash: phoneHash(phone), smsStatus: response.status },
+        'identity.sms-send-failed',
+      );
       throw new Error(`Twilio SMS failed (${response.status}): ${error}`);
     }
   }
@@ -67,6 +79,7 @@ export function createSmsProvider(): SmsProvider {
     return new TwilioSmsProvider();
   }
   if (process.env.NODE_ENV === 'production') {
+    logger.error('identity.sms-not-configured');
     throw new Error(
       'SMS provider not configured. Set SMS_ACCOUNT_SID, SMS_AUTH_TOKEN, and SMS_FROM_NUMBER.',
     );

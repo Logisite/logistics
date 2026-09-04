@@ -15,6 +15,7 @@ import {
 import { getConfig } from '../../shared/config.js';
 import type { Db } from '../../shared/db.js';
 import { badRequest, conflict, forbidden, notFound, unauthorized } from '../../shared/errors.js';
+import { logger } from '../../shared/logger.js';
 
 import { writeAudit } from './audit.js';
 import type { Mailer } from './emails.js';
@@ -62,9 +63,13 @@ export async function register(db: Db, mailer: Mailer, input: RegisterInput) {
   const existing = await db.query.users.findFirst({
     where: (users, { eq }) => eq(users.email, input.email),
   });
-  if (existing) throw conflict('DUPLICATE_EMAIL', 'An account with this email already exists');
+  if (existing) {
+    logger.warn({ email: input.email, reason: 'duplicate_email' }, 'auth.register-rejected');
+    throw conflict('DUPLICATE_EMAIL', 'An account with this email already exists');
+  }
 
   if (Buffer.byteLength(input.password, 'utf-8') > 72) {
+    logger.warn({ email: input.email, reason: 'password_too_long' }, 'auth.register-rejected');
     throw badRequest('PASSWORD_TOO_LONG', 'Password must not exceed 72 bytes');
   }
   const passwordHash = await hashPassword(input.password);
@@ -72,13 +77,18 @@ export async function register(db: Db, mailer: Mailer, input: RegisterInput) {
     .insert(users)
     .values({ email: input.email, passwordHash })
     .returning({ id: users.id, email: users.email });
-  if (!user) throw new Error('register: user insert returned nothing');
+  if (!user) {
+    logger.error({ email: input.email }, 'auth.register-failed');
+    throw new Error('register: user insert returned nothing');
+  }
 
   const customerRole = await db.query.roles.findFirst({
     where: (roles, { eq }) => eq(roles.name, 'CUSTOMER'),
   });
   if (customerRole) {
     await db.insert(roleGrants).values({ userId: user.id, roleId: customerRole.id });
+  } else {
+    logger.error({ userId: user.id, email: user.email, roleName: 'CUSTOMER' }, 'auth.register-missing-role');
   }
 
   const token = generateOpaqueToken();
@@ -88,7 +98,12 @@ export async function register(db: Db, mailer: Mailer, input: RegisterInput) {
     tokenHash: hashEmailTokenValue(token),
     expiresAt: new Date(Date.now() + EMAIL_TOKEN_TTL_MS),
   });
-  await mailer.sendVerificationEmail(user.email, token);
+  try {
+    await mailer.sendVerificationEmail(user.email, token);
+  } catch (err) {
+    logger.error({ err, userId: user.id, email: user.email, purpose: 'verification' }, 'auth.email-send-failed');
+    throw err;
+  }
 
   await writeAudit(db, null, {
     action: 'auth.register',
@@ -106,6 +121,8 @@ export async function verifyEmail(db: Db, token: string): Promise<void> {
     where: (emailVerifications, { eq }) => eq(emailVerifications.tokenHash, tokenHash),
   });
   if (!verification || verification.verifiedAt !== null || verification.expiresAt < new Date()) {
+    const reason = !verification ? 'not_found' : verification.verifiedAt !== null ? 'already_verified' : 'expired';
+    logger.warn({ reason }, 'auth.verify-email-failed');
     throw badRequest('INVALID_TOKEN', 'This verification link is invalid or has expired');
   }
 
@@ -131,19 +148,35 @@ export async function login(db: Db, input: LoginInput) {
   const user = await db.query.users.findFirst({
     where: (users, { eq }) => eq(users.email, input.email),
   });
-  if (!user) throw unauthorized('INVALID_CREDENTIALS', 'Invalid email or password');
+  if (!user) {
+    logger.warn({ email: input.email, reason: 'unknown_email' }, 'auth.login-failed');
+    throw unauthorized('INVALID_CREDENTIALS', 'Invalid email or password');
+  }
 
   if (Buffer.byteLength(input.password, 'utf-8') > 72) {
+    logger.warn({ email: input.email, reason: 'invalid_credentials' }, 'auth.login-failed');
     throw unauthorized('INVALID_CREDENTIALS', 'Invalid email or password');
   }
 
   const passwordMatches = await verifyPassword(input.password, user.passwordHash);
-  if (!passwordMatches) throw unauthorized('INVALID_CREDENTIALS', 'Invalid email or password');
-  if (!user.emailVerifiedAt) throw forbidden('EMAIL_NOT_VERIFIED', 'Verify your email before logging in');
-  if (!user.isActive) throw forbidden('ACCOUNT_DISABLED', 'This account is disabled');
+  if (!passwordMatches) {
+    logger.warn({ email: input.email, reason: 'invalid_credentials' }, 'auth.login-failed');
+    throw unauthorized('INVALID_CREDENTIALS', 'Invalid email or password');
+  }
+  if (!user.emailVerifiedAt) {
+    logger.warn({ userId: user.id, email: user.email, reason: 'email_not_verified' }, 'auth.login-failed');
+    throw forbidden('EMAIL_NOT_VERIFIED', 'Verify your email before logging in');
+  }
+  if (!user.isActive) {
+    logger.warn({ userId: user.id, email: user.email, reason: 'account_disabled' }, 'auth.login-failed');
+    throw forbidden('ACCOUNT_DISABLED', 'This account is disabled');
+  }
 
   const granted = await loadGrantedRoles(db, user.id);
-  if (granted.length === 0) throw forbidden('NO_ROLE', 'This account has no roles assigned');
+  if (granted.length === 0) {
+    logger.warn({ userId: user.id, reason: 'no_role' }, 'auth.login-failed');
+    throw forbidden('NO_ROLE', 'This account has no roles assigned');
+  }
 
   const actingRole = input.role
     ? granted.find((grant) => grant.name === input.role)?.name
@@ -152,7 +185,10 @@ export async function login(db: Db, input: LoginInput) {
         .filter((entry) => entry.priority !== -1)
         .sort((a, b) => a.priority - b.priority)[0]?.name;
 
-  if (!actingRole) throw forbidden('ROLE_NOT_GRANTED', 'You do not hold this role');
+  if (!actingRole) {
+    logger.warn({ userId: user.id, reason: 'role_not_granted', requestedRole: input.role }, 'auth.login-failed');
+    throw forbidden('ROLE_NOT_GRANTED', 'You do not hold this role');
+  }
 
   const config = getConfig();
   const refreshToken = generateOpaqueToken();
@@ -167,7 +203,10 @@ export async function login(db: Db, input: LoginInput) {
       lastUsedAt: new Date(),
     })
     .returning({ id: sessions.id, deviceName: sessions.deviceName, createdAt: sessions.createdAt });
-  if (!session) throw new Error('login: session insert returned nothing');
+  if (!session) {
+    logger.error({ userId: user.id, reason: 'session_insert_failed' }, 'auth.login-failed');
+    throw new Error('login: session insert returned nothing');
+  }
 
   const accessToken = await signAccessToken(
     { sub: user.id, email: user.email, role: actingRole, jti: session.id },
@@ -226,7 +265,9 @@ export async function refresh(db: Db, refreshToken: string) {
         entityId: replayedRow.id,
         payload: { note: 'a rotated refresh token was replayed; session revoked' },
       });
+      logger.error({ userId: replayedRow.userId, sessionId: replayedRow.id, roleName: replayedRow.roleName }, 'auth.refresh-replay-detected');
     }
+    logger.warn({ reason: 'unknown_token' }, 'auth.refresh-failed');
     throw unauthorized('INVALID_REFRESH_TOKEN', 'This session is no longer valid');
   }
 
@@ -234,11 +275,13 @@ export async function refresh(db: Db, refreshToken: string) {
     where: (users, { eq }) => eq(users.id, updated.userId),
   });
   if (!user || !user.isActive) {
+    logger.warn({ userId: updated.userId, sessionId: updated.id, reason: 'account_inactive' }, 'auth.refresh-failed');
     throw unauthorized('INVALID_REFRESH_TOKEN', 'This session is no longer valid');
   }
 
   const granted = await loadGrantedRoles(db, user.id);
   if (!granted.some((grant) => grant.name === updated.roleName)) {
+    logger.warn({ userId: user.id, sessionId: updated.id, reason: 'role_revoked', roleName: updated.roleName }, 'auth.refresh-failed');
     throw unauthorized('INVALID_REFRESH_TOKEN', 'This session is no longer valid');
   }
 
@@ -264,6 +307,8 @@ export async function logout(db: Db, refreshToken: string): Promise<void> {
   });
   if (session && session.revokedAt === null) {
     await db.update(sessions).set({ revokedAt: new Date() }).where(eq(sessions.id, session.id));
+  } else {
+    logger.warn({ reason: 'unknown_or_revoked' }, 'auth.logout-unknown-token');
   }
 }
 
@@ -280,11 +325,17 @@ export async function revokeSession(db: Db, ctx: AuthContext, sessionId: string)
   const session = await db.query.sessions.findFirst({
     where: (sessions, { eq }) => eq(sessions.id, sessionId),
   });
-  if (!session) throw notFound('SESSION_NOT_FOUND', 'No such session');
+  if (!session) {
+    logger.warn({ requesterUserId: ctx.userId, sessionId, reason: 'not_found' }, 'auth.revoke-session-denied');
+    throw notFound('SESSION_NOT_FOUND', 'No such session');
+  }
 
   const ownsSession = session.userId === ctx.userId;
   const canRevokeAny = ctx.permissions.has(PERMISSIONS.AUTH_REVOKE_ANY_SESSION);
-  if (!ownsSession && !canRevokeAny) throw notFound('SESSION_NOT_FOUND', 'No such session');
+  if (!ownsSession && !canRevokeAny) {
+    logger.warn({ requesterUserId: ctx.userId, sessionId, reason: 'not_owner' }, 'auth.revoke-session-denied');
+    throw notFound('SESSION_NOT_FOUND', 'No such session');
+  }
 
   await db.update(sessions).set({ revokedAt: new Date() }).where(eq(sessions.id, sessionId));
 
@@ -305,20 +356,29 @@ export async function invite(db: Db, mailer: Mailer, ctx: AuthContext, input: In
   const existing = await db.query.users.findFirst({
     where: (users, { eq }) => eq(users.email, input.email),
   });
-  if (existing) throw conflict('DUPLICATE_EMAIL', 'An account with this email already exists');
+  if (existing) {
+    logger.warn({ email: input.email, reason: 'duplicate_email', inviterUserId: ctx.userId }, 'auth.invite-rejected');
+    throw conflict('DUPLICATE_EMAIL', 'An account with this email already exists');
+  }
 
   const passwordHash = await hashPassword(randomBytes(24).toString('hex'));
   const [user] = await db
     .insert(users)
     .values({ email: input.email, passwordHash })
     .returning({ id: users.id, email: users.email });
-  if (!user) throw new Error('invite: user insert returned nothing');
+  if (!user) {
+    logger.error({ email: input.email, inviterUserId: ctx.userId }, 'auth.invite-failed');
+    throw new Error('invite: user insert returned nothing');
+  }
 
   for (const name of input.roleNames) {
     const role = await db.query.roles.findFirst({
       where: (roles, { eq }) => eq(roles.name, name),
     });
-    if (!role) throw badRequest('INVALID_ROLE', `Unknown role: ${name}`);
+    if (!role) {
+      logger.warn({ inviterUserId: ctx.userId, roleName: name, reason: 'unknown_role' }, 'auth.invite-rejected');
+      throw badRequest('INVALID_ROLE', `Unknown role: ${name}`);
+    }
     await db.insert(roleGrants).values({ userId: user.id, roleId: role.id }).onConflictDoNothing();
   }
 
@@ -328,7 +388,12 @@ export async function invite(db: Db, mailer: Mailer, ctx: AuthContext, input: In
     tokenHash: hashEmailTokenValue(token),
     expiresAt: new Date(Date.now() + EMAIL_TOKEN_TTL_MS),
   });
-  await mailer.sendInviteEmail(user.email, token);
+  try {
+    await mailer.sendInviteEmail(user.email, token);
+  } catch (err) {
+    logger.error({ err, userId: user.id, email: user.email, purpose: 'invite' }, 'auth.email-send-failed');
+    throw err;
+  }
 
   await writeAudit(db, ctx, {
     action: 'auth.invite',
@@ -357,7 +422,10 @@ export async function createBundle(db: Db, ctx: AuthContext, input: BundleInput)
   const existing = await db.query.roleBundles.findFirst({
     where: (roleBundles, { eq }) => eq(roleBundles.name, input.name),
   });
-  if (existing) throw conflict('DUPLICATE_BUNDLE', 'A bundle with this name already exists');
+  if (existing) {
+    logger.warn({ name: input.name, actorUserId: ctx.userId, reason: 'duplicate_bundle' }, 'auth.create-bundle-rejected');
+    throw conflict('DUPLICATE_BUNDLE', 'A bundle with this name already exists');
+  }
 
   const [bundle] = await db
     .insert(roleBundles)
@@ -368,7 +436,10 @@ export async function createBundle(db: Db, ctx: AuthContext, input: BundleInput)
       description: roleBundles.description,
       roleNames: roleBundles.roleNames,
     });
-  if (!bundle) throw new Error('createBundle: insert returned nothing');
+  if (!bundle) {
+    logger.error({ name: input.name, actorUserId: ctx.userId }, 'auth.create-bundle-failed');
+    throw new Error('createBundle: insert returned nothing');
+  }
 
   await writeAudit(db, ctx, {
     action: 'auth.create-bundle',
@@ -384,7 +455,10 @@ export async function updateBundle(db: Db, ctx: AuthContext, bundleId: string, i
   const existing = await db.query.roleBundles.findFirst({
     where: (roleBundles, { eq }) => eq(roleBundles.id, bundleId),
   });
-  if (!existing) throw notFound('BUNDLE_NOT_FOUND', 'No such bundle');
+  if (!existing) {
+    logger.warn({ bundleId, actorUserId: ctx.userId, action: 'update' }, 'auth.bundle-not-found');
+    throw notFound('BUNDLE_NOT_FOUND', 'No such bundle');
+  }
 
   const [bundle] = await db
     .update(roleBundles)
@@ -412,7 +486,10 @@ export async function deleteBundle(db: Db, ctx: AuthContext, bundleId: string): 
   const existing = await db.query.roleBundles.findFirst({
     where: (roleBundles, { eq }) => eq(roleBundles.id, bundleId),
   });
-  if (!existing) throw notFound('BUNDLE_NOT_FOUND', 'No such bundle');
+  if (!existing) {
+    logger.warn({ bundleId, actorUserId: ctx.userId, action: 'delete' }, 'auth.bundle-not-found');
+    throw notFound('BUNDLE_NOT_FOUND', 'No such bundle');
+  }
 
   await db.delete(roleBundles).where(eq(roleBundles.id, bundleId));
 
@@ -427,19 +504,28 @@ export async function applyBundle(db: Db, ctx: AuthContext, bundleId: string, us
   const bundle = await db.query.roleBundles.findFirst({
     where: (roleBundles, { eq }) => eq(roleBundles.id, bundleId),
   });
-  if (!bundle) throw notFound('BUNDLE_NOT_FOUND', 'No such bundle');
+  if (!bundle) {
+    logger.warn({ bundleId, actorUserId: ctx.userId, action: 'apply' }, 'auth.bundle-not-found');
+    throw notFound('BUNDLE_NOT_FOUND', 'No such bundle');
+  }
 
   const user = await db.query.users.findFirst({
     where: (users, { eq }) => eq(users.id, userId),
   });
-  if (!user) throw notFound('USER_NOT_FOUND', 'No such user');
+  if (!user) {
+    logger.warn({ bundleId, targetUserId: userId, actorUserId: ctx.userId, reason: 'user_not_found' }, 'auth.apply-bundle-rejected');
+    throw notFound('USER_NOT_FOUND', 'No such user');
+  }
 
   const granted: string[] = [];
   for (const name of bundle.roleNames as RoleName[]) {
     const role = await db.query.roles.findFirst({
       where: (roles, { eq }) => eq(roles.name, name),
     });
-    if (!role) throw new Error(`bundle ${bundle.name} references unknown role ${name}`);
+    if (!role) {
+      logger.error({ bundleId: bundle.id, bundleName: bundle.name, roleName: name }, 'auth.bundle-corrupt');
+      throw new Error(`bundle ${bundle.name} references unknown role ${name}`);
+    }
     await db.insert(roleGrants).values({ userId, roleId: role.id }).onConflictDoNothing();
     granted.push(role.name);
   }
@@ -458,7 +544,10 @@ export async function forgotPassword(db: Db, mailer: Mailer, email: string): Pro
   const user = await db.query.users.findFirst({
     where: (users, { eq }) => eq(users.email, email),
   });
-  if (!user || !user.isActive) return;
+  if (!user || !user.isActive) {
+    logger.warn({ email, reason: 'unknown_or_inactive' }, 'auth.forgot-password-skipped');
+    return;
+  }
 
   const token = generateOpaqueToken();
   await db.insert(passwordResets).values({
@@ -466,7 +555,12 @@ export async function forgotPassword(db: Db, mailer: Mailer, email: string): Pro
     tokenHash: hashEmailTokenValue(token),
     expiresAt: new Date(Date.now() + EMAIL_TOKEN_TTL_MS),
   });
-  await mailer.sendPasswordResetEmail(user.email, token);
+  try {
+    await mailer.sendPasswordResetEmail(user.email, token);
+  } catch (err) {
+    logger.error({ err, userId: user.id, purpose: 'password_reset' }, 'auth.email-send-failed');
+    throw err;
+  }
 
   await writeAudit(db, null, {
     action: 'auth.forgot-password',
@@ -481,6 +575,7 @@ export async function resetPassword(db: Db, token: string, newPassword: string):
     where: (passwordResets, { eq }) => eq(passwordResets.tokenHash, tokenHash),
   });
   if (!reset || reset.usedAt !== null || reset.expiresAt < new Date()) {
+    logger.warn({ reason: 'invalid_or_expired' }, 'auth.reset-password-failed');
     throw badRequest('INVALID_TOKEN', 'This token is invalid or has expired');
   }
 
@@ -488,6 +583,7 @@ export async function resetPassword(db: Db, token: string, newPassword: string):
     where: (users, { eq }) => eq(users.id, reset.userId),
   });
   if (!user || !user.isActive) {
+    logger.warn({ userId: reset.userId, reason: 'account_disabled' }, 'auth.reset-password-failed');
     throw forbidden('ACCOUNT_DISABLED', 'This account is disabled');
   }
 

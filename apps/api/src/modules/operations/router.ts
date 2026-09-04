@@ -7,6 +7,7 @@ import type { AuthContext } from '../auth/middleware.js';
 import { requireAuth, requirePermission } from '../auth/middleware.js';
 import { PERMISSIONS } from '../auth/permissions.js';
 import { parse } from '../../shared/validate.js';
+import { logger } from '../../shared/logger.js';
 
 import * as service from './service.js';
 import { defineRoute } from '../../openapi/registry.js';
@@ -70,7 +71,10 @@ export function operationsRouter(db: Db): Router {
 
   router.post('/claim', requireAuth(db), async (req, res) => {
     const ctx = res.locals.auth as AuthContext;
-    if (!ctx.permissions.has(PERMISSIONS.RUNS_MANAGE)) throw forbidden('FORBIDDEN', 'Not allowed to claim runs');
+    if (!ctx.permissions.has(PERMISSIONS.RUNS_MANAGE)) {
+      logger.warn({ actorUserId: ctx.userId, actorRole: ctx.roleName }, 'operations.run-claim-denied');
+      throw forbidden('FORBIDDEN', 'Not allowed to claim runs');
+    }
     const input = parse(ClaimRunRequest, req.body);
     const shipments = input.shipmentIds.map((id: string, i: number) => ({ shipmentId: id, sequence: i }));
     const run = await service.createRun(db, ctx, { hubId: input.hubId, driverUserId: ctx.userId, shipments });

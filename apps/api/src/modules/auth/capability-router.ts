@@ -15,6 +15,7 @@ import { verifyCapabilityLink, revokeCapabilityLink } from '../identity/capabili
 import { mintShadow, isShadowExpired } from '../identity/shadows.js';
 import { parsePhone } from '../identity/phone.js';
 import { writeAudit } from './audit.js';
+import { logger } from '../../shared/logger.js';
 
 const revokeSchema = z.object({ reason: z.string().max(500).optional() }).openapi('CapabilityRevokeRequest');
 
@@ -28,6 +29,7 @@ export function capabilityRouter(db: Db): Router {
 
   router.get('/:nonce', async (req, res) => {
     const nonce = String(req.params.nonce);
+    // Verify failures already logged inside verifyCapabilityLink with linkId + action.
     const link = await verifyCapabilityLink(db, nonce);
     res.json({ action: link.action, expiresAt: link.expiresAt });
   });
@@ -37,6 +39,7 @@ export function capabilityRouter(db: Db): Router {
     const link = await verifyCapabilityLink(db, nonce);
 
     if (link.action !== 'BOOKING') {
+      logger.warn({ linkId: link.id, expectedAction: 'BOOKING', actualAction: link.action }, 'auth.capability-wrong-action');
       res.status(400).json({ error: { code: 'WRONG_ACTION', message: 'This link is not for booking' } });
       return;
     }
@@ -44,6 +47,7 @@ export function capabilityRouter(db: Db): Router {
     const payload = link.payload as Record<string, unknown>;
     const phone = typeof payload.phone === 'string' ? payload.phone : null;
     if (!phone) {
+      logger.error({ linkId: link.id, action: link.action, missingField: 'phone' }, 'auth.capability-bad-payload');
       res.status(400).json({ error: { code: 'INVALID_PAYLOAD', message: 'Link payload missing phone' } });
       return;
     }
@@ -58,6 +62,7 @@ export function capabilityRouter(db: Db): Router {
     if (existingIdentity) {
       shadowUserId = existingIdentity.userId;
     } else if (!shadowUserId) {
+      // Mint success/failure already logged inside mintShadow.
       const shadow = await mintShadow(db, parsed.phone, 'capability-booking');
       shadowUserId = shadow.id;
 
@@ -71,11 +76,13 @@ export function capabilityRouter(db: Db): Router {
     }
 
     if (shadowUserId && (await isShadowExpired(db, shadowUserId))) {
+      logger.warn({ userId: shadowUserId, linkId: link.id }, 'auth.capability-shadow-expired');
       res.status(403).json({ error: { code: 'SHADOW_EXPIRED', message: 'Account expired. Contact support.' } });
       return;
     }
 
     if (!shadowUserId) {
+      logger.error({ linkId: link.id }, 'auth.capability-no-user');
       res.status(403).json({ error: { code: 'NO_USER', message: 'Unable to resolve user' } });
       return;
     }
@@ -88,6 +95,7 @@ export function capabilityRouter(db: Db): Router {
       .sort((a: { priority: number }, b: { priority: number }) => a.priority - b.priority)[0]?.name;
 
     if (!actingRole) {
+      logger.warn({ userId: shadowUserId, linkId: link.id }, 'auth.capability-no-role');
       res.status(403).json({ error: { code: 'NO_ROLE', message: 'Account has no roles' } });
       return;
     }
@@ -103,6 +111,7 @@ export function capabilityRouter(db: Db): Router {
 
     const session = sessionRows[0];
     if (!session) {
+      logger.error({ userId: shadowUserId, linkId: link.id }, 'auth.capability-session-failed');
       res.status(500).json({ error: { code: 'INTERNAL', message: 'Failed to create session' } });
       return;
     }
@@ -133,6 +142,7 @@ export function capabilityRouter(db: Db): Router {
     const link = await verifyCapabilityLink(db, nonce);
 
     if (link.action !== 'TRACKING') {
+      logger.warn({ linkId: link.id, expectedAction: 'TRACKING', actualAction: link.action }, 'auth.capability-wrong-action');
       res.status(400).json({ error: { code: 'WRONG_ACTION', message: 'This link is not for tracking' } });
       return;
     }
@@ -140,6 +150,7 @@ export function capabilityRouter(db: Db): Router {
     const payload = link.payload as Record<string, unknown>;
     const shipmentId = typeof payload.shipmentId === 'string' ? payload.shipmentId : null;
     if (!shipmentId) {
+      logger.error({ linkId: link.id, action: link.action, missingField: 'shipmentId' }, 'auth.capability-bad-payload');
       res.status(400).json({ error: { code: 'INVALID_PAYLOAD', message: 'Link payload missing shipmentId' } });
       return;
     }
@@ -157,6 +168,7 @@ export function capabilityRouter(db: Db): Router {
     });
 
     if (!shipment) {
+      logger.warn({ linkId: link.id, shipmentId }, 'auth.capability-shipment-missing');
       res.status(404).json({ error: { code: 'SHIPMENT_NOT_FOUND', message: 'Shipment not found' } });
       return;
     }

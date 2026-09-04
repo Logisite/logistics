@@ -21,6 +21,7 @@ import { signAccessToken, generateOpaqueToken, hashOpaqueToken } from './tokens.
 import { hashPassword } from './passwords.js';
 import { createSmsProvider } from '../identity/sms.js';
 import { getConfig } from '../../shared/config.js';
+import { logger } from '../../shared/logger.js';
 
 const registerSchema = z.object({
   email: z.string().email(),
@@ -213,6 +214,7 @@ export function authRouter(db: Db, mailer: Mailer): Router {
     const { phone } = parse(otpRequestSchema, req.body);
     const parsed = parsePhone(phone);
     const sms = createSmsProvider();
+    // Failures already logged inside requestOtp with phoneHash + purpose.
     const result = await requestOtp(db, sms, parsed.phone, 'login');
     res.json(result);
   });
@@ -220,7 +222,8 @@ export function authRouter(db: Db, mailer: Mailer): Router {
   router.post('/otp/verify', async (req, res) => {
     const { phone, code } = parse(otpVerifySchema, req.body);
     const parsed = parsePhone(phone);
-    const result = await verifyOtp(db, parsed.phone, code, 'login', parsed.country);
+    // Failures already logged inside verifyOtp with phoneHash + purpose + country.
+    const result: Awaited<ReturnType<typeof verifyOtp>> = await verifyOtp(db, parsed.phone, code, 'login', parsed.country);
 
     const config = getConfig();
     const granted = await loadGrantedRoles(db, result.userId);
@@ -230,6 +233,7 @@ export function authRouter(db: Db, mailer: Mailer): Router {
       .sort((a, b) => a.priority - b.priority)[0]?.name;
 
     if (!actingRole) {
+      logger.warn({ userId: result.userId }, 'auth.otp-no-role');
       res.status(403).json({ error: { code: 'NO_ROLE', message: 'Account has no roles' } });
       return;
     }
@@ -247,6 +251,7 @@ export function authRouter(db: Db, mailer: Mailer): Router {
 
     const session = sessionRows[0];
     if (!session) {
+      logger.error({ userId: result.userId }, 'auth.otp-session-failed');
       res.status(500).json({ error: { code: 'INTERNAL', message: 'Failed to create session' } });
       return;
     }
@@ -265,8 +270,14 @@ export function authRouter(db: Db, mailer: Mailer): Router {
     const { password } = parse(otpUpgradeSchema, req.body);
 
     const passwordHash = await hashPassword(password);
-    await db.update(users).set({ passwordHash }).where(eq(users.id, ctx.userId));
-    await upgradeShadow(db, ctx.userId);
+    try {
+      await db.update(users).set({ passwordHash }).where(eq(users.id, ctx.userId));
+      await upgradeShadow(db, ctx.userId);
+    } catch (err) {
+      logger.error({ err, userId: ctx.userId }, 'auth.otp-upgrade-failed');
+      throw err;
+    }
+    logger.info({ userId: ctx.userId }, 'auth.otp-upgraded');
     res.json({ upgraded: true });
   });
 

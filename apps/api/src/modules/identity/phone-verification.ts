@@ -1,4 +1,4 @@
-import { randomInt } from 'node:crypto';
+import { createHash, randomInt } from 'node:crypto';
 
 import { and, eq, gt, isNull, sql } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
@@ -7,6 +7,7 @@ import { phoneOtps, contactIdentities, users, roleGrants } from '@logistics/db';
 
 import { getConfig } from '../../shared/config.js';
 import type { Db } from '../../shared/db.js';
+import { logger } from '../../shared/logger.js';
 import { badRequest, unauthorized } from '../../shared/errors.js';
 import { HttpError } from '../../shared/errors.js';
 
@@ -29,6 +30,10 @@ async function hashOtp(code: string): Promise<string> {
 
 async function verifyOtpHash(code: string, hash: string): Promise<boolean> {
   return bcrypt.compare(code, hash);
+}
+
+function phoneHash(phone: string): string {
+  return createHash('sha256').update(phone).digest('hex');
 }
 
 export interface RequestOtpResult {
@@ -59,6 +64,7 @@ export async function requestOtp(
 
   if (recentForPhone.length > 0) {
     const remaining = Math.ceil(OTP_RESEND_COOLDOWN_MS / 1000);
+    logger.warn({ phoneHash: phoneHash(phone), purpose }, 'identity.otp-cooldown');
     return { sent: false, cooldownSeconds: remaining };
   }
 
@@ -74,6 +80,7 @@ export async function requestOtp(
       ),
     );
   if ((sendCountPhone[0]?.count ?? 0) >= OTP_SEND_LIMIT_PHONE) {
+    logger.warn({ phoneHash: phoneHash(phone), purpose }, 'identity.otp-rate-limited');
     throw new HttpError(429, 'RATE_LIMITED', 'Too many OTP requests. Try again later.');
   }
 
@@ -88,13 +95,20 @@ export async function requestOtp(
     expiresAt: new Date(now.getTime() + OTP_EXPIRY_MS),
   });
 
-  await sms.sendOtp(phone, code);
+  try {
+    await sms.sendOtp(phone, code);
+  } catch (err) {
+    logger.error({ err, phoneHash: phoneHash(phone), purpose }, 'identity.otp-send-failed');
+    throw err;
+  }
 
   await writeAudit(db, null, {
     action: 'identity.otp-request',
     entityType: 'phone',
     payload: { phone, purpose },
   });
+
+  logger.info({ phoneHash: phoneHash(phone), purpose }, 'identity.otp-sent');
 
   return { sent: true };
 }
@@ -131,13 +145,18 @@ async function findOrCreateUserByPhone(
     })
     .returning({ id: users.id });
 
-  if (!user) throw new Error('findOrCreateUserByPhone: insert returned nothing');
+  if (!user) {
+    logger.error({ phoneHash: phoneHash(phone), purpose: 'otp-verify' }, 'identity.shadow-mint-failed');
+    throw new Error('findOrCreateUserByPhone: insert returned nothing');
+  }
 
   const customerRole = await db.query.roles.findFirst({
     where: (roles, { eq }) => eq(roles.name, 'CUSTOMER'),
   });
   if (customerRole) {
     await db.insert(roleGrants).values({ userId: user.id, roleId: customerRole.id });
+  } else {
+    logger.warn({ userId: user.id, purpose: 'otp-verify' }, 'identity.shadow-missing-role');
   }
 
   await db.insert(contactIdentities).values({
@@ -197,12 +216,15 @@ export async function verifyOtp(
       .limit(1);
 
     if (expired.length > 0) {
+      logger.warn({ phoneHash: phoneHash(phone), purpose, country }, 'identity.otp-expired');
       throw badRequest('OTP_EXPIRED', 'This code has expired. Request a new one.');
     }
+    logger.warn({ phoneHash: phoneHash(phone), purpose, country }, 'identity.otp-invalid');
     throw badRequest('INVALID_OTP', 'Invalid verification code.');
   }
 
   if (otp.attempts >= otp.maxAttempts) {
+    logger.warn({ phoneHash: phoneHash(phone), purpose, country }, 'identity.otp-exhausted');
     throw unauthorized('OTP_EXHAUSTED', 'Too many failed attempts. Request a new code.');
   }
 
@@ -212,6 +234,10 @@ export async function verifyOtp(
       .update(phoneOtps)
       .set({ attempts: otp.attempts + 1 })
       .where(eq(phoneOtps.id, otp.id));
+    logger.warn(
+      { phoneHash: phoneHash(phone), purpose, country, attempts: otp.attempts + 1 },
+      'identity.otp-mismatch',
+    );
     throw badRequest('INVALID_OTP', 'Invalid verification code.');
   }
 
@@ -225,6 +251,8 @@ export async function verifyOtp(
     entityId: userId,
     payload: { phone, purpose, isNew },
   });
+
+  logger.info({ userId, phoneHash: phoneHash(phone), purpose, isNew }, 'identity.otp-verified');
 
   return { userId, isNew };
 }

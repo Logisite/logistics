@@ -1,8 +1,11 @@
+import { createHash } from 'node:crypto';
+
 import { and, eq } from 'drizzle-orm';
 import { users, roleGrants } from '@logistics/db';
 
 import { getConfig } from '../../shared/config.js';
 import type { Db } from '../../shared/db.js';
+import { logger } from '../../shared/logger.js';
 import { forbidden } from '../../shared/errors.js';
 
 import { writeAudit } from '../auth/audit.js';
@@ -10,6 +13,10 @@ import { writeAudit } from '../auth/audit.js';
 export interface ShadowUser {
   id: string;
   isShadow: boolean;
+}
+
+function phoneHash(phone: string): string {
+  return createHash('sha256').update(phone).digest('hex');
 }
 
 export async function mintShadow(
@@ -31,13 +38,18 @@ export async function mintShadow(
     })
     .returning({ id: users.id });
 
-  if (!user) throw new Error('mintShadow: insert returned nothing');
+  if (!user) {
+    logger.error({ phoneHash: phoneHash(phone), purpose }, 'identity.shadow-mint-failed');
+    throw new Error('mintShadow: insert returned nothing');
+  }
 
   const customerRole = await db.query.roles.findFirst({
     where: (roles, { eq }) => eq(roles.name, 'CUSTOMER'),
   });
   if (customerRole) {
     await db.insert(roleGrants).values({ userId: user.id, roleId: customerRole.id });
+  } else {
+    logger.warn({ userId: user.id, purpose }, 'identity.shadow-missing-role');
   }
 
   await writeAudit(db, null, {
@@ -46,6 +58,8 @@ export async function mintShadow(
     entityId: user.id,
     payload: { phone, purpose },
   });
+
+  logger.info({ userId: user.id, phoneHash: phoneHash(phone), purpose }, 'identity.shadow-minted');
 
   return { id: user.id, isShadow: true };
 }
@@ -64,7 +78,11 @@ export async function upgradeShadow(
     .where(and(eq(users.id, userId), eq(users.isShadow, true)))
     .returning({ id: users.id });
 
-  if (!user) throw forbidden('NOT_SHADOW', 'User is not a shadow account');
+  // Upgrade outcome logged by the sole caller (auth otp/upgrade route), which also
+  // covers the password-hash update in the same operation.
+  if (!user) {
+    throw forbidden('NOT_SHADOW', 'User is not a shadow account');
+  }
 
   await writeAudit(db, null, {
     action: 'identity.shadow-upgrade',

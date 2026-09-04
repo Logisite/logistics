@@ -125,12 +125,13 @@ export function shipmentsRouter(db: Db, mailer?: Mailer): Router {
   // a notification failure must never fail the transition
   async function maybeNotify(
     result: Awaited<ReturnType<typeof service.transition>>,
+    ctx: AuthContext,
   ): Promise<void> {
     if (!mailer || !result.event) return;
     try {
       await notifyTransition(db, mailer, result.shipment, result.event);
     } catch (err) {
-      logger.error({ err, shipmentId: result.shipment.id, status: result.event.toStatus }, 'notification fan-out failed');
+      logger.error({ err, shipmentId: result.shipment.id, status: result.event.toStatus, actorUserId: ctx.userId }, 'notification fan-out failed');
     }
   }
 
@@ -141,7 +142,7 @@ export function shipmentsRouter(db: Db, mailer?: Mailer): Router {
       const ctx = res.locals.auth as AuthContext;
       const input = parse(transitionBodySchema, req.body ?? {});
       const result = await service.transition(db, ctx, shipmentId(req), toStatus, input);
-      await maybeNotify(result);
+      await maybeNotify(result, ctx);
       res.status(200).json(result);
     });
   }
@@ -150,7 +151,7 @@ export function shipmentsRouter(db: Db, mailer?: Mailer): Router {
     const ctx = res.locals.auth as AuthContext;
     const input = parse(transitionBodySchema, req.body ?? {});
     const result = await service.cancelShipment(db, ctx, shipmentId(req), input);
-    await maybeNotify(result);
+    await maybeNotify(result, ctx);
     res.status(200).json(result);
   });
 

@@ -4,6 +4,7 @@ import { roleBundles, roleGrants, roles, users } from '@logistics/db';
 
 import { getConfig } from '../../shared/config.js';
 import type { Db } from '../../shared/db.js';
+import { logger } from '../../shared/logger.js';
 
 import { writeAudit } from './audit.js';
 import { hashPassword } from './passwords.js';
@@ -60,13 +61,19 @@ export async function ensureOwner(db: Db): Promise<void> {
     .insert(users)
     .values({ email: config.bootstrapOwnerEmail, passwordHash, emailVerifiedAt: new Date() })
     .returning({ id: users.id, email: users.email });
-  if (!owner) throw new Error('ensureOwner: user insert returned nothing');
+  if (!owner) {
+    logger.error({ email: config.bootstrapOwnerEmail }, 'auth.bootstrap-failed');
+    throw new Error('ensureOwner: user insert returned nothing');
+  }
 
   for (const name of bundleRoleNames) {
     const role = await db.query.roles.findFirst({
       where: (roles, { eq }) => eq(roles.name, name),
     });
-    if (!role) throw new Error(`ensureOwner: unknown role ${name}`);
+    if (!role) {
+      logger.error({ roleName: name }, 'auth.bootstrap-failed');
+      throw new Error(`ensureOwner: unknown role ${name}`);
+    }
     await db.insert(roleGrants).values({ userId: owner.id, roleId: role.id }).onConflictDoNothing();
   }
 

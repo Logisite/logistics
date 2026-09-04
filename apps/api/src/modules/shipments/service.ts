@@ -6,6 +6,7 @@ import { writeAudit } from '../auth/audit.js';
 import type { AuthContext } from '../auth/middleware.js';
 import type { Db } from '../../shared/db.js';
 import { conflict, forbidden, notFound } from '../../shared/errors.js';
+import { logger } from '../../shared/logger.js';
 
 import { canTransition } from './transitions.js';
 import type { ShipmentStatus } from './transitions.js';
@@ -52,7 +53,10 @@ export async function applyTransitionTx(
   const [shipment] = await tx.select().from(shipments).where(eq(shipments.id, shipmentId)).for('update');
   if (!shipment) return { kind: 'missing' };
   if (shipment.status === to) return { kind: 'noop', shipment };
-  if (!canTransition(shipment.status, to)) return { kind: 'rejected', from: shipment.status };
+  if (!canTransition(shipment.status, to)) {
+    logger.warn({ shipmentId, from: shipment.status, to, actorUserId: ctx.userId }, 'shipments.transition-rejected');
+    return { kind: 'rejected', from: shipment.status };
+  }
   const occurredAt = input.occurredAt ?? new Date();
   const [updated] = await tx.update(shipments).set({ status: to, updatedAt: occurredAt }).where(eq(shipments.id, shipmentId)).returning();
   const [event] = await tx
@@ -130,6 +134,10 @@ export async function transition(
     case 'missing':
       throw notFound('NOT_FOUND', 'Shipment not found');
     case 'rejected': {
+      logger.warn(
+        { shipmentId, from: outcome.from, to, actorUserId: ctx.userId, roleName: ctx.roleName },
+        'shipments.transition-rejected',
+      );
       await writeAudit(db, ctx, {
         action: 'shipment.transition.rejected',
         entityType: 'shipment',
@@ -142,6 +150,10 @@ export async function transition(
       );
     }
     case 'applied': {
+      logger.info(
+        { shipmentId, from: outcome.from, to, actorUserId: ctx.userId, roleName: ctx.roleName, eventId: outcome.event.id },
+        'shipments.transition-applied',
+      );
       await writeAudit(db, ctx, {
         action: 'shipment.transition',
         entityType: 'shipment',
@@ -150,8 +162,10 @@ export async function transition(
       });
       return { shipment: outcome.shipment, event: outcome.event };
     }
-    case 'noop':
+    case 'noop': {
+      logger.info({ shipmentId, to, actorUserId: ctx.userId }, 'shipments.transition-noop');
       return { shipment: outcome.shipment, event: null };
+    }
   }
 }
 
@@ -167,6 +181,7 @@ export async function cancelShipment(
       .from(shipments)
       .where(and(eq(shipments.id, shipmentId), eq(shipments.senderUserId, ctx.userId)));
     if (!owned) {
+      logger.warn({ shipmentId, actorUserId: ctx.userId, roleName: ctx.roleName }, 'shipments.cancel-denied');
       throw forbidden('NOT_SHIPMENT_OWNER', 'You can only cancel your own shipments');
     }
   }
@@ -194,7 +209,10 @@ export async function patchShipment(
     const isAdmin = ctx.roleName === 'ADMIN';
     const isStaff = STAFF_ROLES.has(ctx.roleName);
     const isOwner = shipment.senderUserId === ctx.userId;
-    if (!isStaff && !isOwner) throw forbidden('NOT_SHIPMENT_OWNER', 'Not authorized for this shipment');
+    if (!isStaff && !isOwner) {
+      logger.warn({ shipmentId, actorUserId: ctx.userId, roleName: ctx.roleName }, 'shipments.patch-denied');
+      throw forbidden('NOT_SHIPMENT_OWNER', 'Not authorized for this shipment');
+    }
     const lockedFields: (keyof typeof input)[] = [
       'destinationZoneId',
       'recipientName',
@@ -204,7 +222,12 @@ export async function patchShipment(
       'pickupLocationId',
     ];
     if (shipment.fieldLock && !isAdmin) {
-      for (const f of lockedFields) if (input[f] !== undefined) throw conflict('SHIPMENT_LOCKED', `Field ${f} locked while on active run`);
+      for (const f of lockedFields) {
+        if (input[f] !== undefined) {
+          logger.warn({ shipmentId, actorUserId: ctx.userId, roleName: ctx.roleName, lockedField: f }, 'shipments.field-lock-violation');
+          throw conflict('SHIPMENT_LOCKED', `Field ${f} locked while on active run`);
+        }
+      }
     }
     const patch: Record<string, unknown> = { updatedAt: new Date() };
     if (input.specialInstructions !== undefined) patch.specialInstructions = input.specialInstructions;
@@ -218,6 +241,8 @@ export async function patchShipment(
       if (input.pickupLocationId !== undefined) patch.pickupLocationId = input.pickupLocationId;
     }
     const [updated] = await tx.update(shipments).set(patch).where(eq(shipments.id, shipmentId)).returning();
+    const patchedFields = Object.keys(patch).filter((k) => k !== 'updatedAt');
+    logger.info({ shipmentId, actorUserId: ctx.userId, roleName: ctx.roleName, patchedFields }, 'shipments.patched');
     await writeAudit(tx as unknown as Db, ctx, { action: 'shipment.patch', entityType: 'shipment', entityId: shipmentId, payload: input as Record<string, unknown> });
     return updated!;
   });
@@ -237,7 +262,10 @@ export async function getShipmentWithEvents(db: Db, ctx: AuthContext, shipmentId
       shipment.senderEmail?.toLowerCase() === email ||
       shipment.recipientEmail?.toLowerCase() === email;
     // 404 rather than 403 so strangers cannot probe ids.
-    if (!visible) throw notFound('NOT_FOUND', 'Shipment not found');
+    if (!visible) {
+      logger.warn({ shipmentId, actorUserId: ctx.userId, roleName: ctx.roleName }, 'shipments.timeline-probe');
+      throw notFound('NOT_FOUND', 'Shipment not found');
+    }
   }
 
   const events = await db.query.shipmentEvents.findMany({

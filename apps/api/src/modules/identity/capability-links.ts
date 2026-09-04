@@ -1,10 +1,11 @@
-import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
+import { createHash, createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 
 import { and, eq, isNull } from 'drizzle-orm';
 import { capabilityLinks } from '@logistics/db';
 
 import { getConfig } from '../../shared/config.js';
 import type { Db } from '../../shared/db.js';
+import { logger } from '../../shared/logger.js';
 import { badRequest, conflict, forbidden, notFound } from '../../shared/errors.js';
 import { writeAudit } from '../auth/audit.js';
 
@@ -30,6 +31,10 @@ function verifyHmac(nonce: string, payload: string, signature: string, secret: s
   const expBuf = Buffer.from(expected, 'base64url');
   if (sigBuf.length !== expBuf.length) return false;
   return timingSafeEqual(sigBuf, expBuf);
+}
+
+function nonceHash(nonce: string): string {
+  return createHash('sha256').update(nonce).digest('hex');
 }
 
 export interface IssueCapabilityLinkInput {
@@ -64,6 +69,11 @@ export async function issueCapabilityLink(
     expiresAt,
   });
 
+  logger.info(
+    { action: input.action, senderUserId: input.senderUserId ?? null, expiryMinutes },
+    'identity.capability-issued',
+  );
+
   return { nonce, expiresAt };
 }
 
@@ -85,13 +95,29 @@ export async function verifyCapabilityLink(
     where: (capabilityLinks, { eq }) => eq(capabilityLinks.nonce, nonce),
   });
 
-  if (!link) throw notFound('LINK_NOT_FOUND', 'Invalid capability link');
-  if (link.usedAt) throw conflict('LINK_USED', 'This link has already been used');
-  if (link.revokedAt) throw forbidden('LINK_REVOKED', 'This link has been revoked');
-  if (link.expiresAt < new Date()) throw badRequest('LINK_EXPIRED', 'This link has expired');
+  if (!link) {
+    logger.warn({ nonceHash: nonceHash(nonce) }, 'identity.capability-link-unknown');
+    throw notFound('LINK_NOT_FOUND', 'Invalid capability link');
+  }
+  if (link.usedAt) {
+    logger.warn(
+      { linkId: link.id, action: link.action, senderUserId: link.senderUserId },
+      'identity.capability-link-reused',
+    );
+    throw conflict('LINK_USED', 'This link has already been used');
+  }
+  if (link.revokedAt) {
+    logger.warn({ linkId: link.id, action: link.action }, 'identity.capability-link-revoked-hit');
+    throw forbidden('LINK_REVOKED', 'This link has been revoked');
+  }
+  if (link.expiresAt < new Date()) {
+    logger.warn({ linkId: link.id, action: link.action }, 'identity.capability-link-expired');
+    throw badRequest('LINK_EXPIRED', 'This link has expired');
+  }
 
   const payloadStr = JSON.stringify(link.payload);
   if (!verifyHmac(nonce, payloadStr, link.hmacSignature, config.capabilityLinkSecret)) {
+    logger.warn({ linkId: link.id, action: link.action }, 'identity.capability-link-tampered');
     throw badRequest('LINK_INVALID', 'Invalid capability link signature');
   }
 
@@ -114,15 +140,32 @@ export async function consumeCapabilityLink(
     where: (capabilityLinks, { eq }) => eq(capabilityLinks.nonce, nonce),
   });
 
-  if (!link) throw notFound('LINK_NOT_FOUND', 'Invalid capability link');
-  if (link.usedAt) throw conflict('LINK_USED', 'This link has already been used');
-  if (link.revokedAt) throw forbidden('LINK_REVOKED', 'This link has been revoked');
-  if (link.expiresAt < new Date()) throw badRequest('LINK_EXPIRED', 'This link has expired');
+  if (!link) {
+    logger.warn({ nonceHash: nonceHash(nonce) }, 'identity.capability-link-unknown');
+    throw notFound('LINK_NOT_FOUND', 'Invalid capability link');
+  }
+  if (link.usedAt) {
+    logger.warn(
+      { linkId: link.id, action: link.action, senderUserId: link.senderUserId },
+      'identity.capability-link-reused',
+    );
+    throw conflict('LINK_USED', 'This link has already been used');
+  }
+  if (link.revokedAt) {
+    logger.warn({ linkId: link.id, action: link.action }, 'identity.capability-link-revoked-hit');
+    throw forbidden('LINK_REVOKED', 'This link has been revoked');
+  }
+  if (link.expiresAt < new Date()) {
+    logger.warn({ linkId: link.id, action: link.action }, 'identity.capability-link-expired');
+    throw badRequest('LINK_EXPIRED', 'This link has expired');
+  }
 
   await db
     .update(capabilityLinks)
     .set({ usedAt: new Date(), shipmentId })
     .where(eq(capabilityLinks.id, link.id));
+
+  logger.info({ linkId: link.id, action: link.action, shipmentId }, 'identity.capability-consumed');
 }
 
 export async function revokeCapabilityLink(
@@ -136,7 +179,10 @@ export async function revokeCapabilityLink(
     .where(and(eq(capabilityLinks.id, linkId), isNull(capabilityLinks.revokedAt)))
     .returning({ id: capabilityLinks.id });
 
-  if (!updated) throw notFound('LINK_NOT_FOUND', 'Link not found or already revoked');
+  if (!updated) {
+    logger.warn({ linkId, revokedBy }, 'identity.capability-revoke-denied');
+    throw notFound('LINK_NOT_FOUND', 'Link not found or already revoked');
+  }
 
   await writeAudit(db, null, {
     action: 'identity.capability-revoke',
@@ -144,4 +190,6 @@ export async function revokeCapabilityLink(
     entityId: linkId,
     payload: { revokedBy },
   });
+
+  logger.info({ linkId, revokedBy }, 'identity.capability-revoked');
 }

@@ -1,6 +1,7 @@
 import { Resend } from 'resend';
 
 import { getConfig } from '../../shared/config.js';
+import { logger } from '../../shared/logger.js';
 
 export interface Mailer {
   sendVerificationEmail(to: string, token: string): Promise<void>;
@@ -49,6 +50,11 @@ export class ResendMailer implements Mailer {
   }
 
   async sendNotificationEmail(to: string, subject: string, body: string): Promise<void> {
-    await this.resend.emails.send({ from: this.from, to, subject, text: body });
+    try {
+      await this.resend.emails.send({ from: this.from, to, subject, text: body });
+    } catch (err) {
+      logger.error({ err, purpose: 'notification' }, 'auth.email-send-failed');
+      throw err;
+    }
   }
 }
