@@ -8,6 +8,7 @@ import { requireAuth, requirePermission } from '../auth/middleware.js';
 import { PERMISSIONS } from '../auth/permissions.js';
 import type { Mailer } from '../auth/emails.js';
 import { parse } from '../../shared/validate.js';
+import { logger } from '../../shared/logger.js';
 
 import * as service from './service.js';
 import type { ShipmentStatus } from './transitions.js';
@@ -129,7 +130,7 @@ export function shipmentsRouter(db: Db, mailer?: Mailer): Router {
     try {
       await notifyTransition(db, mailer, result.shipment, result.event);
     } catch (err) {
-      console.error('notification fan-out failed', err);
+      logger.error({ err, shipmentId: result.shipment.id, status: result.event.toStatus }, 'notification fan-out failed');
     }
   }
 

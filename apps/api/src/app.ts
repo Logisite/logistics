@@ -1,5 +1,6 @@
 import express from 'express';
 import type { ErrorRequestHandler, Express } from 'express';
+import pinoHttp from 'pino-http';
 
 import { authRouter, capabilityRouter, requireAuth, requirePermission, PERMISSIONS } from './modules/auth/index.js';
 import type { Mailer } from './modules/auth/index.js';
@@ -18,30 +19,47 @@ import { API } from './openapi/registry.js';
 import pkg from '../package.json' with { type: 'json' };
 import { HttpError } from './shared/errors.js';
 import { getConfig } from './shared/config.js';
+import { logger } from './shared/logger.js';
 
 export interface AppDeps {
   db: Db;
   mailer: Mailer;
 }
 
-const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
+const errorHandler: ErrorRequestHandler = (err, req, res, _next) => {
   if (err instanceof HttpError) {
     res.status(err.status).json({ error: { code: err.code, message: err.message } });
     return;
   }
-  console.error(err);
+  req.log.error({ err }, 'unhandled error');
   res.status(500).json({ error: { code: 'INTERNAL', message: 'Internal server error' } });
 };
 
 export function createApp({ db, mailer }: AppDeps): Express {
   const app = express();
+  const config = getConfig();
+
+  const httpLogger = pinoHttp({
+    logger,
+    genReqId: (req) => (req.headers['x-request-id'] as string) ?? undefined,
+    customSuccessMessage: (req: express.Request, res: express.Response) => {
+      if (res.statusCode >= 400) return 'request failed';
+      return 'request completed';
+    },
+    customLogLevel: (_req: express.Request, res: express.Response, err?: Error) => {
+      if (err || res.statusCode >= 500) return 'error';
+      if (res.statusCode >= 400) return 'warn';
+      return 'info';
+    },
+  });
+
+  app.use(httpLogger);
 
   app.use(express.json());
 
   app.use((req, res, next) => {
     const origin = req.headers.origin;
-    const allowed = getConfig().appUrl;
-    if (origin && origin === allowed) {
+    if (origin && origin === config.appUrl) {
       res.setHeader('Access-Control-Allow-Origin', origin);
       res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
       res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');

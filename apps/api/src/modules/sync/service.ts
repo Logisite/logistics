@@ -80,7 +80,7 @@ export async function pushLedger(
     .orderBy(syncLedger.seq);
 
   const skewMs = getConfig().syncSkewMs;
-  const operatorId = null;
+  const operatorId = undefined;
   const results: Array<{ seq: number; opId: string; status: string }> = [];
   for (const row of pending) {
     const outcome = await db.transaction(async (tx) => {
