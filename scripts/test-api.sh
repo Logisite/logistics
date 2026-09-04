@@ -49,3 +49,5 @@ reset_db
 run "cod-reconciliation" pnpm -F @logistics/api exec vitest run --reporter=verbose test/cod.reconciliation.test.ts
 reset_db
 run "cod-settlement" pnpm -F @logistics/api exec vitest run --reporter=verbose test/cod.settlement.test.ts
+reset_db
+run "sync-ws" pnpm -F @logistics/api exec vitest run --reporter=verbose test/sync.ws.test.ts

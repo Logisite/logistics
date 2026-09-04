@@ -4,6 +4,7 @@ import { gpsPositions, hubs, runs, runSheetEntries, shipments } from '@logistics
 
 import { writeAudit } from '../auth/audit.js';
 import type { AuthContext } from '../auth/middleware.js';
+import { syncEmitter } from '../sync/events.js';
 import type { Db } from '../../shared/db.js';
 import { badRequest, conflict, forbidden, notFound } from '../../shared/errors.js';
 import { logger } from '../../shared/logger.js';
@@ -149,7 +150,7 @@ export async function cancelRun(db: Db, ctx: AuthContext, runId: string) {
 }
 
 export async function pushGps(db: Db, ctx: AuthContext, runId: string, positions: Array<{ latitude: number; longitude: number; recordedAt?: string }>) {
-  return db.transaction(async (tx) => {
+  const count = await db.transaction(async (tx) => {
     await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${runId}::text))`);
     const [run] = await tx.select().from(runs).where(eq(runs.id, runId)).for('update');
     if (!run) {
@@ -171,6 +172,17 @@ export async function pushGps(db: Db, ctx: AuthContext, runId: string, positions
     logger.info({ runId, driverUserId: run.driverUserId, actorUserId: ctx.userId, positionCount: rows.length }, 'operations.gps-accepted');
     return rows.length;
   });
+  // Emit after commit so subscribers never see rolled-back positions.
+  for (const p of positions) {
+    syncEmitter.emit('gps:position', {
+      runId,
+      driverUserId: ctx.userId,
+      latitude: p.latitude,
+      longitude: p.longitude,
+      recordedAt: p.recordedAt ? new Date(p.recordedAt) : new Date(),
+    });
+  }
+  return count;
 }
 
 export async function getRunSheet(db: Db, ctx: AuthContext, runId: string) {

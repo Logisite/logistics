@@ -1,4 +1,4 @@
-import type { Mailer } from '../src/auth/emails.js';
+import type { Mailer } from '../src/modules/auth/emails.js';
 
 export type SentEmailKind = 'verification' | 'invite' | 'passwordReset' | 'notification';
 

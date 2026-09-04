@@ -2,8 +2,8 @@ import request from 'supertest';
 
 import { createApp } from '../src/app.js';
 import type { AppDeps } from '../src/app.js';
-import { seedAuthData } from '../src/auth/seed.js';
-import type { Db } from '../src/db.js';
+import { seedAuthData } from '../src/modules/auth/seed.js';
+import type { Db } from '../src/shared/db.js';
 
 import { createTestDb } from './db.js';
 import { FakeMailer } from './fakes.js';

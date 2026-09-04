@@ -6,11 +6,11 @@ import { phoneOtps } from '@logistics/db';
 
 import { createApp } from '../src/app.js';
 import type { AppDeps } from '../src/app.js';
-import { seedAuthData } from '../src/auth/seed.js';
-import { FakeSmsProvider } from '../src/auth/sms.js';
-import { requestOtp, verifyOtp } from '../src/auth/phone-verification.js';
-import { issueCapabilityLink, verifyCapabilityLink, consumeCapabilityLink } from '../src/auth/capability-links.js';
-import type { Db } from '../src/db.js';
+import { seedAuthData } from '../src/modules/auth/seed.js';
+import { FakeSmsProvider } from '../src/modules/identity/sms.js';
+import { requestOtp, verifyOtp } from '../src/modules/identity/phone-verification.js';
+import { issueCapabilityLink, verifyCapabilityLink, consumeCapabilityLink } from '../src/modules/identity/capability-links.js';
+import type { Db } from '../src/shared/db.js';
 
 import { createTestDb } from './db.js';
 import { FakeMailer } from './fakes.js';
@@ -251,8 +251,8 @@ describe('identity pack', () => {
   });
 
   async function getAccessToken(userId: string): Promise<string> {
-    const { signAccessToken } = await import('../src/auth/tokens.js');
-    const { getConfig } = await import('../src/config.js');
+    const { signAccessToken } = await import('../src/modules/auth/tokens.js');
+    const { getConfig } = await import('../src/shared/config.js');
     const config = getConfig();
 
     return signAccessToken(

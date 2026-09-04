@@ -1,9 +1,10 @@
 import { and, eq } from 'drizzle-orm';
 
-import { shipments, shipmentEvents } from '@logistics/db';
+import { runs, runSheetEntries, shipments, shipmentEvents } from '@logistics/db';
 
 import { writeAudit } from '../auth/audit.js';
 import type { AuthContext } from '../auth/middleware.js';
+import { syncEmitter } from '../sync/events.js';
 import type { Db } from '../../shared/db.js';
 import { conflict, forbidden, notFound } from '../../shared/errors.js';
 import { logger } from '../../shared/logger.js';
@@ -74,6 +75,23 @@ export async function applyTransitionTx(
       operatorId: input.operatorId ?? null,
     })
     .returning();
+  // Live-tracking hint for WS subscribers. Emitted pre-commit alongside the
+  // applied outcome; subscribers treat it as a hint and pull authoritative state.
+  const activeRun = await tx
+    .select({ runId: runSheetEntries.runId })
+    .from(runSheetEntries)
+    .innerJoin(runs, eq(runs.id, runSheetEntries.runId))
+    .where(and(eq(runSheetEntries.shipmentId, shipmentId), eq(runs.status, 'ACTIVE')))
+    .limit(1);
+  syncEmitter.emit('shipment:status', {
+    shipmentId,
+    runId: activeRun[0]?.runId ?? null,
+    from: shipment.status,
+    to,
+    actorUserId: ctx.userId,
+    locationLabel: input.locationLabel,
+    occurredAt,
+  });
   return { kind: 'applied', from: shipment.status, shipment: updated!, event: event! };
 }
 
@@ -159,6 +177,21 @@ export async function transition(
         entityType: 'shipment',
         entityId: shipmentId,
         payload: { from: outcome.from, to },
+      });
+      const activeRun = await db
+        .select({ runId: runSheetEntries.runId })
+        .from(runSheetEntries)
+        .innerJoin(runs, eq(runs.id, runSheetEntries.runId))
+        .where(and(eq(runSheetEntries.shipmentId, shipmentId), eq(runs.status, 'ACTIVE')))
+        .limit(1);
+      syncEmitter.emit('shipment:status', {
+        shipmentId,
+        runId: activeRun[0]?.runId ?? null,
+        from: outcome.from,
+        to,
+        actorUserId: ctx.userId,
+        locationLabel: input.locationLabel,
+        occurredAt,
       });
       return { shipment: outcome.shipment, event: outcome.event };
     }

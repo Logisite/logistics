@@ -6,11 +6,11 @@ import { passwordResets, roleGrants, roles, users } from '@logistics/db';
 
 import { createApp } from '../src/app.js';
 import type { AppDeps } from '../src/app.js';
-import { getConfig } from '../src/config.js';
-import { seedAuthData, ensureOwner } from '../src/auth/seed.js';
-import { emailTokenSecret, generateOpaqueToken, hashOpaqueToken, signAccessToken } from '../src/auth/tokens.js';
-import { ROLE_PERMISSIONS } from '../src/auth/permissions.js';
-import type { Db } from '../src/db.js';
+import { getConfig } from '../src/shared/config.js';
+import { seedAuthData, ensureOwner } from '../src/modules/auth/seed.js';
+import { emailTokenSecret, generateOpaqueToken, hashOpaqueToken, signAccessToken } from '../src/modules/auth/tokens.js';
+import { ROLE_PERMISSIONS } from '../src/modules/auth/permissions.js';
+import type { Db } from '../src/shared/db.js';
 
 import { createTestDb } from './db.js';
 import { FakeMailer } from './fakes.js';

@@ -2,7 +2,7 @@ import { hash } from 'bcryptjs';
 
 import { roleGrants, users } from '@logistics/db';
 
-import type { Db } from '../src/db.js';
+import type { Db } from '../src/shared/db.js';
 
 export const TEST_PASSWORD = 'password123';
 
