@@ -18,14 +18,14 @@ export default tseslint.config(
         'error',
         {
           default: 'disallow',
-          policies: [
+          rules: [
             {
-              from: { element: { type: 'app' } },
-              allow: { to: { element: { types: ['app', 'package'] } } },
+              from: { type: 'app' },
+              allow: { to: { type: ['app', 'package'] } },
             },
             {
-              from: { element: { type: 'package' } },
-              allow: { to: { element: { type: 'package' } } },
+              from: { type: 'package' },
+              allow: { to: { type: 'package' } },
             },
           ],
         },
@@ -36,6 +36,7 @@ export default tseslint.config(
         { type: 'app', pattern: 'apps/*', mode: 'folder' },
         { type: 'package', pattern: 'packages/*', mode: 'folder' },
       ],
+      'boundaries/root-path': import.meta.dirname,
       'import/resolver': {
         typescript: { alwaysTryTypes: true },
         node: true,

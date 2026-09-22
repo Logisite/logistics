@@ -1,5 +1,5 @@
 import { eq } from 'drizzle-orm';
-import { WebSocket, WebSocketServer } from 'ws';
+import { WebSocket, type WebSocketServer } from 'ws';
 
 import { runs, shipments } from '@logistics/db';
 
