@@ -131,7 +131,7 @@ export function shipmentsRouter(db: Db, mailer?: Mailer): Router {
     try {
       await notifyTransition(db, mailer, result.shipment, result.event);
     } catch (err) {
-      logger.error({ err, shipmentId: result.shipment.id, status: result.event.toStatus, actorUserId: ctx.userId }, 'notification fan-out failed');
+      logger.error({ err, shipmentId: result.shipment.id, status: result.event.toStatus, actorUserId: ctx.userId }, 'notifications.fan-out-failed');
     }
   }
 

@@ -10,6 +10,8 @@ import { badRequest } from '../../shared/errors.js';
 import { logger } from '../../shared/logger.js';
 
 import { applyTransitionTx } from '../shipments/index.js';
+import { syncEmitter } from './events.js';
+import type { ShipmentStatusEvent } from './events.js';
 import { canTransition } from '../shipments/index.js';
 import type { ShipmentStatus } from '../shipments/index.js';
 import type { TxHandle } from '../shipments/service.js';
@@ -105,7 +107,7 @@ export async function pushLedger(
     'sync.push-started',
   );
   for (const row of pending) {
-    let outcome: { status: string };
+    let outcome: { status: string; liveEvent?: ShipmentStatusEvent };
     try {
       outcome = await db.transaction(async (tx) => {
       await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${deviceId}::text))`);
@@ -206,7 +208,11 @@ export async function pushLedger(
             { deviceId, userId: ctx.userId, opId: locked.opId, seq: locked.seq, action: locked.action, entityId: locked.entityId, toStatus },
             'sync.op-applied',
           );
-          return { status: 'APPLIED' };
+          if (outcome.kind !== 'applied') {
+            // Concurrent apply won the race: no state change, so no broadcast.
+            return { status: 'APPLIED' };
+          }
+          return { status: 'APPLIED', liveEvent: outcome.liveEvent };
         }
 
         const [shipment] = await tx.select().from(shipments).where(eq(shipments.id, locked.entityId)).for('update');
@@ -242,6 +248,10 @@ export async function pushLedger(
     } catch (err) {
       logger.error({ err, deviceId, userId: ctx.userId, opId: row.opId, seq: row.seq, entityId: row.entityId }, 'sync.op-failed');
       throw err;
+    }
+    // Post-commit fan-out. Idempotent replays carry no liveEvent, so retries never double-broadcast.
+    if (outcome.status === 'APPLIED' && outcome.liveEvent) {
+      syncEmitter.emit('shipment:status', outcome.liveEvent);
     }
     results.push({ seq: row.seq, opId: row.opId, status: outcome.status });
   }

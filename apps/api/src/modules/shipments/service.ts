@@ -5,6 +5,7 @@ import { runs, runSheetEntries, shipments, shipmentEvents } from '@logistics/db'
 import { writeAudit } from '../auth/audit.js';
 import type { AuthContext } from '../auth/middleware.js';
 import { syncEmitter } from '../sync/events.js';
+import type { ShipmentStatusEvent } from '../sync/events.js';
 import type { Db } from '../../shared/db.js';
 import { conflict, forbidden, notFound } from '../../shared/errors.js';
 import { logger } from '../../shared/logger.js';
@@ -29,12 +30,14 @@ type Outcome =
   | { kind: 'missing' }
   | { kind: 'noop'; shipment: typeof shipments.$inferSelect }
   | { kind: 'rejected'; from: ShipmentStatus }
-  | {
-      kind: 'applied';
-      from: ShipmentStatus;
-      shipment: typeof shipments.$inferSelect;
-      event: typeof shipmentEvents.$inferSelect;
-    };
+    | {
+        kind: 'applied';
+        from: ShipmentStatus;
+        shipment: typeof shipments.$inferSelect;
+        event: typeof shipmentEvents.$inferSelect;
+        /** Live WS event. Built pre-commit (read-only addressing); the caller emits only after commit. */
+        liveEvent?: ShipmentStatusEvent;
+      };
 
 function buildMetadata(input: TransitionInput): Record<string, unknown> | null {
   const meta: Record<string, unknown> = { ...(input.metadata ?? {}) };
@@ -75,24 +78,28 @@ export async function applyTransitionTx(
       operatorId: input.operatorId ?? null,
     })
     .returning();
-  // Live-tracking hint for WS subscribers. Emitted pre-commit alongside the
-  // applied outcome; subscribers treat it as a hint and pull authoritative state.
+  // Run lookup is read-only addressing; the caller emits liveEvent post-commit.
   const activeRun = await tx
     .select({ runId: runSheetEntries.runId })
     .from(runSheetEntries)
     .innerJoin(runs, eq(runs.id, runSheetEntries.runId))
     .where(and(eq(runSheetEntries.shipmentId, shipmentId), eq(runs.status, 'ACTIVE')))
     .limit(1);
-  syncEmitter.emit('shipment:status', {
-    shipmentId,
-    runId: activeRun[0]?.runId ?? null,
+  return {
+    kind: 'applied',
     from: shipment.status,
-    to,
-    actorUserId: ctx.userId,
-    locationLabel: input.locationLabel,
-    occurredAt,
-  });
-  return { kind: 'applied', from: shipment.status, shipment: updated!, event: event! };
+    shipment: updated!,
+    event: event!,
+    liveEvent: {
+      shipmentId,
+      runId: activeRun[0]?.runId ?? null,
+      from: shipment.status,
+      to,
+      actorUserId: ctx.userId,
+      locationLabel: input.locationLabel,
+      occurredAt,
+    },
+  };
 }
 
 /** same state is an idempotent no-op, invalid attempts are audited then rejected */
