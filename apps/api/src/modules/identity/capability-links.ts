@@ -1,4 +1,4 @@
-import { createHash, createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
+import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 
 import { and, eq, isNull } from 'drizzle-orm';
 import { capabilityLinks } from '@logistics/db';
@@ -8,6 +8,8 @@ import type { Db } from '../../shared/db.js';
 import { logger } from '../../shared/logger.js';
 import { badRequest, conflict, forbidden, notFound } from '../../shared/errors.js';
 import { writeAudit } from '../auth/audit.js';
+
+import { sha256Hex } from './hash.js';
 
 export type CapabilityAction = 'BOOKING' | 'TRACKING' | 'CLAIM';
 
@@ -31,10 +33,6 @@ function verifyHmac(nonce: string, payload: string, signature: string, secret: s
   const expBuf = Buffer.from(expected, 'base64url');
   if (sigBuf.length !== expBuf.length) return false;
   return timingSafeEqual(sigBuf, expBuf);
-}
-
-function nonceHash(nonce: string): string {
-  return createHash('sha256').update(nonce).digest('hex');
 }
 
 export interface IssueCapabilityLinkInput {
@@ -96,7 +94,7 @@ export async function verifyCapabilityLink(
   });
 
   if (!link) {
-    logger.warn({ nonceHash: nonceHash(nonce) }, 'identity.capability-link-unknown');
+    logger.warn({ nonceHash: sha256Hex(nonce) }, 'identity.capability-link-unknown');
     throw notFound('LINK_NOT_FOUND', 'Invalid capability link');
   }
   if (link.usedAt) {
@@ -141,7 +139,7 @@ export async function consumeCapabilityLink(
   });
 
   if (!link) {
-    logger.warn({ nonceHash: nonceHash(nonce) }, 'identity.capability-link-unknown');
+    logger.warn({ nonceHash: sha256Hex(nonce) }, 'identity.capability-link-unknown');
     throw notFound('LINK_NOT_FOUND', 'Invalid capability link');
   }
   if (link.usedAt) {

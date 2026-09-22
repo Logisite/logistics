@@ -1,14 +1,10 @@
-import { createHash } from 'node:crypto';
-
 import { getConfig } from '../../shared/config.js';
 import { logger } from '../../shared/logger.js';
 
+import { sha256Hex } from './hash.js';
+
 export interface SmsProvider {
   sendOtp(phone: string, code: string): Promise<void>;
-}
-
-function phoneHash(phone: string): string {
-  return createHash('sha256').update(phone).digest('hex');
 }
 
 export class TwilioSmsProvider implements SmsProvider {
@@ -47,7 +43,7 @@ export class TwilioSmsProvider implements SmsProvider {
     if (!response.ok) {
       const error = await response.text();
       logger.error(
-        { phoneHash: phoneHash(phone), smsStatus: response.status },
+        { phoneHash: sha256Hex(phone), smsStatus: response.status },
         'identity.sms-send-failed',
       );
       throw new Error(`Twilio SMS failed (${response.status}): ${error}`);

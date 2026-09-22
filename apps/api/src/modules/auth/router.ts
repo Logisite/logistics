@@ -214,7 +214,7 @@ export function authRouter(db: Db, mailer: Mailer): Router {
     const { phone } = parse(otpRequestSchema, req.body);
     const parsed = parsePhone(phone);
     const sms = createSmsProvider();
-    // Failures already logged inside requestOtp with phoneHash + purpose.
+    // Failures already logged inside requestOtp with phone hash + purpose.
     const result = await requestOtp(db, sms, parsed.phone, 'login');
     res.json(result);
   });
@@ -222,7 +222,7 @@ export function authRouter(db: Db, mailer: Mailer): Router {
   router.post('/otp/verify', async (req, res) => {
     const { phone, code } = parse(otpVerifySchema, req.body);
     const parsed = parsePhone(phone);
-    // Failures already logged inside verifyOtp with phoneHash + purpose + country.
+    // Failures already logged inside verifyOtp with phone hash + purpose + country.
     const result: Awaited<ReturnType<typeof verifyOtp>> = await verifyOtp(db, parsed.phone, code, 'login', parsed.country);
 
     const config = getConfig();

@@ -1,5 +1,3 @@
-import { createHash } from 'node:crypto';
-
 import { and, eq } from 'drizzle-orm';
 import { users, roleGrants } from '@logistics/db';
 
@@ -10,13 +8,11 @@ import { forbidden } from '../../shared/errors.js';
 
 import { writeAudit } from '../auth/audit.js';
 
+import { sha256Hex } from './hash.js';
+
 export interface ShadowUser {
   id: string;
   isShadow: boolean;
-}
-
-function phoneHash(phone: string): string {
-  return createHash('sha256').update(phone).digest('hex');
 }
 
 export async function mintShadow(
@@ -39,7 +35,7 @@ export async function mintShadow(
     .returning({ id: users.id });
 
   if (!user) {
-    logger.error({ phoneHash: phoneHash(phone), purpose }, 'identity.shadow-mint-failed');
+    logger.error({ phoneHash: sha256Hex(phone), purpose }, 'identity.shadow-mint-failed');
     throw new Error('mintShadow: insert returned nothing');
   }
 
@@ -59,7 +55,7 @@ export async function mintShadow(
     payload: { phone, purpose },
   });
 
-  logger.info({ userId: user.id, phoneHash: phoneHash(phone), purpose }, 'identity.shadow-minted');
+  logger.info({ userId: user.id, phoneHash: sha256Hex(phone), purpose }, 'identity.shadow-minted');
 
   return { id: user.id, isShadow: true };
 }
