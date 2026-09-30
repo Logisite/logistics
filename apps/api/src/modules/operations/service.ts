@@ -172,7 +172,6 @@ export async function pushGps(db: Db, ctx: AuthContext, runId: string, positions
     logger.info({ runId, driverUserId: run.driverUserId, actorUserId: ctx.userId, positionCount: rows.length }, 'operations.gps-accepted');
     return rows.length;
   });
-  // Emit after commit so subscribers never see rolled-back positions.
   for (const p of positions) {
     syncEmitter.emit('gps:position', {
       runId,

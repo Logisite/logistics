@@ -1,4 +1,4 @@
-import { and, eq } from 'drizzle-orm';
+import { and, eq, inArray } from 'drizzle-orm';
 
 import { runs, runSheetEntries, shipments, shipmentEvents } from '@logistics/db';
 
@@ -21,6 +21,10 @@ export interface TransitionInput {
   metadata?: Record<string, unknown>;
 }
 
+export interface TransitionAuthority {
+  established: true;
+}
+
 export interface TransitionResult {
   shipment: typeof shipments.$inferSelect;
   event: typeof shipmentEvents.$inferSelect | null;
@@ -28,6 +32,7 @@ export interface TransitionResult {
 
 type Outcome =
   | { kind: 'missing' }
+  | { kind: 'not_visible' }
   | { kind: 'noop'; shipment: typeof shipments.$inferSelect }
   | { kind: 'rejected'; from: ShipmentStatus }
     | {
@@ -35,7 +40,6 @@ type Outcome =
         from: ShipmentStatus;
         shipment: typeof shipments.$inferSelect;
         event: typeof shipmentEvents.$inferSelect;
-        /** Live WS event. Built pre-commit (read-only addressing); the caller emits only after commit. */
         liveEvent?: ShipmentStatusEvent;
       };
 
@@ -47,15 +51,37 @@ function buildMetadata(input: TransitionInput): Record<string, unknown> | null {
 
 export type TxHandle = Parameters<Parameters<Db['transaction']>[0]>[0];
 
+async function mayDriveShipment(db: Db, ctx: AuthContext, shipmentId: string): Promise<boolean> {
+  if (STAFF_ROLES.has(ctx.roleName)) return true;
+  if (ctx.roleName !== 'DRIVER') return false;
+  const [assigned] = await db
+    .select({ shipmentId: runSheetEntries.shipmentId })
+    .from(runSheetEntries)
+    .innerJoin(runs, eq(runs.id, runSheetEntries.runId))
+    .where(
+      and(
+        eq(runSheetEntries.shipmentId, shipmentId),
+        eq(runs.driverUserId, ctx.userId),
+        inArray(runs.status, ['PLANNED', 'ACTIVE']),
+      ),
+    )
+    .limit(1);
+  return !!assigned;
+}
+
 export async function applyTransitionTx(
   tx: TxHandle,
   ctx: AuthContext,
   shipmentId: string,
   to: ShipmentStatus,
-  input: TransitionInput & { occurredAt?: Date; deviceId?: string; opId?: string; operatorId?: string },
+  input: TransitionInput & { occurredAt?: Date; deviceId?: string; opId?: string; operatorId?: string; authority?: TransitionAuthority },
 ): Promise<Outcome> {
   const [shipment] = await tx.select().from(shipments).where(eq(shipments.id, shipmentId)).for('update');
   if (!shipment) return { kind: 'missing' };
+  if (!(input.authority ?? await mayDriveShipment(tx as unknown as Db, ctx, shipmentId))) {
+    logger.warn({ shipmentId, actorUserId: ctx.userId, roleName: ctx.roleName, to }, 'shipments.transition-denied');
+    return { kind: 'not_visible' };
+  }
   if (shipment.status === to) return { kind: 'noop', shipment };
   if (!canTransition(shipment.status, to)) {
     logger.warn({ shipmentId, from: shipment.status, to, actorUserId: ctx.userId }, 'shipments.transition-rejected');
@@ -78,7 +104,6 @@ export async function applyTransitionTx(
       operatorId: input.operatorId ?? null,
     })
     .returning();
-  // Run lookup is read-only addressing; the caller emits liveEvent post-commit.
   const activeRun = await tx
     .select({ runId: runSheetEntries.runId })
     .from(runSheetEntries)
@@ -109,6 +134,7 @@ export async function transition(
   shipmentId: string,
   to: ShipmentStatus,
   input: TransitionInput = {},
+  authority?: TransitionAuthority,
 ): Promise<TransitionResult> {
   const occurredAt = new Date();
   const metadata = buildMetadata(input);
@@ -121,6 +147,11 @@ export async function transition(
       .for('update');
 
     if (!shipment) return { kind: 'missing' };
+
+    if (!(authority ?? (await mayDriveShipment(tx as unknown as Db, ctx, shipmentId)))) {
+      logger.warn({ shipmentId, actorUserId: ctx.userId, roleName: ctx.roleName, to }, 'shipments.transition-denied');
+      return { kind: 'not_visible' };
+    }
 
     if (shipment.status === to) return { kind: 'noop', shipment };
 
@@ -157,6 +188,8 @@ export async function transition(
 
   switch (outcome.kind) {
     case 'missing':
+      throw notFound('NOT_FOUND', 'Shipment not found');
+    case 'not_visible':
       throw notFound('NOT_FOUND', 'Shipment not found');
     case 'rejected': {
       logger.warn(
@@ -225,7 +258,7 @@ export async function cancelShipment(
       throw forbidden('NOT_SHIPMENT_OWNER', 'You can only cancel your own shipments');
     }
   }
-  return transition(db, ctx, shipmentId, 'CANCELLED', input);
+  return transition(db, ctx, shipmentId, 'CANCELLED', input, { established: true });
 }
 
 export async function patchShipment(

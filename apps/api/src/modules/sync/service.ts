@@ -196,7 +196,7 @@ export async function pushLedger(
             );
             return reject(tx, row.id, 'INVALID_TRANSITION');
           }
-          if (outcome.kind === 'missing') {
+          if (outcome.kind === 'missing' || outcome.kind === 'not_visible') {
             logger.warn(
               { code: 'NOT_FOUND', source: 'APPLY', deviceId, userId: ctx.userId, opId: locked.opId, seq: locked.seq, action: locked.action, entityId: locked.entityId },
               'sync.op-rejected',
@@ -249,7 +249,6 @@ export async function pushLedger(
       logger.error({ err, deviceId, userId: ctx.userId, opId: row.opId, seq: row.seq, entityId: row.entityId }, 'sync.op-failed');
       throw err;
     }
-    // Post-commit fan-out. Idempotent replays carry no liveEvent, so retries never double-broadcast.
     if (outcome.status === 'APPLIED' && outcome.liveEvent) {
       syncEmitter.emit('shipment:status', outcome.liveEvent);
     }
