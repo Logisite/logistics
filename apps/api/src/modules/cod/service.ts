@@ -620,7 +620,7 @@ export async function pendingSummary(db: Db) {
     .select({
       currency: collections.currency,
       count: sql<number>`count(*)::int`,
-      total: sql<number>`coalesce(sum(${collections.amountCents}), 0)::int`,
+      total: sql<number>`coalesce(sum(${collections.amountCents}), 0)::float8`,
     })
     .from(collections)
     .where(

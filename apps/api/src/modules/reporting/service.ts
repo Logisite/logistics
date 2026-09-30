@@ -39,7 +39,7 @@ export async function revenueVolume(db: Db, from?: string, to?: string, zoneId?:
   if (route) where.push(eq(shipments.destinationZoneId, route));
   const clause = where.length ? and(...where) : undefined;
   const rows = await db
-    .select({ currency: shipments.quoteCurrency, count: sql<number>`count(*)::int`, total: sql<number>`coalesce(sum(${shipments.quoteAmountCents}),0)::int` })
+    .select({ currency: shipments.quoteCurrency, count: sql<number>`count(*)::int`, total: sql<number>`coalesce(sum(${shipments.quoteAmountCents}),0)::float8` })
     .from(shipments)
     .where(clause)
     .groupBy(shipments.quoteCurrency);
@@ -65,10 +65,16 @@ export async function codReconciliationReport(db: Db, periodStart?: string, peri
   if (periodStart) reconWhere.push(gte(reconciliations.createdAt, new Date(periodStart)));
   if (periodEnd) reconWhere.push(lte(reconciliations.createdAt, new Date(periodEnd)));
   const reconClause = reconWhere.length ? and(...reconWhere) : undefined;
+  // A settlement is scoped by its own period, not by the timestamp of a reconciliation row.
+  // Count the settlements whose period overlaps the requested window.
+  const settlementWhere = [];
+  if (periodStart) settlementWhere.push(gte(settlements.periodEnd, new Date(periodStart)));
+  if (periodEnd) settlementWhere.push(lte(settlements.periodStart, new Date(periodEnd)));
+  const settlementClause = settlementWhere.length ? and(...settlementWhere) : undefined;
   const [cols, recons, sets, reconFunctionalRows, reconciledIdsRows, allCols] = await Promise.all([
-    db.select({ currency: collections.currency, count: sql<number>`count(*)::int`, total: sql<number>`coalesce(sum(${collections.amountCents}),0)::int` }).from(collections).where(clause).groupBy(collections.currency),
+    db.select({ currency: collections.currency, count: sql<number>`count(*)::int`, total: sql<number>`coalesce(sum(${collections.amountCents}),0)::float8` }).from(collections).where(clause).groupBy(collections.currency),
     db.select({ count: sql<number>`count(*)::int` }).from(reconciliations).where(reconClause),
-    db.select({ count: sql<number>`count(*)::int` }).from(settlements).where(reconClause),
+    db.select({ count: sql<number>`count(*)::int` }).from(settlements).where(settlementClause),
     db.select({ amount: reconciliations.functionalAmountCents }).from(reconciliations).where(reconClause),
     db.select({ id: reconciliations.collectionId }).from(reconciliations).where(reconClause),
     db.select({ id: collections.id, currency: collections.currency, amountCents: collections.amountCents }).from(collections).where(clause),
