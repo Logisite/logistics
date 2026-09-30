@@ -1,0 +1,1 @@
+ALTER TABLE "run_sheet_entries" ADD CONSTRAINT "run_sheet_entries_shipment_unique" UNIQUE("shipment_id");

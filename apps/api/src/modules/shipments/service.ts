@@ -4,6 +4,7 @@ import { runs, runSheetEntries, shipments, shipmentEvents } from '@logistics/db'
 
 import { writeAudit } from '../auth/audit.js';
 import type { AuthContext } from '../auth/middleware.js';
+import { PERMISSIONS } from '../auth/permissions.js';
 import { syncEmitter } from '../sync/events.js';
 import type { ShipmentStatusEvent } from '../sync/events.js';
 import type { Db } from '../../shared/db.js';
@@ -261,20 +262,41 @@ export async function cancelShipment(
   return transition(db, ctx, shipmentId, 'CANCELLED', input, { established: true });
 }
 
+const MANAGE_FIELDS = [
+  'destinationZoneId',
+  'recipientName',
+  'recipientEmail',
+  'recipientPhone',
+  'deliveryOptionId',
+  'pickupLocationId',
+] as const;
+
+type PatchField =
+  | 'specialInstructions'
+  | 'category'
+  | 'destinationZoneId'
+  | 'recipientName'
+  | 'recipientEmail'
+  | 'recipientPhone'
+  | 'deliveryOptionId'
+  | 'pickupLocationId';
+
+export interface PatchInput {
+  specialInstructions?: string | null;
+  category?: string | null;
+  destinationZoneId?: string;
+  recipientName?: string;
+  recipientEmail?: string | null;
+  recipientPhone?: string | null;
+  deliveryOptionId?: string;
+  pickupLocationId?: string;
+}
+
 export async function patchShipment(
   db: Db,
   ctx: AuthContext,
   shipmentId: string,
-  input: {
-    specialInstructions?: string | null;
-    category?: string | null;
-    destinationZoneId?: string;
-    recipientName?: string;
-    recipientEmail?: string | null;
-    recipientPhone?: string | null;
-    deliveryOptionId?: string;
-    pickupLocationId?: string;
-  },
+  input: PatchInput,
 ) {
   return db.transaction(async (tx) => {
     const [shipment] = await tx.select().from(shipments).where(eq(shipments.id, shipmentId)).for('update');
@@ -286,32 +308,33 @@ export async function patchShipment(
       logger.warn({ shipmentId, actorUserId: ctx.userId, roleName: ctx.roleName }, 'shipments.patch-denied');
       throw forbidden('NOT_SHIPMENT_OWNER', 'Not authorized for this shipment');
     }
-    const lockedFields: (keyof typeof input)[] = [
-      'destinationZoneId',
-      'recipientName',
-      'recipientEmail',
-      'recipientPhone',
-      'deliveryOptionId',
-      'pickupLocationId',
-    ];
-    if (shipment.fieldLock && !isAdmin) {
-      for (const f of lockedFields) {
-        if (input[f] !== undefined) {
-          logger.warn({ shipmentId, actorUserId: ctx.userId, roleName: ctx.roleName, lockedField: f }, 'shipments.field-lock-violation');
-          throw conflict('SHIPMENT_LOCKED', `Field ${f} locked while on active run`);
-        }
+    const canManage = isStaff || ctx.permissions.has(PERMISSIONS.SHIPMENTS_MANAGE);
+
+    const activeRun = await tx
+      .select({ runId: runSheetEntries.runId })
+      .from(runSheetEntries)
+      .innerJoin(runs, eq(runs.id, runSheetEntries.runId))
+      .where(and(eq(runSheetEntries.shipmentId, shipmentId), eq(runs.status, 'ACTIVE')))
+      .limit(1);
+    const isLocked = shipment.fieldLock || activeRun.length > 0;
+
+    for (const field of MANAGE_FIELDS) {
+      if (input[field] === undefined) continue;
+      if (!canManage) {
+        logger.warn({ shipmentId, actorUserId: ctx.userId, roleName: ctx.roleName, field }, 'shipments.patch-denied');
+        throw forbidden('NOT_SHIPMENT_MANAGE', `Editing ${field} requires shipments:manage`);
+      }
+      if (isLocked && !isAdmin) {
+        logger.warn({ shipmentId, actorUserId: ctx.userId, roleName: ctx.roleName, lockedField: field }, 'shipments.field-lock-violation');
+        throw conflict('SHIPMENT_LOCKED', `Field ${field} locked while on active run`);
       }
     }
+
     const patch: Record<string, unknown> = { updatedAt: new Date() };
     if (input.specialInstructions !== undefined) patch.specialInstructions = input.specialInstructions;
     if (input.category !== undefined) patch.category = input.category;
-    if (isAdmin || !shipment.fieldLock) {
-      if (input.destinationZoneId !== undefined) patch.destinationZoneId = input.destinationZoneId;
-      if (input.recipientName !== undefined) patch.recipientName = input.recipientName;
-      if (input.recipientEmail !== undefined) patch.recipientEmail = input.recipientEmail;
-      if (input.recipientPhone !== undefined) patch.recipientPhone = input.recipientPhone;
-      if (input.deliveryOptionId !== undefined) patch.deliveryOptionId = input.deliveryOptionId;
-      if (input.pickupLocationId !== undefined) patch.pickupLocationId = input.pickupLocationId;
+    for (const field of MANAGE_FIELDS) {
+      if (input[field] !== undefined) patch[field] = input[field];
     }
     const [updated] = await tx.update(shipments).set(patch).where(eq(shipments.id, shipmentId)).returning();
     const patchedFields = Object.keys(patch).filter((k) => k !== 'updatedAt');

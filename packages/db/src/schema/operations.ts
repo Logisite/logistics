@@ -53,6 +53,7 @@ export const runSheetEntries = pgTable(
     index('run_sheet_entries_run_id_idx').on(t.runId),
     index('run_sheet_entries_shipment_id_idx').on(t.shipmentId),
     unique('run_sheet_entries_run_shipment_unique').on(t.runId, t.shipmentId),
+    unique('run_sheet_entries_shipment_unique').on(t.shipmentId),
   ],
 );
 
