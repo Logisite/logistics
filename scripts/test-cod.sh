@@ -61,3 +61,4 @@ echo "cod pglite-server ready (PID $PGPID)"
 run "cod-reconciliation" pnpm -F @logistics/api exec vitest run --reporter=verbose test/cod.reconciliation.test.ts
 reset_db
 run "cod-settlement" pnpm -F @logistics/api exec vitest run --reporter=verbose test/cod.settlement.test.ts
+run "cod-money" pnpm -F @logistics/api exec vitest run --reporter=verbose test/cod.money.test.ts

@@ -363,6 +363,9 @@ export async function addFxRate(
 }
 
 /** unreconciled COLLECTED totals per currency */
+// ::float8, not ::int: sum(int) is bigint and ::int overflows past 2,147,483,647
+// cents (GBP 21,474,836.47), which turned a large tenant's summary into a 500.
+// float8 stays a JSON number and is exact to 2^53 cents. Do not cast back to int.
 export async function pendingSummary(db: Db) {
   return db
     .select({

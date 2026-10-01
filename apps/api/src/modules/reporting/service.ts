@@ -8,6 +8,11 @@ import { convertCents } from '../cod/index.js';
 
 type RateMap = Map<string, string>;
 
+// ::float8, not ::int, on every money aggregate in this module: sum(int) is bigint
+// and ::int overflows past 2,147,483,647 cents (GBP 21,474,836.47), turning a large
+// tenant's report into a 500. float8 stays a JSON number and is exact to 2^53 cents.
+// Do not cast back to int. Guarded by test/cod.money.test.ts.
+
 async function loadRates(db: Db, currencies: string[], at: Date): Promise<RateMap> {
   const functional = getConfig().functionalCurrency;
   const distinct = [...new Set(currencies.filter((c) => c !== functional))];
