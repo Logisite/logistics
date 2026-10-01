@@ -18,10 +18,10 @@ import { reportingRouter } from './modules/reporting/index.js';
 import { syncRouter } from './modules/sync/index.js';
 import { generateSpec } from './openapi/generator.js';
 import type { Db } from './shared/db.js';
-import { API } from './openapi/registry.js';
+import { API, responseSchemasFor } from './openapi/registry.js';
 import pkg from '../package.json' with { type: 'json' };
 import { HttpError } from './shared/errors.js';
-import { getConfig } from './shared/config.js';
+import { getConfig, isProd } from './shared/config.js';
 import { logger } from './shared/logger.js';
 
 export interface AppDeps {
@@ -59,6 +59,46 @@ const notFoundHandler: RequestHandler = (req, res) => {
   req.log.info({ path: req.path, method: req.method }, 'route not found');
   res.status(404).json({ error: { code: 'NOT_FOUND', message: 'No such endpoint' } });
 };
+
+/**
+ * ADR 0016 §1: outside production, project every JSON response through the schema
+ * its route declared. Zod strips undeclared keys, so a handler that spreads a
+ * database row cannot leak a column it never promised.
+ *
+ * On a schema mismatch the response is still sent — the drift is logged loudly
+ * enough to fail CI, but breaking a live request over a contract bug would trade a
+ * documentation defect for an outage.
+ */
+function projectResponses(): RequestHandler {
+  return (req, res, next) => {
+    if (isProd) {
+      next();
+      return;
+    }
+    const send = res.json.bind(res);
+    res.json = (body: unknown) => {
+      const declared = responseSchemasFor(req.method, req.path);
+      const schema = declared?.get(res.statusCode);
+      if (schema) {
+        const parsed = schema.safeParse(body);
+        if (parsed.success) {
+          return send(parsed.data);
+        }
+        logger.error(
+          {
+            path: req.path,
+            method: req.method,
+            status: res.statusCode,
+            issues: parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`),
+          },
+          'response does not match its declared schema',
+        );
+      }
+      return send(body);
+    };
+    next();
+  };
+}
 
 export function createApp({ db, mailer }: AppDeps): Express {
   const app = express();
@@ -130,6 +170,8 @@ export function createApp({ db, mailer }: AppDeps): Express {
   app.use(`${API}/runs`, operationsRouter(db));
   app.use(`${API}/sync`, syncRouter(db));
   app.use(`${API}/reports`, reportingRouter(db));
+
+  app.use(projectResponses());
 
   app.use(notFoundHandler);
   app.use(errorHandler);

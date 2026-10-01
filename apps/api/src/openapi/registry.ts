@@ -61,12 +61,54 @@ function tagsFrom(path: string): string[] {
   return top ? [top] : [];
 }
 
+const isSuccess = (status: number) => status >= 200 && status < 300;
+
+/**
+ * Declared response schemas keyed by `${METHOD} ${path}`, captured as routes are
+ * registered. This is what lets ADR 0016 §1 project a live response through the
+ * contract the route promised: without it the schema exists only in the generated
+ * document, where nothing checks that a handler honours it.
+ */
+const responseSchemas = new Map<string, Map<number, z.ZodTypeAny>>();
+
+function jsonSchemaOf(response: unknown): z.ZodTypeAny | undefined {
+  const schema = (response as { content?: Record<string, { schema?: z.ZodTypeAny }> })?.content?.[
+    'application/json'
+  ]?.schema;
+  return schema;
+}
+
+/**
+ * Resolves the schemas declared for the route serving this request, or undefined
+ * when no route matched. `{id}` in a registered path matches any single segment,
+ * mirroring how Express treats `:id`.
+ */
+export function responseSchemasFor(method: string, requestPath: string): Map<number, z.ZodTypeAny> | undefined {
+  const upper = method.toUpperCase();
+  for (const [key, schemas] of responseSchemas) {
+    const [routeMethod, routePath] = key.split(' ');
+    if (routeMethod !== upper || !routePath) continue;
+    const pattern = routePath.replace(/\{[^}]+\}/g, '[^/]+');
+    if (new RegExp(`^${pattern}$`).test(requestPath)) return schemas;
+  }
+  return undefined;
+}
+
 export function defineRoute(config: RouteConfig): RouteConfig {
   const isPublic = config.security !== undefined && Array.isArray(config.security) && config.security.length === 0;
+  const path = `${API}${config.path}`;
+
+  const declared = new Map<number, z.ZodTypeAny>();
+  for (const [status, response] of Object.entries(config.responses ?? {})) {
+    if (!isSuccess(Number(status))) continue;
+    const schema = jsonSchemaOf(response);
+    if (schema) declared.set(Number(status), schema);
+  }
+  if (declared.size > 0) responseSchemas.set(`${config.method.toUpperCase()} ${path}`, declared);
 
   const merged = {
     ...config,
-    path: `${API}${config.path}`,
+    path,
     summary: config.summary ?? summaryFrom(config.method, config.path),
     operationId: config.operationId ?? operationIdFrom(config.method, config.path),
     tags: config.tags ?? tagsFrom(config.path),

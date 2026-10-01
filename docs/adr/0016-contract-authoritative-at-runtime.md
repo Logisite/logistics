@@ -43,18 +43,31 @@ The contract is authoritative at runtime, and money is integer-typed.
 
 ### 1. Responses are projected through their declared schema
 
-Outside production, every response body is parsed through the schema the route declared. Zod
-strips undeclared keys by default, so a handler that spreads a database row physically cannot
-leak an undeclared column — the class of bug is closed structurally rather than by review.
+Outside production, every JSON response is parsed through the schema the route declared for
+the status it is sending. Zod strips undeclared keys, so a handler that spreads a database row
+cannot leak an undeclared column.
+
+`defineRoute` captures each declared success schema into a lookup keyed by method and path;
+`projectResponses()` in `app.ts` resolves it per request and wraps `res.json`. On a schema
+mismatch the drift is logged as an error — visible in CI — but the response is still sent.
+Breaking a live request over a contract bug would trade a documentation defect for an outage.
 
 Enforcement lives in non-production because that is where CI runs and where a mismatch must
 fail loudly. Production keeps the schema as the contract and skips the parse cost.
 
+`test/response.projection.test.ts` proves the stripping: a probe route returns three fields
+where its schema declares one, and the client receives only the declared field.
+
 ### 2. One contract artifact
 
-`apps/api/openapi.json` is generated, drift-gated in `scripts/check.sh`, and served verbatim
-from `/api/v1/openapi.json`. The second generation path is deleted. There is no longer a
-committed file and a separately-computed response that can disagree.
+`apps/api/openapi.json` is generated and drift-gated in `scripts/check.sh`, which regenerates
+and fails on any uncommitted diff. `/api/v1/openapi.json` and `/api/v1/docs` continue to
+generate live from the same registry rather than serving the committed file.
+
+Serving the committed file was considered and rejected: it would make the committed copy
+authoritative at runtime and turn a two-sources problem into a stale-contract one, where a
+running deployment never reveals drift. The gate already makes the two artifacts identical by
+construction, so live generation costs nothing and keeps the freshness oracle.
 
 ### 3. Discriminators are enums derived from the database
 
@@ -80,9 +93,10 @@ actually return. A GET does not advertise 409.
 
 ## Consequences
 
-**Several routes will fail validation on first run and need schemas completed.** That is the
-intended effect. It surfaces drift that is currently invisible, which is the whole point, but
-it means this is not a one-commit change.
+**Several routes failed validation when projection was first switched on and needed schemas
+completed.** That was the intended discovery: it surfaces drift that is otherwise invisible. It
+is also why the projection logs rather than rejects — an incomplete schema should not take an
+endpoint down.
 
 **A parse per response in development and CI.** Acceptable; it buys the guarantee.
 
