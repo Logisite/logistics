@@ -3809,6 +3809,9 @@
         "security": [],
         "summary": "POST /auth /register",
         "operationId": "postAuthRegister",
+        "tags": [
+          "auth"
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -3879,26 +3882,6 @@
                 }
               }
             }
-          },
-          "404": {
-            "description": "Not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           }
         }
       }
@@ -3908,6 +3891,9 @@
         "security": [],
         "summary": "POST /auth /verify-email",
         "operationId": "postAuthVerifyEmail",
+        "tags": [
+          "auth"
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -3968,26 +3954,6 @@
                 }
               }
             }
-          },
-          "404": {
-            "description": "Not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           }
         }
       }
@@ -3997,6 +3963,9 @@
         "security": [],
         "summary": "POST /auth /login",
         "operationId": "postAuthLogin",
+        "tags": [
+          "auth"
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -4090,26 +4059,6 @@
                 }
               }
             }
-          },
-          "404": {
-            "description": "Not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           }
         }
       }
@@ -4119,6 +4068,9 @@
         "security": [],
         "summary": "POST /auth /refresh",
         "operationId": "postAuthRefresh",
+        "tags": [
+          "auth"
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -4180,26 +4132,6 @@
                 }
               }
             }
-          },
-          "404": {
-            "description": "Not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           }
         }
       }
@@ -4209,6 +4141,9 @@
         "security": [],
         "summary": "POST /auth /logout",
         "operationId": "postAuthLogout",
+        "tags": [
+          "auth"
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -4251,26 +4186,6 @@
                 }
               }
             }
-          },
-          "404": {
-            "description": "Not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           }
         }
       }
@@ -4279,6 +4194,9 @@
       "get": {
         "summary": "GET /auth /sessions",
         "operationId": "getAuthSessions",
+        "tags": [
+          "auth"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -4361,26 +4279,6 @@
                 }
               }
             }
-          },
-          "404": {
-            "description": "Not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           }
         }
       }
@@ -4389,6 +4287,9 @@
       "post": {
         "summary": "POST /auth /sessions /{id} /revoke",
         "operationId": "postAuthSessionsIdRevoke",
+        "tags": [
+          "auth"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -4447,16 +4348,6 @@
                 }
               }
             }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           }
         }
       }
@@ -4465,6 +4356,9 @@
       "post": {
         "summary": "POST /auth /invite",
         "operationId": "postAuthInvite",
+        "tags": [
+          "auth"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -4540,26 +4434,6 @@
                 }
               }
             }
-          },
-          "404": {
-            "description": "Not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           }
         }
       }
@@ -4568,6 +4442,9 @@
       "get": {
         "summary": "GET /auth /bundles",
         "operationId": "getAuthBundles",
+        "tags": [
+          "auth"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -4651,32 +4528,15 @@
                 }
               }
             }
-          },
-          "404": {
-            "description": "Not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           }
         }
       },
       "post": {
         "summary": "POST /auth /bundles",
         "operationId": "postAuthBundles",
+        "tags": [
+          "auth"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -4766,26 +4626,6 @@
                 }
               }
             }
-          },
-          "404": {
-            "description": "Not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           }
         }
       }
@@ -4794,6 +4634,9 @@
       "put": {
         "summary": "PUT /auth /bundles /{id}",
         "operationId": "putAuthBundlesId",
+        "tags": [
+          "auth"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -4904,22 +4747,15 @@
                 }
               }
             }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           }
         }
       },
       "delete": {
         "summary": "DELETE /auth /bundles /{id}",
         "operationId": "deleteAuthBundlesId",
+        "tags": [
+          "auth"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -4979,16 +4815,6 @@
                 }
               }
             }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           }
         }
       }
@@ -4997,6 +4823,9 @@
       "post": {
         "summary": "POST /auth /bundles /{id} /apply",
         "operationId": "postAuthBundlesIdApply",
+        "tags": [
+          "auth"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -5083,16 +4912,6 @@
                 }
               }
             }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           }
         }
       }
@@ -5102,6 +4921,9 @@
         "security": [],
         "summary": "POST /auth /forgot-password",
         "operationId": "postAuthForgotPassword",
+        "tags": [
+          "auth"
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -5162,26 +4984,6 @@
                 }
               }
             }
-          },
-          "404": {
-            "description": "Not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           }
         }
       }
@@ -5191,6 +4993,9 @@
         "security": [],
         "summary": "POST /auth /reset-password",
         "operationId": "postAuthResetPassword",
+        "tags": [
+          "auth"
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -5251,26 +5056,6 @@
                 }
               }
             }
-          },
-          "404": {
-            "description": "Not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           }
         }
       }
@@ -5280,6 +5065,9 @@
         "security": [],
         "summary": "POST /auth /otp /request",
         "operationId": "postAuthOtpRequest",
+        "tags": [
+          "auth"
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -5340,26 +5128,6 @@
                 }
               }
             }
-          },
-          "404": {
-            "description": "Not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           }
         }
       }
@@ -5369,6 +5137,9 @@
         "security": [],
         "summary": "POST /auth /otp /verify",
         "operationId": "postAuthOtpVerify",
+        "tags": [
+          "auth"
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -5448,26 +5219,6 @@
                 }
               }
             }
-          },
-          "404": {
-            "description": "Not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           }
         }
       }
@@ -5476,6 +5227,9 @@
       "post": {
         "summary": "POST /auth /otp /upgrade",
         "operationId": "postAuthOtpUpgrade",
+        "tags": [
+          "auth"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -5541,26 +5295,6 @@
                 }
               }
             }
-          },
-          "404": {
-            "description": "Not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           }
         }
       }
@@ -5570,6 +5304,9 @@
         "summary": "Inspect capability link",
         "security": [],
         "operationId": "getCapabilityNonce",
+        "tags": [
+          "capability"
+        ],
         "parameters": [
           {
             "schema": {
@@ -5630,16 +5367,6 @@
                 }
               }
             }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           }
         }
       }
@@ -5649,6 +5376,9 @@
         "summary": "Book via capability link",
         "security": [],
         "operationId": "postCapabilityNonceBook",
+        "tags": [
+          "capability"
+        ],
         "parameters": [
           {
             "schema": {
@@ -5709,16 +5439,6 @@
                 }
               }
             }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           }
         }
       }
@@ -5728,6 +5448,9 @@
         "summary": "Track shipment via capability link",
         "security": [],
         "operationId": "getCapabilityNonceTrack",
+        "tags": [
+          "capability"
+        ],
         "parameters": [
           {
             "schema": {
@@ -5788,16 +5511,6 @@
                 }
               }
             }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           }
         }
       }
@@ -5806,6 +5519,9 @@
       "post": {
         "summary": "Revoke capability link",
         "operationId": "postCapabilityNonceRevoke",
+        "tags": [
+          "capability"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -5873,16 +5589,6 @@
                 }
               }
             }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           }
         }
       }
@@ -5891,6 +5597,9 @@
       "post": {
         "summary": "POST /customers /me",
         "operationId": "postCustomersMe",
+        "tags": [
+          "customers"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -5984,32 +5693,15 @@
                 }
               }
             }
-          },
-          "404": {
-            "description": "Not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           }
         }
       },
       "get": {
         "summary": "GET /customers /me",
         "operationId": "getCustomersMe",
+        "tags": [
+          "customers"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -6094,32 +5786,15 @@
                 }
               }
             }
-          },
-          "404": {
-            "description": "Not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           }
         }
       },
       "put": {
         "summary": "PUT /customers /me",
         "operationId": "putCustomersMe",
+        "tags": [
+          "customers"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -6213,26 +5888,6 @@
                 }
               }
             }
-          },
-          "404": {
-            "description": "Not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           }
         }
       }
@@ -6241,6 +5896,9 @@
       "get": {
         "summary": "GET /customers /me /addresses",
         "operationId": "getCustomersMeAddresses",
+        "tags": [
+          "customers"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -6363,32 +6021,15 @@
                 }
               }
             }
-          },
-          "404": {
-            "description": "Not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           }
         }
       },
       "post": {
         "summary": "POST /customers /me /addresses",
         "operationId": "postCustomersMeAddresses",
+        "tags": [
+          "customers"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -6517,26 +6158,6 @@
                 }
               }
             }
-          },
-          "404": {
-            "description": "Not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           }
         }
       }
@@ -6545,6 +6166,9 @@
       "put": {
         "summary": "PUT /customers /me /addresses /{id}",
         "operationId": "putCustomersMeAddressesId",
+        "tags": [
+          "customers"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -6694,22 +6318,15 @@
                 }
               }
             }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           }
         }
       },
       "delete": {
         "summary": "DELETE /customers /me /addresses /{id}",
         "operationId": "deleteCustomersMeAddressesId",
+        "tags": [
+          "customers"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -6769,16 +6386,6 @@
                 }
               }
             }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           }
         }
       }
@@ -6787,6 +6394,9 @@
       "get": {
         "summary": "GET /customers /me /emergency-contacts",
         "operationId": "getCustomersMeEmergencyContacts",
+        "tags": [
+          "customers"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -6881,32 +6491,15 @@
                 }
               }
             }
-          },
-          "404": {
-            "description": "Not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           }
         }
       },
       "post": {
         "summary": "POST /customers /me /emergency-contacts",
         "operationId": "postCustomersMeEmergencyContacts",
+        "tags": [
+          "customers"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -7007,26 +6600,6 @@
                 }
               }
             }
-          },
-          "404": {
-            "description": "Not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           }
         }
       }
@@ -7035,6 +6608,9 @@
       "put": {
         "summary": "PUT /customers /me /emergency-contacts /{id}",
         "operationId": "putCustomersMeEmergencyContactsId",
+        "tags": [
+          "customers"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -7156,22 +6732,15 @@
                 }
               }
             }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           }
         }
       },
       "delete": {
         "summary": "DELETE /customers /me /emergency-contacts /{id}",
         "operationId": "deleteCustomersMeEmergencyContactsId",
+        "tags": [
+          "customers"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -7231,16 +6800,6 @@
                 }
               }
             }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           }
         }
       }
@@ -7249,6 +6808,9 @@
       "post": {
         "summary": "Create merchant profile",
         "operationId": "postMerchantsMe",
+        "tags": [
+          "merchants"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -7312,16 +6874,6 @@
               }
             }
           },
-          "404": {
-            "description": "Not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
           "409": {
             "description": "Profile already exists",
             "content": {
@@ -7357,6 +6909,9 @@
       "get": {
         "summary": "Get merchant profile",
         "operationId": "getMerchantsMe",
+        "tags": [
+          "merchants"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -7440,22 +6995,15 @@
                 }
               }
             }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           }
         }
       },
       "put": {
         "summary": "Update merchant profile",
         "operationId": "putMerchantsMe",
+        "tags": [
+          "merchants"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -7548,16 +7096,6 @@
                 }
               }
             }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           }
         }
       }
@@ -7566,6 +7104,9 @@
       "get": {
         "summary": "GET /locations /hubs",
         "operationId": "getLocationsHubs",
+        "tags": [
+          "locations"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -7676,32 +7217,15 @@
                 }
               }
             }
-          },
-          "404": {
-            "description": "Not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           }
         }
       },
       "post": {
         "summary": "POST /locations /hubs",
         "operationId": "postLocationsHubs",
+        "tags": [
+          "locations"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -7818,26 +7342,6 @@
                 }
               }
             }
-          },
-          "404": {
-            "description": "Not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           }
         }
       }
@@ -7846,6 +7350,9 @@
       "put": {
         "summary": "PUT /locations /hubs /{id}",
         "operationId": "putLocationsHubsId",
+        "tags": [
+          "locations"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -7983,22 +7490,15 @@
                 }
               }
             }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           }
         }
       },
       "delete": {
         "summary": "DELETE /locations /hubs /{id}",
         "operationId": "deleteLocationsHubsId",
+        "tags": [
+          "locations"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -8098,16 +7598,6 @@
                 }
               }
             }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           }
         }
       }
@@ -8116,6 +7606,9 @@
       "get": {
         "summary": "GET /locations /pickup-points",
         "operationId": "getLocationsPickupPoints",
+        "tags": [
+          "locations"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -8238,32 +7731,15 @@
                 }
               }
             }
-          },
-          "404": {
-            "description": "Not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           }
         }
       },
       "post": {
         "summary": "POST /locations /pickup-points",
         "operationId": "postLocationsPickupPoints",
+        "tags": [
+          "locations"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -8392,26 +7868,6 @@
                 }
               }
             }
-          },
-          "404": {
-            "description": "Not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           }
         }
       }
@@ -8420,6 +7876,9 @@
       "get": {
         "summary": "GET /locations /zones",
         "operationId": "getLocationsZones",
+        "tags": [
+          "locations"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -8515,32 +7974,15 @@
                 }
               }
             }
-          },
-          "404": {
-            "description": "Not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           }
         }
       },
       "post": {
         "summary": "POST /locations /zones",
         "operationId": "postLocationsZones",
+        "tags": [
+          "locations"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -8642,26 +8084,6 @@
                 }
               }
             }
-          },
-          "404": {
-            "description": "Not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           }
         }
       }
@@ -8670,6 +8092,9 @@
       "put": {
         "summary": "PUT /locations /pickup-points /{id}",
         "operationId": "putLocationsPickupPointsId",
+        "tags": [
+          "locations"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -8819,22 +8244,15 @@
                 }
               }
             }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           }
         }
       },
       "delete": {
         "summary": "DELETE /locations /pickup-points /{id}",
         "operationId": "deleteLocationsPickupPointsId",
+        "tags": [
+          "locations"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -8946,16 +8364,6 @@
                 }
               }
             }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           }
         }
       }
@@ -8964,6 +8372,9 @@
       "put": {
         "summary": "PUT /locations /zones /{id}",
         "operationId": "putLocationsZonesId",
+        "tags": [
+          "locations"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -9086,22 +8497,15 @@
                 }
               }
             }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           }
         }
       },
       "delete": {
         "summary": "DELETE /locations /zones /{id}",
         "operationId": "deleteLocationsZonesId",
+        "tags": [
+          "locations"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -9205,16 +8609,6 @@
                 }
               }
             }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           }
         }
       }
@@ -9224,6 +8618,9 @@
         "security": [],
         "summary": "GET /locations /public /hubs",
         "operationId": "getLocationsPublicHubs",
+        "tags": [
+          "locations"
+        ],
         "responses": {
           "200": {
             "description": "List active hubs",
@@ -9296,26 +8693,6 @@
                 }
               }
             }
-          },
-          "404": {
-            "description": "Not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           }
         }
       }
@@ -9325,6 +8702,9 @@
         "security": [],
         "summary": "GET /locations /public /pickup-points",
         "operationId": "getLocationsPublicPickupPoints",
+        "tags": [
+          "locations"
+        ],
         "responses": {
           "200": {
             "description": "List active pickup locations",
@@ -9409,26 +8789,6 @@
                 }
               }
             }
-          },
-          "404": {
-            "description": "Not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           }
         }
       }
@@ -9438,6 +8798,9 @@
         "security": [],
         "summary": "GET /locations /public /zones",
         "operationId": "getLocationsPublicZones",
+        "tags": [
+          "locations"
+        ],
         "responses": {
           "200": {
             "description": "List active zones",
@@ -9514,26 +8877,6 @@
                 }
               }
             }
-          },
-          "404": {
-            "description": "Not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           }
         }
       }
@@ -9542,6 +8885,9 @@
       "post": {
         "summary": "POST /pricing /quote",
         "operationId": "postPricingQuote",
+        "tags": [
+          "pricing"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -9596,26 +8942,6 @@
                 }
               }
             }
-          },
-          "404": {
-            "description": "Not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           }
         }
       }
@@ -9624,6 +8950,9 @@
       "post": {
         "summary": "POST /pricing /book",
         "operationId": "postPricingBook",
+        "tags": [
+          "pricing"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -9678,26 +9007,6 @@
                 }
               }
             }
-          },
-          "404": {
-            "description": "Not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           }
         }
       }
@@ -9706,6 +9015,9 @@
       "get": {
         "summary": "GET /pricing /rules",
         "operationId": "getPricingRules",
+        "tags": [
+          "pricing"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -9751,32 +9063,15 @@
                 }
               }
             }
-          },
-          "404": {
-            "description": "Not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           }
         }
       },
       "post": {
         "summary": "POST /pricing /rules",
         "operationId": "postPricingRules",
+        "tags": [
+          "pricing"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -9831,26 +9126,6 @@
                 }
               }
             }
-          },
-          "404": {
-            "description": "Not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           }
         }
       }
@@ -9859,6 +9134,9 @@
       "put": {
         "summary": "PUT /pricing /rules /{id}",
         "operationId": "putPricingRulesId",
+        "tags": [
+          "pricing"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -9934,16 +9212,6 @@
                 }
               }
             }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           }
         }
       }
@@ -9952,6 +9220,9 @@
       "get": {
         "summary": "GET /pricing /delivery-options",
         "operationId": "getPricingDeliveryOptions",
+        "tags": [
+          "pricing"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -9997,32 +9268,15 @@
                 }
               }
             }
-          },
-          "404": {
-            "description": "Not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           }
         }
       },
       "post": {
         "summary": "POST /pricing /delivery-options",
         "operationId": "postPricingDeliveryOptions",
+        "tags": [
+          "pricing"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -10077,26 +9331,6 @@
                 }
               }
             }
-          },
-          "404": {
-            "description": "Not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           }
         }
       }
@@ -10105,6 +9339,9 @@
       "put": {
         "summary": "PUT /pricing /delivery-options /{id}",
         "operationId": "putPricingDeliveryOptionsId",
+        "tags": [
+          "pricing"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -10180,16 +9417,6 @@
                 }
               }
             }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           }
         }
       }
@@ -10198,6 +9425,9 @@
       "post": {
         "summary": "POST /shipments /{id} /pickup",
         "operationId": "postShipmentsIdPickup",
+        "tags": [
+          "shipments"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -10278,16 +9508,6 @@
           },
           "404": {
             "description": "Not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
             "content": {
               "application/json": {
                 "schema": {
@@ -10303,6 +9523,9 @@
       "post": {
         "summary": "POST /shipments /{id} /transit",
         "operationId": "postShipmentsIdTransit",
+        "tags": [
+          "shipments"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -10383,16 +9606,6 @@
           },
           "404": {
             "description": "Not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
             "content": {
               "application/json": {
                 "schema": {
@@ -10408,6 +9621,9 @@
       "post": {
         "summary": "POST /shipments /{id} /out-for-delivery",
         "operationId": "postShipmentsIdOutForDelivery",
+        "tags": [
+          "shipments"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -10488,16 +9704,6 @@
           },
           "404": {
             "description": "Not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
             "content": {
               "application/json": {
                 "schema": {
@@ -10513,6 +9719,9 @@
       "post": {
         "summary": "POST /shipments /{id} /deliver",
         "operationId": "postShipmentsIdDeliver",
+        "tags": [
+          "shipments"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -10593,16 +9802,6 @@
           },
           "404": {
             "description": "Not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
             "content": {
               "application/json": {
                 "schema": {
@@ -10618,6 +9817,9 @@
       "post": {
         "summary": "POST /shipments /{id} /fail-attempt",
         "operationId": "postShipmentsIdFailAttempt",
+        "tags": [
+          "shipments"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -10698,16 +9900,6 @@
           },
           "404": {
             "description": "Not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
             "content": {
               "application/json": {
                 "schema": {
@@ -10723,6 +9915,9 @@
       "post": {
         "summary": "POST /shipments /{id} /return",
         "operationId": "postShipmentsIdReturn",
+        "tags": [
+          "shipments"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -10803,16 +9998,6 @@
           },
           "404": {
             "description": "Not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
             "content": {
               "application/json": {
                 "schema": {
@@ -10828,6 +10013,9 @@
       "post": {
         "summary": "POST /shipments /{id} /returned",
         "operationId": "postShipmentsIdReturned",
+        "tags": [
+          "shipments"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -10915,16 +10103,6 @@
                 }
               }
             }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           }
         }
       }
@@ -10933,6 +10111,9 @@
       "patch": {
         "summary": "PATCH /shipments /{id} /cancel",
         "operationId": "patchShipmentsIdCancel",
+        "tags": [
+          "shipments"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -11020,16 +10201,6 @@
                 }
               }
             }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           }
         }
       }
@@ -11038,6 +10209,9 @@
       "get": {
         "summary": "GET /shipments /{id} /events",
         "operationId": "getShipmentsIdEvents",
+        "tags": [
+          "shipments"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -11126,16 +10300,6 @@
                 }
               }
             }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           }
         }
       }
@@ -11144,6 +10308,9 @@
       "patch": {
         "summary": "PATCH /shipments /{id}",
         "operationId": "patchShipmentsId",
+        "tags": [
+          "shipments"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -11227,16 +10394,6 @@
                 }
               }
             }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           }
         }
       }
@@ -11247,6 +10404,9 @@
         "summary": "Shipment state machine: legal target statuses keyed by current status",
         "description": "Derived from the same TRANSITIONS constant that enforces transitions server-side, so it cannot drift. A client uses this to decide which actions to offer instead of hardcoding its own copy of the matrix.",
         "operationId": "getShipmentsTransitions",
+        "tags": [
+          "shipments"
+        ],
         "responses": {
           "200": {
             "description": "Transition matrix",
@@ -11287,26 +10447,6 @@
                 }
               }
             }
-          },
-          "404": {
-            "description": "Not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           }
         }
       }
@@ -11315,6 +10455,9 @@
       "get": {
         "summary": "List shipments the caller is sender or recipient of",
         "operationId": "getTrackingShipments",
+        "tags": [
+          "tracking"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -11360,26 +10503,6 @@
                 }
               }
             }
-          },
-          "404": {
-            "description": "Not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           }
         }
       }
@@ -11388,6 +10511,9 @@
       "post": {
         "summary": "POST /runs",
         "operationId": "postRuns",
+        "tags": [
+          "runs"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -11442,26 +10568,6 @@
                 }
               }
             }
-          },
-          "404": {
-            "description": "Not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           }
         }
       }
@@ -11470,6 +10576,9 @@
       "post": {
         "summary": "POST /runs /claim",
         "operationId": "postRunsClaim",
+        "tags": [
+          "runs"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -11524,26 +10633,6 @@
                 }
               }
             }
-          },
-          "404": {
-            "description": "Not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           }
         }
       }
@@ -11552,6 +10641,9 @@
       "post": {
         "summary": "POST /runs /{id} /start",
         "operationId": "postRunsIdStart",
+        "tags": [
+          "runs"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -11618,16 +10710,6 @@
                 }
               }
             }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           }
         }
       }
@@ -11636,6 +10718,9 @@
       "post": {
         "summary": "POST /runs /{id} /complete",
         "operationId": "postRunsIdComplete",
+        "tags": [
+          "runs"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -11702,16 +10787,6 @@
                 }
               }
             }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           }
         }
       }
@@ -11720,6 +10795,9 @@
       "post": {
         "summary": "POST /runs /{id} /cancel",
         "operationId": "postRunsIdCancel",
+        "tags": [
+          "runs"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -11786,16 +10864,6 @@
                 }
               }
             }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           }
         }
       }
@@ -11804,6 +10872,9 @@
       "get": {
         "summary": "GET /runs /mine",
         "operationId": "getRunsMine",
+        "tags": [
+          "runs"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -11849,26 +10920,6 @@
                 }
               }
             }
-          },
-          "404": {
-            "description": "Not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           }
         }
       }
@@ -11877,6 +10928,9 @@
       "get": {
         "summary": "GET /runs /{id}",
         "operationId": "getRunsId",
+        "tags": [
+          "runs"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -11943,16 +10997,6 @@
                 }
               }
             }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           }
         }
       }
@@ -11961,6 +11005,9 @@
       "post": {
         "summary": "POST /runs /{id} /gps",
         "operationId": "postRunsIdGps",
+        "tags": [
+          "runs"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -12036,16 +11083,6 @@
                 }
               }
             }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           }
         }
       }
@@ -12054,6 +11091,9 @@
       "post": {
         "summary": "POST /sync /push",
         "operationId": "postSyncPush",
+        "tags": [
+          "sync"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -12108,26 +11148,6 @@
                 }
               }
             }
-          },
-          "404": {
-            "description": "Not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           }
         }
       }
@@ -12136,6 +11156,9 @@
       "get": {
         "summary": "GET /sync /pending /{deviceId}",
         "operationId": "getSyncPendingDeviceId",
+        "tags": [
+          "sync"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -12226,16 +11249,6 @@
                 }
               }
             }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           }
         }
       }
@@ -12245,6 +11258,9 @@
         "description": "Bootstrap reference data for an offline device. `version` is the newest shipment event timestamp; refetch when it changes.",
         "summary": "GET /sync /static",
         "operationId": "getSyncStatic",
+        "tags": [
+          "sync"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -12290,26 +11306,6 @@
                 }
               }
             }
-          },
-          "404": {
-            "description": "Not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           }
         }
       }
@@ -12318,6 +11314,9 @@
       "post": {
         "summary": "Record COD collection",
         "operationId": "postCodCollections",
+        "tags": [
+          "cod"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -12372,26 +11371,6 @@
                 }
               }
             }
-          },
-          "404": {
-            "description": "Not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           }
         }
       }
@@ -12400,6 +11379,9 @@
       "post": {
         "summary": "Record COD deposit",
         "operationId": "postCodDeposits",
+        "tags": [
+          "cod"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -12454,26 +11436,6 @@
                 }
               }
             }
-          },
-          "404": {
-            "description": "Not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           }
         }
       }
@@ -12482,6 +11444,9 @@
       "get": {
         "summary": "Get pending COD summary",
         "operationId": "getCodPending",
+        "tags": [
+          "cod"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -12527,26 +11492,6 @@
                 }
               }
             }
-          },
-          "404": {
-            "description": "Not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           }
         }
       }
@@ -12555,6 +11500,9 @@
       "post": {
         "summary": "Reconcile deposits with collections",
         "operationId": "postCodReconciliations",
+        "tags": [
+          "cod"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -12609,26 +11557,6 @@
                 }
               }
             }
-          },
-          "404": {
-            "description": "Not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           }
         }
       }
@@ -12637,6 +11565,9 @@
       "post": {
         "summary": "Compute settlements for period",
         "operationId": "postCodSettlementsCompute",
+        "tags": [
+          "cod"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -12691,26 +11622,6 @@
                 }
               }
             }
-          },
-          "404": {
-            "description": "Not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           }
         }
       }
@@ -12719,6 +11630,9 @@
       "patch": {
         "summary": "Mark settlement as settled",
         "operationId": "patchCodSettlementsIdSettle",
+        "tags": [
+          "cod"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -12785,16 +11699,6 @@
                 }
               }
             }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           }
         }
       }
@@ -12803,6 +11707,9 @@
       "post": {
         "summary": "Open COD dispute",
         "operationId": "postCodDisputes",
+        "tags": [
+          "cod"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -12857,26 +11764,6 @@
                 }
               }
             }
-          },
-          "404": {
-            "description": "Not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           }
         }
       }
@@ -12885,6 +11772,9 @@
       "patch": {
         "summary": "Resolve COD dispute",
         "operationId": "patchCodDisputesIdResolve",
+        "tags": [
+          "cod"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -12960,16 +11850,6 @@
                 }
               }
             }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           }
         }
       }
@@ -12978,6 +11858,9 @@
       "post": {
         "summary": "Add FX exchange rate",
         "operationId": "postCodFxRates",
+        "tags": [
+          "cod"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -13032,26 +11915,6 @@
                 }
               }
             }
-          },
-          "404": {
-            "description": "Not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           }
         }
       }
@@ -13060,6 +11923,9 @@
       "get": {
         "summary": "GET /reports /revenue",
         "operationId": "getReportsRevenue",
+        "tags": [
+          "reports"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -13143,26 +12009,6 @@
                 }
               }
             }
-          },
-          "404": {
-            "description": "Not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           }
         }
       }
@@ -13171,6 +12017,9 @@
       "get": {
         "summary": "GET /reports /cod",
         "operationId": "getReportsCod",
+        "tags": [
+          "reports"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -13236,26 +12085,6 @@
                 }
               }
             }
-          },
-          "404": {
-            "description": "Not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           }
         }
       }
@@ -13264,6 +12093,9 @@
       "get": {
         "summary": "GET /reports /drivers",
         "operationId": "getReportsDrivers",
+        "tags": [
+          "reports"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -13329,26 +12161,6 @@
                 }
               }
             }
-          },
-          "404": {
-            "description": "Not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           }
         }
       }
@@ -13357,6 +12169,9 @@
       "get": {
         "summary": "GET /reports /exceptions",
         "operationId": "getReportsExceptions",
+        "tags": [
+          "reports"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -13414,26 +12229,6 @@
                 }
               }
             }
-          },
-          "404": {
-            "description": "Not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           }
         }
       }
@@ -13443,6 +12238,9 @@
         "security": [],
         "summary": "Liveness probe",
         "operationId": "getHealth",
+        "tags": [
+          "health"
+        ],
         "responses": {
           "200": {
             "description": "Service is up",
@@ -13483,26 +12281,6 @@
                 }
               }
             }
-          },
-          "404": {
-            "description": "Not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           }
         }
       }
@@ -13512,6 +12290,9 @@
         "security": [],
         "summary": "This document",
         "operationId": "getOpenapiJson",
+        "tags": [
+          "openapi.json"
+        ],
         "responses": {
           "200": {
             "description": "OpenAPI document",
@@ -13546,26 +12327,6 @@
           },
           "403": {
             "description": "Forbidden",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
             "content": {
               "application/json": {
                 "schema": {
