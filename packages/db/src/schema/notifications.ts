@@ -5,6 +5,7 @@ import {
   pgTable,
   text,
   timestamp,
+  unique,
   uuid,
 } from 'drizzle-orm/pg-core';
 
@@ -30,5 +31,6 @@ export const notificationLogs = pgTable(
   (t) => [
     index('notification_logs_user_id_idx').on(t.userId),
     index('notification_logs_status_idx').on(t.status),
+    unique('notification_logs_channel_type_unique').on(t.channel, t.type),
   ],
 );

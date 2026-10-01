@@ -22,39 +22,27 @@ export class ResendMailer implements Mailer {
     this.from = config.mailFrom;
   }
 
+  private async send(to: string, subject: string, text: string, purpose: string): Promise<void> {
+    const { error } = await this.resend.emails.send({ from: this.from, to, subject, text });
+    if (error) {
+      logger.error({ err: error, purpose }, 'auth.email-send-failed');
+      throw error;
+    }
+  }
+
   async sendVerificationEmail(to: string, token: string): Promise<void> {
-    await this.resend.emails.send({
-      from: this.from,
-      to,
-      subject: 'Verify your email',
-      text: `Verify your email: ${this.appUrl}/verify-email?token=${token}`,
-    });
+    await this.send(to, 'Verify your email', `Verify your email: ${this.appUrl}/verify-email?token=${token}`, 'verification');
   }
 
   async sendInviteEmail(to: string, token: string): Promise<void> {
-    await this.resend.emails.send({
-      from: this.from,
-      to,
-      subject: 'You were invited to Logisite',
-      text: `Set your password: ${this.appUrl}/set-password?token=${token}`,
-    });
+    await this.send(to, 'You were invited to Logisite', `Set your password: ${this.appUrl}/set-password?token=${token}`, 'invite');
   }
 
   async sendPasswordResetEmail(to: string, token: string): Promise<void> {
-    await this.resend.emails.send({
-      from: this.from,
-      to,
-      subject: 'Reset your password',
-      text: `Reset your password: ${this.appUrl}/reset-password?token=${token}`,
-    });
+    await this.send(to, 'Reset your password', `Reset your password: ${this.appUrl}/reset-password?token=${token}`, 'password_reset');
   }
 
   async sendNotificationEmail(to: string, subject: string, body: string): Promise<void> {
-    try {
-      await this.resend.emails.send({ from: this.from, to, subject, text: body });
-    } catch (err) {
-      logger.error({ err, purpose: 'notification' }, 'auth.email-send-failed');
-      throw err;
-    }
+    await this.send(to, subject, body, 'notification');
   }
 }

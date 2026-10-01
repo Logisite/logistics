@@ -71,6 +71,13 @@
       "when": 1790806509701,
       "tag": "0009_bored_proemial_gods",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1790806727530,
+      "tag": "0010_chief_magik",
+      "breakpoints": true
     }
   ]
 }

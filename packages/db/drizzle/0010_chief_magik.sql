@@ -1,0 +1,1 @@
+ALTER TABLE "notification_logs" ADD CONSTRAINT "notification_logs_channel_type_unique" UNIQUE("channel","type");
