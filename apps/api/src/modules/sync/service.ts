@@ -12,6 +12,8 @@ import { logger } from '../../shared/logger.js';
 import { applyTransitionTx } from '../shipments/index.js';
 import { syncEmitter } from './events.js';
 import type { ShipmentStatusEvent } from './events.js';
+import { splitOpStatus } from './protocol.js';
+import type { SyncOpStatus, SyncRejectionCode } from './protocol.js';
 import { canTransition } from '../shipments/index.js';
 import type { ShipmentStatus } from '../shipments/index.js';
 import type { TxHandle } from '../shipments/service.js';
@@ -101,7 +103,7 @@ export async function pushLedger(
 
   const skewMs = getConfig().syncSkewMs;
   const operatorId = undefined;
-  const results: Array<{ seq: number; opId: string; status: string }> = [];
+  const results: Array<{ seq: number; opId: string; status: SyncOpStatus; rejectionCode?: SyncRejectionCode }> = [];
   logger.info(
     { deviceId, userId: ctx.userId, receivedCount: ops.length, pendingCount: pending.length, insertedCount: toInsert.length },
     'sync.push-started',
@@ -252,16 +254,19 @@ export async function pushLedger(
     if (outcome.status === 'APPLIED' && outcome.liveEvent) {
       syncEmitter.emit('shipment:status', outcome.liveEvent);
     }
-    results.push({ seq: row.seq, opId: row.opId, status: outcome.status });
+    results.push({ seq: row.seq, opId: row.opId, ...splitOpStatus(outcome.status) });
   }
 
   await db.update(devices).set({ lastSyncedAt: new Date() }).where(eq(devices.id, deviceId));
   await writeAudit(db, ctx, { action: 'sync.push', entityType: 'device', entityId: deviceId, payload: { count: ops.length } });
   const appliedCount = results.filter((r) => r.status === 'APPLIED').length;
   const skippedCount = results.filter((r) => r.status === 'SKIPPED').length;
-  const rejected = results.filter((r) => r.status.startsWith('REJECTED:'));
+  const rejected = results.filter((r) => r.status === 'REJECTED');
   const rejectedCodes: Record<string, number> = {};
-  for (const r of rejected) rejectedCodes[r.status] = (rejectedCodes[r.status] ?? 0) + 1;
+  for (const r of rejected) {
+    const code = r.rejectionCode ?? 'UNKNOWN';
+    rejectedCodes[code] = (rejectedCodes[code] ?? 0) + 1;
+  }
   logger.info(
     {
       deviceId,
@@ -290,7 +295,7 @@ export async function getPending(db: Db, ctx: AuthContext, deviceId: string, sin
     .where(and(eq(syncLedger.deviceId, deviceId), sql`${syncLedger.seq} > ${sinceSeq}`))
     .orderBy(syncLedger.seq)
     .limit(limit);
-  return rows;
+  return rows.map(({ status, ...rest }) => ({ ...rest, ...splitOpStatus(status) }));
 }
 
 export async function getStaticRefs(db: Db) {

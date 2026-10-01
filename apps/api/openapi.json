@@ -2214,34 +2214,128 @@
           "positions"
         ]
       },
+      "SyncOpResult": {
+        "type": "object",
+        "properties": {
+          "seq": {
+            "type": "integer"
+          },
+          "opId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "APPLIED",
+              "SKIPPED",
+              "REJECTED"
+            ]
+          },
+          "rejectionCode": {
+            "type": "string",
+            "enum": [
+              "BAD_OCCURRED_AT",
+              "STALE_OCCURRED_AT",
+              "NOT_FOUND",
+              "INVALID_TRANSITION",
+              "SHIPMENT_LOCKED"
+            ]
+          }
+        },
+        "required": [
+          "seq",
+          "opId",
+          "status"
+        ]
+      },
       "SyncPushResponse": {
         "type": "object",
         "properties": {
           "results": {
             "type": "array",
             "items": {
-              "type": "object",
-              "properties": {
-                "seq": {
-                  "type": "number"
-                },
-                "opId": {
-                  "type": "string"
-                },
-                "status": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "seq",
-                "opId",
-                "status"
-              ]
+              "$ref": "#/components/schemas/SyncOpResult"
             }
           }
         },
         "required": [
           "results"
+        ]
+      },
+      "ShipmentTransitionPayload": {
+        "type": "object",
+        "properties": {
+          "toStatus": {
+            "type": "string",
+            "enum": [
+              "DRAFT",
+              "BOOKED",
+              "PICKED_UP",
+              "IN_TRANSIT",
+              "OUT_FOR_DELIVERY",
+              "DELIVERED",
+              "FAILED_ATTEMPT",
+              "RETURNING",
+              "RETURNED",
+              "CANCELLED"
+            ]
+          },
+          "locationLabel": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "occurredAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "metadata": {
+            "type": "object",
+            "additionalProperties": {}
+          }
+        },
+        "required": [
+          "toStatus"
+        ]
+      },
+      "SyncOpRequest": {
+        "type": "object",
+        "properties": {
+          "seq": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "opId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "entity": {
+            "type": "string",
+            "enum": [
+              "shipment"
+            ]
+          },
+          "entityId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "action": {
+            "type": "string",
+            "enum": [
+              "shipment.transition"
+            ]
+          },
+          "payload": {
+            "$ref": "#/components/schemas/ShipmentTransitionPayload"
+          }
+        },
+        "required": [
+          "seq",
+          "opId",
+          "entity",
+          "action",
+          "payload"
         ]
       },
       "SyncPushRequest": {
@@ -2254,38 +2348,7 @@
           "ops": {
             "type": "array",
             "items": {
-              "type": "object",
-              "properties": {
-                "seq": {
-                  "type": "integer",
-                  "minimum": 0
-                },
-                "opId": {
-                  "type": "string",
-                  "format": "uuid"
-                },
-                "action": {
-                  "type": "string"
-                },
-                "entity": {
-                  "type": "string"
-                },
-                "entityId": {
-                  "type": "string",
-                  "format": "uuid"
-                },
-                "payload": {
-                  "type": "object",
-                  "additionalProperties": {},
-                  "default": {}
-                }
-              },
-              "required": [
-                "seq",
-                "opId",
-                "action",
-                "entity"
-              ]
+              "$ref": "#/components/schemas/SyncOpRequest"
             },
             "minItems": 1,
             "maxItems": 1000
@@ -2296,57 +2359,90 @@
           "ops"
         ]
       },
+      "SyncPendingOp": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "deviceId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "seq": {
+            "type": "number"
+          },
+          "opId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "action": {
+            "type": "string",
+            "enum": [
+              "shipment.transition"
+            ]
+          },
+          "entity": {
+            "type": "string",
+            "enum": [
+              "shipment"
+            ]
+          },
+          "entityId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "payload": {
+            "$ref": "#/components/schemas/ShipmentTransitionPayload"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "APPLIED",
+              "SKIPPED",
+              "REJECTED"
+            ]
+          },
+          "rejectionCode": {
+            "type": "string",
+            "enum": [
+              "BAD_OCCURRED_AT",
+              "STALE_OCCURRED_AT",
+              "NOT_FOUND",
+              "INVALID_TRANSITION",
+              "SHIPMENT_LOCKED"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "deviceId",
+          "seq",
+          "opId",
+          "action",
+          "entity",
+          "entityId",
+          "payload",
+          "status",
+          "createdAt"
+        ]
+      },
       "SyncPendingResponse": {
         "type": "object",
         "properties": {
           "ops": {
             "type": "array",
             "items": {
-              "type": "object",
-              "properties": {
-                "id": {
-                  "type": "string"
-                },
-                "deviceId": {
-                  "type": "string"
-                },
-                "seq": {
-                  "type": "number"
-                },
-                "opId": {
-                  "type": "string"
-                },
-                "action": {
-                  "type": "string"
-                },
-                "entity": {
-                  "type": "string"
-                },
-                "entityId": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                },
-                "payload": {},
-                "status": {
-                  "type": "string"
-                },
-                "createdAt": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "id",
-                "deviceId",
-                "seq",
-                "opId",
-                "action",
-                "entity",
-                "entityId",
-                "status",
-                "createdAt"
-              ]
+              "$ref": "#/components/schemas/SyncPendingOp"
             }
           }
         },
@@ -2354,30 +2450,242 @@
           "ops"
         ]
       },
+      "StaticHub": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "address": {
+            "type": "string"
+          },
+          "location": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "number"
+              },
+              "y": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "x",
+              "y"
+            ]
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "code",
+          "address",
+          "location",
+          "isActive",
+          "createdAt"
+        ]
+      },
+      "StaticZone": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "hubId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "centroid": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "number"
+              },
+              "y": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "x",
+              "y"
+            ]
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "hubId",
+          "name",
+          "description",
+          "centroid",
+          "isActive",
+          "createdAt"
+        ]
+      },
+      "StaticPricingRule": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "originZoneId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "destinationZoneId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sizeClass": {
+            "type": "string"
+          },
+          "weightClass": {
+            "type": "string"
+          },
+          "deliveryOptionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "amountCents": {
+            "type": "integer"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "validFrom": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "validTo": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "originZoneId",
+          "destinationZoneId",
+          "sizeClass",
+          "weightClass",
+          "deliveryOptionId",
+          "currency",
+          "amountCents",
+          "isActive",
+          "validFrom",
+          "validTo",
+          "createdAt"
+        ]
+      },
+      "StaticDeliveryOption": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name",
+          "description",
+          "isActive",
+          "createdAt"
+        ]
+      },
       "SyncStaticResponse": {
         "type": "object",
         "properties": {
           "hubs": {
             "type": "array",
-            "items": {}
+            "items": {
+              "$ref": "#/components/schemas/StaticHub"
+            }
           },
           "zones": {
             "type": "array",
-            "items": {}
+            "items": {
+              "$ref": "#/components/schemas/StaticZone"
+            }
           },
           "pricingRules": {
             "type": "array",
-            "items": {}
+            "items": {
+              "$ref": "#/components/schemas/StaticPricingRule"
+            }
           },
           "deliveryOptions": {
             "type": "array",
-            "items": {}
+            "items": {
+              "$ref": "#/components/schemas/StaticDeliveryOption"
+            }
           },
           "version": {
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "format": "date-time"
           }
         },
         "required": [
@@ -7057,7 +7365,24 @@
                           "isActive": {
                             "type": "boolean"
                           },
-                          "location": {},
+                          "location": {
+                            "type": [
+                              "object",
+                              "null"
+                            ],
+                            "properties": {
+                              "x": {
+                                "type": "number"
+                              },
+                              "y": {
+                                "type": "number"
+                              }
+                            },
+                            "required": [
+                              "x",
+                              "y"
+                            ]
+                          },
                           "createdAt": {
                             "type": "string",
                             "format": "date-time"
@@ -7073,6 +7398,7 @@
                           "code",
                           "address",
                           "isActive",
+                          "location",
                           "createdAt",
                           "updatedAt"
                         ]
@@ -7182,7 +7508,24 @@
                         "isActive": {
                           "type": "boolean"
                         },
-                        "location": {},
+                        "location": {
+                          "type": [
+                            "object",
+                            "null"
+                          ],
+                          "properties": {
+                            "x": {
+                              "type": "number"
+                            },
+                            "y": {
+                              "type": "number"
+                            }
+                          },
+                          "required": [
+                            "x",
+                            "y"
+                          ]
+                        },
                         "createdAt": {
                           "type": "string",
                           "format": "date-time"
@@ -7198,6 +7541,7 @@
                         "code",
                         "address",
                         "isActive",
+                        "location",
                         "createdAt",
                         "updatedAt"
                       ]
@@ -7319,7 +7663,24 @@
                         "isActive": {
                           "type": "boolean"
                         },
-                        "location": {},
+                        "location": {
+                          "type": [
+                            "object",
+                            "null"
+                          ],
+                          "properties": {
+                            "x": {
+                              "type": "number"
+                            },
+                            "y": {
+                              "type": "number"
+                            }
+                          },
+                          "required": [
+                            "x",
+                            "y"
+                          ]
+                        },
                         "createdAt": {
                           "type": "string",
                           "format": "date-time"
@@ -7335,6 +7696,7 @@
                         "code",
                         "address",
                         "isActive",
+                        "location",
                         "createdAt",
                         "updatedAt"
                       ]
@@ -7564,7 +7926,24 @@
                           "isActive": {
                             "type": "boolean"
                           },
-                          "location": {},
+                          "location": {
+                            "type": [
+                              "object",
+                              "null"
+                            ],
+                            "properties": {
+                              "x": {
+                                "type": "number"
+                              },
+                              "y": {
+                                "type": "number"
+                              }
+                            },
+                            "required": [
+                              "x",
+                              "y"
+                            ]
+                          },
                           "createdAt": {
                             "type": "string",
                             "format": "date-time"
@@ -7581,6 +7960,7 @@
                           "name",
                           "address",
                           "isActive",
+                          "location",
                           "createdAt",
                           "updatedAt"
                         ]
@@ -7701,7 +8081,24 @@
                         "isActive": {
                           "type": "boolean"
                         },
-                        "location": {},
+                        "location": {
+                          "type": [
+                            "object",
+                            "null"
+                          ],
+                          "properties": {
+                            "x": {
+                              "type": "number"
+                            },
+                            "y": {
+                              "type": "number"
+                            }
+                          },
+                          "required": [
+                            "x",
+                            "y"
+                          ]
+                        },
                         "createdAt": {
                           "type": "string",
                           "format": "date-time"
@@ -7718,6 +8115,7 @@
                         "name",
                         "address",
                         "isActive",
+                        "location",
                         "createdAt",
                         "updatedAt"
                       ]
@@ -8100,7 +8498,24 @@
                         "isActive": {
                           "type": "boolean"
                         },
-                        "location": {},
+                        "location": {
+                          "type": [
+                            "object",
+                            "null"
+                          ],
+                          "properties": {
+                            "x": {
+                              "type": "number"
+                            },
+                            "y": {
+                              "type": "number"
+                            }
+                          },
+                          "required": [
+                            "x",
+                            "y"
+                          ]
+                        },
                         "createdAt": {
                           "type": "string",
                           "format": "date-time"
@@ -8117,6 +8532,7 @@
                         "name",
                         "address",
                         "isActive",
+                        "location",
                         "createdAt",
                         "updatedAt"
                       ]
@@ -11521,6 +11937,7 @@
     },
     "/api/v1/sync/static": {
       "get": {
+        "description": "Bootstrap reference data for an offline device. `version` is the newest shipment event timestamp; refetch when it changes.",
         "summary": "GET /sync /static",
         "operationId": "getSyncStatic",
         "security": [

@@ -6,18 +6,19 @@ import { parse } from '../../shared/validate.js';
 import { requireAuth } from '../auth/middleware.js';
 
 import * as service from './service.js';
+import { SyncOpRequest, SyncOpResult } from './protocol.js';
+import {
+  SYNC_ACTIONS,
+  SYNC_ENTITIES,
+  ShipmentTransitionPayloadSchema,
+  SyncOpStatusSchema,
+  SyncRejectionCodeSchema,
+} from './protocol.js';
 import { defineRoute } from '../../openapi/registry.js';
 
 const MAX_OPS_PER_PUSH = 1000;
 
-const opSchema = z.object({
-  seq: z.number().int().min(0),
-  opId: z.string().uuid(),
-  action: z.string(),
-  entity: z.string(),
-  entityId: z.string().uuid().optional(),
-  payload: z.record(z.string(), z.unknown()).default({}),
-});
+const opSchema = SyncOpRequest;
 
 const pushSchema = z
   .object({
@@ -35,9 +36,81 @@ const pendingQuery = z
   })
   .openapi('SyncPendingQuery');
 
-defineRoute({ method: 'post', path: '/sync/push', request: { body: { content: { 'application/json': { schema: pushSchema } } } }, responses: { 200: { description: 'Push results', content: { 'application/json': { schema: z.object({ results: z.array(z.object({ seq: z.number(), opId: z.string(), status: z.string() })) }).openapi('SyncPushResponse') } } } } });
-defineRoute({ method: 'get', path: '/sync/pending/{deviceId}', request: { params: pendingParams, query: pendingQuery }, responses: { 200: { description: 'Pending operations', content: { 'application/json': { schema: z.object({ ops: z.array(z.object({ id: z.string(), deviceId: z.string(), seq: z.number(), opId: z.string(), action: z.string(), entity: z.string(), entityId: z.string().nullable(), payload: z.unknown(), status: z.string(), createdAt: z.string() })) }).openapi('SyncPendingResponse') } } } } });
-defineRoute({ method: 'get', path: '/sync/static', responses: { 200: { description: 'Static reference data', content: { 'application/json': { schema: z.object({ hubs: z.array(z.unknown()), zones: z.array(z.unknown()), pricingRules: z.array(z.unknown()), deliveryOptions: z.array(z.unknown()), version: z.string().nullable() }).openapi('SyncStaticResponse') } } } } });
+const PendingOp = z
+  .object({
+    id: z.string().uuid(),
+    deviceId: z.string().uuid(),
+    seq: z.number(),
+    opId: z.string().uuid(),
+    action: z.enum(SYNC_ACTIONS),
+    entity: z.enum(SYNC_ENTITIES),
+    entityId: z.string().uuid().nullable(),
+    payload: ShipmentTransitionPayloadSchema,
+    status: SyncOpStatusSchema,
+    rejectionCode: SyncRejectionCodeSchema.optional(),
+    createdAt: z.string().datetime(),
+  })
+  .openapi('SyncPendingOp');
+
+const PointXY = z.object({ x: z.number(), y: z.number() });
+
+// These mirror the drizzle row shapes getStaticRefs returns verbatim, so the
+// declared fields must match the table columns exactly.
+const StaticHub = z
+  .object({
+    id: z.string().uuid(),
+    name: z.string(),
+    code: z.string(),
+    address: z.string(),
+    location: PointXY,
+    isActive: z.boolean(),
+    createdAt: z.string().datetime(),
+  })
+  .openapi('StaticHub');
+
+const StaticZone = z
+  .object({
+    id: z.string().uuid(),
+    hubId: z.string().uuid(),
+    name: z.string(),
+    description: z.string().nullable(),
+    centroid: PointXY,
+    isActive: z.boolean(),
+    createdAt: z.string().datetime(),
+  })
+  .openapi('StaticZone');
+
+const StaticPricingRule = z
+  .object({
+    id: z.string().uuid(),
+    originZoneId: z.string().uuid(),
+    destinationZoneId: z.string().uuid(),
+    sizeClass: z.string(),
+    weightClass: z.string(),
+    deliveryOptionId: z.string().uuid(),
+    currency: z.string(),
+    amountCents: z.number().int(),
+    isActive: z.boolean(),
+    validFrom: z.string().datetime(),
+    validTo: z.string().datetime().nullable(),
+    createdAt: z.string().datetime(),
+  })
+  .openapi('StaticPricingRule');
+
+const StaticDeliveryOption = z
+  .object({
+    id: z.string().uuid(),
+    code: z.string(),
+    name: z.string(),
+    description: z.string().nullable(),
+    isActive: z.boolean(),
+    createdAt: z.string().datetime(),
+  })
+  .openapi('StaticDeliveryOption');
+
+defineRoute({ method: 'post', path: '/sync/push', request: { body: { content: { 'application/json': { schema: pushSchema } } } }, responses: { 200: { description: 'Push results', content: { 'application/json': { schema: z.object({ results: z.array(SyncOpResult) }).openapi('SyncPushResponse') } } } } });
+defineRoute({ method: 'get', path: '/sync/pending/{deviceId}', request: { params: pendingParams, query: pendingQuery }, responses: { 200: { description: 'Pending operations', content: { 'application/json': { schema: z.object({ ops: z.array(PendingOp) }).openapi('SyncPendingResponse') } } } } });
+defineRoute({ method: 'get', path: '/sync/static', description: 'Bootstrap reference data for an offline device. `version` is the newest shipment event timestamp; refetch when it changes.', responses: { 200: { description: 'Static reference data', content: { 'application/json': { schema: z.object({ hubs: z.array(StaticHub), zones: z.array(StaticZone), pricingRules: z.array(StaticPricingRule), deliveryOptions: z.array(StaticDeliveryOption), version: z.string().datetime().nullable() }).openapi('SyncStaticResponse') } } } } });
 
 export function syncRouter(db: Db): Router {
   const router = Router();
