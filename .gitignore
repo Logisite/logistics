@@ -10,6 +10,13 @@ node_modules/
 dist/
 build/
 
+# Emitted next to source by tsc (vite.config.ts -> vite.config.js/.d.ts/.map)
+apps/web/vite.config.js
+apps/web/vite.config.js.map
+apps/web/vite.config.d.ts
+apps/web/vite.config.d.ts.map
+*.tsbuildinfo
+
 # Env
 .env
 .env.*
