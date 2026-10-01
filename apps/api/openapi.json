@@ -2474,8 +2474,7 @@
               "BAD_OCCURRED_AT",
               "STALE_OCCURRED_AT",
               "NOT_FOUND",
-              "INVALID_TRANSITION",
-              "SHIPMENT_LOCKED"
+              "INVALID_TRANSITION"
             ]
           }
         },
@@ -2649,8 +2648,7 @@
               "BAD_OCCURRED_AT",
               "STALE_OCCURRED_AT",
               "NOT_FOUND",
-              "INVALID_TRANSITION",
-              "SHIPMENT_LOCKED"
+              "INVALID_TRANSITION"
             ]
           },
           "createdAt": {

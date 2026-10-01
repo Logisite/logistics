@@ -10,12 +10,16 @@ export const SYNC_ACTIONS = ['shipment.transition'] as const;
 
 export const SYNC_OP_STATUSES = ['PENDING', 'APPLIED', 'SKIPPED', 'REJECTED'] as const;
 
+// Only codes pushLedger can actually emit. SHIPMENT_LOCKED is deliberately absent:
+// narrowing SYNC_ACTIONS to shipment.transition removed the last op that could carry
+// a field write, so the field-lock guard now lives only on the authenticated HTTP
+// patch path. Advertising a code the server never returns would be the same contract
+// dishonesty this schema exists to remove.
 export const SYNC_REJECTION_CODES = [
   'BAD_OCCURRED_AT',
   'STALE_OCCURRED_AT',
   'NOT_FOUND',
   'INVALID_TRANSITION',
-  'SHIPMENT_LOCKED',
 ] as const;
 
 export type SyncEntity = (typeof SYNC_ENTITIES)[number];

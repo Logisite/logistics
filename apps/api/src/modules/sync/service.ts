@@ -1,9 +1,9 @@
 import { and, eq, inArray, sql } from 'drizzle-orm';
 
-import { devices, runSheetEntries, runs, shipmentEvents, shipments, syncLedger } from '@logistics/db';
+import { devices, shipmentEvents, shipments, syncLedger } from '@logistics/db';
 
-import { writeAudit } from '../auth/audit.js';
 import type { AuthContext } from '../auth/middleware.js';
+import { writeAudit } from '../auth/audit.js';
 import { getConfig } from '../../shared/config.js';
 import type { Db } from '../../shared/db.js';
 import { badRequest } from '../../shared/errors.js';
@@ -18,7 +18,6 @@ import { canTransition } from '../shipments/index.js';
 import type { ShipmentStatus } from '../shipments/index.js';
 import type { TxHandle } from '../shipments/service.js';
 
-const LOCKED_FIELDS = ['destinationZoneId', 'recipientName', 'recipientEmail', 'recipientPhone', 'deliveryOptionId', 'pickupLocationId'] as const;
 
 async function reject(tx: Parameters<Parameters<Db['transaction']>[0]>[0], rowId: string, code: string) {
   await tx.update(syncLedger).set({ status: `REJECTED:${code}` }).where(eq(syncLedger.id, rowId));
@@ -216,28 +215,11 @@ export async function pushLedger(
           }
           return { status: 'APPLIED', liveEvent: outcome.liveEvent };
         }
-
-        const [shipment] = await tx.select().from(shipments).where(eq(shipments.id, locked.entityId)).for('update');
-        let isLocked = !!shipment?.fieldLock;
-        if (!isLocked) {
-          const [active] = await tx
-            .select({ id: runSheetEntries.id })
-            .from(runSheetEntries)
-            .innerJoin(runs, eq(runs.id, runSheetEntries.runId))
-            .where(and(eq(runSheetEntries.shipmentId, locked.entityId), eq(runs.status, 'ACTIVE')))
-            .limit(1);
-          if (active) isLocked = true;
-        }
-        if (isLocked) {
-          const touchesLocked = payload ? LOCKED_FIELDS.some((f) => f in payload) : false;
-          if (touchesLocked) {
-            logger.warn(
-              { code: 'SHIPMENT_LOCKED', deviceId, userId: ctx.userId, opId: locked.opId, seq: locked.seq, action: locked.action, entityId: locked.entityId },
-              'sync.op-rejected',
-            );
-            return reject(tx, row.id, 'SHIPMENT_LOCKED');
-          }
-        }
+        // The only implemented action is shipment.transition, whose payload always
+        // carries a toStatus, so every op reaching here has already returned above.
+        // There is no field-write op to lock-check: field locking is enforced on the
+        // authenticated HTTP patch path (shipments/service.ts patchShipment), which is
+        // where a field write can now arrive at all.
       }
 
       await tx.update(syncLedger).set({ status: 'APPLIED' }).where(eq(syncLedger.id, row.id));

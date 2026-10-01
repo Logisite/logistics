@@ -60,10 +60,10 @@ describe('sync ledger', () => {
 
   it('ledger replay is idempotent via same-TX opId', async () => {
     const opId = crypto.randomUUID();
-    const r1 = await request(app).post('/api/v1/sync/push').set('Authorization', `Bearer ${driverToken}`).send({ deviceId, ops: [{ seq: 1, opId, action: 'noop', entity: 'shipment', payload: {} }] });
+    const r1 = await request(app).post('/api/v1/sync/push').set('Authorization', `Bearer ${driverToken}`).send({ deviceId, ops: [{ seq: 1, opId, action: 'shipment.transition', entity: 'shipment', payload: { toStatus: 'PICKED_UP' } }] });
     expect(r1.status).toBe(200);
     expect(r1.body.results[0].status).toBe('APPLIED');
-    const r2 = await request(app).post('/api/v1/sync/push').set('Authorization', `Bearer ${driverToken}`).send({ deviceId, ops: [{ seq: 1, opId, action: 'noop', entity: 'shipment', payload: {} }] });
+    const r2 = await request(app).post('/api/v1/sync/push').set('Authorization', `Bearer ${driverToken}`).send({ deviceId, ops: [{ seq: 1, opId, action: 'shipment.transition', entity: 'shipment', payload: { toStatus: 'PICKED_UP' } }] });
     expect(r2.status).toBe(200);
     expect(r2.body.results.length).toBe(0);
   });
@@ -71,29 +71,37 @@ describe('sync ledger', () => {
   it('duplicate seq is rejected', async () => {
     const opA = crypto.randomUUID();
     const opB = crypto.randomUUID();
-    await request(app).post('/api/v1/sync/push').set('Authorization', `Bearer ${driverToken}`).send({ deviceId, ops: [{ seq: 2, opId: opA, action: 'noop', entity: 'shipment', payload: {} }] });
-    const r = await request(app).post('/api/v1/sync/push').set('Authorization', `Bearer ${driverToken}`).send({ deviceId, ops: [{ seq: 2, opId: opB, action: 'noop', entity: 'shipment', payload: {} }] });
+    await request(app).post('/api/v1/sync/push').set('Authorization', `Bearer ${driverToken}`).send({ deviceId, ops: [{ seq: 2, opId: opA, action: 'shipment.transition', entity: 'shipment', payload: { toStatus: 'PICKED_UP' } }] });
+    const r = await request(app).post('/api/v1/sync/push').set('Authorization', `Bearer ${driverToken}`).send({ deviceId, ops: [{ seq: 2, opId: opB, action: 'shipment.transition', entity: 'shipment', payload: { toStatus: 'PICKED_UP' } }] });
     expect(r.status).toBe(409);
   });
 
   it('client resumes from last acked offset', async () => {
     const opId = crypto.randomUUID();
-    await request(app).post('/api/v1/sync/push').set('Authorization', `Bearer ${driverToken}`).send({ deviceId, ops: [{ seq: 3, opId, action: 'noop', entity: 'shipment', payload: {} }] });
+    await request(app).post('/api/v1/sync/push').set('Authorization', `Bearer ${driverToken}`).send({ deviceId, ops: [{ seq: 3, opId, action: 'shipment.transition', entity: 'shipment', payload: { toStatus: 'PICKED_UP' } }] });
     const pending = await request(app).get(`/api/v1/sync/pending/${deviceId}?since=2`).set('Authorization', `Bearer ${driverToken}`);
     expect(pending.status).toBe(200);
     expect(pending.body.ops.some((o: { opId: string }) => o.opId === opId)).toBe(true);
   });
 
-  it('field-locked shipment rejects conflicting op', async () => {
+  it('field-locked shipment still accepts a driver transition', async () => {
     const ids = await seedHubZonePickup();
     const shipmentId = await bookShipment(ids);
     const create = await request(app).post('/runs').set('Authorization', `Bearer ${adminToken}`).send({ hubId: ids.hubId, driverUserId: driverId, shipments: [{ shipmentId, sequence: 0 }] });
     const runId = create.body.run.id as string;
     await request(app).post(`/api/v1/runs/${runId}/start`).set('Authorization', `Bearer ${adminToken}`);
     const opId = crypto.randomUUID();
-    const r = await request(app).post('/api/v1/sync/push').set('Authorization', `Bearer ${driverToken}`).send({ deviceId, ops: [{ seq: 10, opId, action: 'shipment.patch', entity: 'shipment', entityId: shipmentId, payload: { destinationZoneId: ids.hubId } }] });
-    expect(r.body.results[0].status).toBe('REJECTED:SHIPMENT_LOCKED');
+    const r = await request(app).post('/api/v1/sync/push').set('Authorization', `Bearer ${driverToken}`).send({ deviceId, ops: [{ seq: 10, opId, action: 'shipment.transition', entity: 'shipment', entityId: shipmentId, payload: { toStatus: 'PICKED_UP', occurredAt: new Date().toISOString() } }] });
+    expect(r.status).toBe(200);
+    expect(r.body.results[0].status).toBe('APPLIED');
     await request(app).post(`/api/v1/runs/${runId}/complete`).set('Authorization', `Bearer ${adminToken}`);
+  });
+
+  it('rejects an action outside the implemented set', async () => {
+    const opId = crypto.randomUUID();
+    const r = await request(app).post('/api/v1/sync/push').set('Authorization', `Bearer ${driverToken}`).send({ deviceId, ops: [{ seq: 10, opId, action: 'shipment.patch', entity: 'shipment', payload: { toStatus: 'PICKED_UP' } }] });
+    expect(r.status).toBe(400);
+    expect(r.body.error.code).toBe('VALIDATION');
   });
 
   it('shipment transition via ledger respects state machine and skew', async () => {
@@ -104,7 +112,39 @@ describe('sync ledger', () => {
     expect(r.body.results[0].status).toBe('APPLIED');
     const bad = crypto.randomUUID();
     const r2 = await request(app).post('/api/v1/sync/push').set('Authorization', `Bearer ${driverToken}`).send({ deviceId, ops: [{ seq: 12, opId: bad, action: 'shipment.transition', entity: 'shipment', entityId: shipmentId, payload: { toStatus: 'DELIVERED', occurredAt: new Date(Date.now() - 10 * 60 * 1000).toISOString() } }] });
-    expect(r2.body.results[0].status).toBe('REJECTED:BAD_OCCURRED_AT');
+    expect(r2.body.results[0].status).toBe('REJECTED');
+    expect(r2.body.results[0].rejectionCode).toBe('BAD_OCCURRED_AT');
+  });
+
+  it('rejects an out-of-order transition with INVALID_TRANSITION', async () => {
+    const ids = await seedHubZonePickup();
+    const shipmentId = await bookShipment(ids);
+    const opId = crypto.randomUUID();
+    const r = await request(app).post('/api/v1/sync/push').set('Authorization', `Bearer ${driverToken}`).send({ deviceId, ops: [{ seq: 20, opId, action: 'shipment.transition', entity: 'shipment', entityId: shipmentId, payload: { toStatus: 'DELIVERED', occurredAt: new Date().toISOString() } }] });
+    expect(r.body.results[0].status).toBe('REJECTED');
+    expect(r.body.results[0].rejectionCode).toBe('INVALID_TRANSITION');
+  });
+
+  it('rejects a transition on an unknown shipment with NOT_FOUND', async () => {
+    const opId = crypto.randomUUID();
+    const r = await request(app).post('/api/v1/sync/push').set('Authorization', `Bearer ${driverToken}`).send({ deviceId, ops: [{ seq: 21, opId, action: 'shipment.transition', entity: 'shipment', entityId: crypto.randomUUID(), payload: { toStatus: 'PICKED_UP', occurredAt: new Date().toISOString() } }] });
+    expect(r.body.results[0].status).toBe('REJECTED');
+    expect(r.body.results[0].rejectionCode).toBe('NOT_FOUND');
+  });
+
+  it('pending ops carry the same split status shape as push results', async () => {
+    const opId = crypto.randomUUID();
+    const r = await request(app).post('/api/v1/sync/push').set('Authorization', `Bearer ${driverToken}`).send({ deviceId, ops: [{ seq: 30, opId, action: 'shipment.transition', entity: 'shipment', entityId: crypto.randomUUID(), payload: { toStatus: 'PICKED_UP', occurredAt: new Date().toISOString() } }] });
+    expect(r.body.results[0].status).toBe('REJECTED');
+    expect(r.body.results[0].rejectionCode).toBe('NOT_FOUND');
+
+    const pending = await request(app).get(`/api/v1/sync/pending/${deviceId}?since=29`).set('Authorization', `Bearer ${driverToken}`);
+    expect(pending.status).toBe(200);
+    const row = pending.body.ops.find((o: { opId: string }) => o.opId === opId);
+    expect(row).toBeDefined();
+    expect(row.status).toBe('REJECTED');
+    expect(row.rejectionCode).toBe('NOT_FOUND');
+    expect(row.status).not.toContain(':');
   });
 
   it('batched GPS gated on ACTIVE does not resurrect completed run', async () => {
