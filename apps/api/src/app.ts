@@ -80,13 +80,17 @@ export function createApp({ db, mailer }: AppDeps): Express {
 
   app.use(httpLogger);
 
+  // Auth is a Bearer token in the Authorization header; the API sets no cookies,
+  // so credentials mode is omitted deliberately. A client that sees
+  // Allow-Credentials reaches for cookie auth that silently never authenticates.
+  const allowedOrigins = new Set([config.appUrl, ...config.corsAllowedOrigins]);
   app.use((req, res, next) => {
     const origin = req.headers.origin;
-    if (origin && origin === config.appUrl) {
+    if (origin && allowedOrigins.has(origin)) {
       res.setHeader('Access-Control-Allow-Origin', origin);
       res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
       res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Request-Id');
-      res.setHeader('Access-Control-Allow-Credentials', 'true');
+      res.setHeader('Access-Control-Max-Age', '600');
       res.setHeader('Vary', 'Origin');
     }
     if (req.method === 'OPTIONS') {

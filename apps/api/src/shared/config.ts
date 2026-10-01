@@ -3,7 +3,12 @@ export interface AppConfig {
   jwtRefreshSecret: string;
   jwtAccessTtl: string;
   jwtRefreshTtl: string;
+  /** Origin of the frontend. Used for CORS and for links in transactional email. */
   appUrl: string;
+  /** Base URL this API is reachable at. Used as the OpenAPI server URL. */
+  apiPublicUrl: string;
+  /** Explicit CORS origins beyond appUrl, comma separated. Empty means appUrl only. */
+  corsAllowedOrigins: readonly string[];
   mailFrom: string;
   resendApiKey: string;
   functionalCurrency: 'USD' | 'EUR' | 'GBP';
@@ -38,6 +43,8 @@ export function getConfig(): AppConfig {
   const jwtAccessSecret = process.env.JWT_ACCESS_SECRET;
   const jwtRefreshSecret = process.env.JWT_REFRESH_SECRET;
   const appUrl = process.env.APP_URL;
+  const apiPublicUrl = process.env.API_PUBLIC_URL;
+  const corsRaw = process.env.CORS_ALLOWED_ORIGINS;
   const mailFrom = process.env.MAIL_FROM;
   const resendApiKey = process.env.RESEND_API_KEY;
   const capabilityLinkSecret = process.env.CAPABILITY_LINK_SECRET;
@@ -78,7 +85,11 @@ export function getConfig(): AppConfig {
     jwtRefreshSecret: jwtRefreshSecret ?? 'dev-refresh-secret',
     jwtAccessTtl: process.env.JWT_ACCESS_TTL ?? '15m',
     jwtRefreshTtl: process.env.JWT_REFRESH_TTL ?? '30d',
-    appUrl: appUrl ?? 'http://localhost:3000',
+    appUrl: appUrl ?? 'http://localhost:5173',
+    apiPublicUrl: apiPublicUrl ?? appUrl ?? 'http://localhost:3000',
+    corsAllowedOrigins: corsRaw
+      ? corsRaw.split(',').map((o) => o.trim()).filter(Boolean)
+      : [],
     mailFrom: mailFrom ?? 'Logistics <no-reply@localhost>',
     resendApiKey: resendApiKey ?? 'dev-resend-key',
     functionalCurrency: (functionalCurrency ?? 'GBP') as 'USD' | 'EUR' | 'GBP',

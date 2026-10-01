@@ -32,6 +32,6 @@ export function generateSpec(): ReturnType<OpenApiGeneratorV31['generateDocument
   return generator.generateDocument({
     openapi: '3.1.0',
     info: { title: 'Logistics OS', version: (pkg as { version: string }).version, description: 'Offline-first logistics platform' },
-    servers: [{ url: getConfig().appUrl }],
+    servers: [{ url: getConfig().apiPublicUrl }],
   });
 }
