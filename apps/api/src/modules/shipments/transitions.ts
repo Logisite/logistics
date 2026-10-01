@@ -2,6 +2,8 @@ import { shipmentStatusEnum } from '@logistics/db';
 
 export type ShipmentStatus = (typeof shipmentStatusEnum.enumValues)[number];
 
+export const SHIPMENT_STATUSES = shipmentStatusEnum.enumValues;
+
 export const TERMINAL_STATUSES: readonly ShipmentStatus[] = [
   'DELIVERED',
   'RETURNED',

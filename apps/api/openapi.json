@@ -7,7 +7,7 @@
   },
   "servers": [
     {
-      "url": "http://localhost:3000/api/v1"
+      "url": "http://localhost:3000"
     }
   ],
   "components": {
@@ -1563,7 +1563,19 @@
             "format": "uuid"
           },
           "status": {
-            "type": "string"
+            "type": "string",
+            "enum": [
+              "DRAFT",
+              "BOOKED",
+              "PICKED_UP",
+              "IN_TRANSIT",
+              "OUT_FOR_DELIVERY",
+              "DELIVERED",
+              "FAILED_ATTEMPT",
+              "RETURNING",
+              "RETURNED",
+              "CANCELLED"
+            ]
           },
           "senderName": {
             "type": "string"
@@ -1708,6 +1720,87 @@
           }
         }
       },
+      "TrackingResponse": {
+        "type": "object",
+        "properties": {
+          "shipments": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "role": {
+                  "type": "string",
+                  "enum": [
+                    "sender",
+                    "recipient"
+                  ]
+                },
+                "shipment": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "DRAFT",
+                        "BOOKED",
+                        "PICKED_UP",
+                        "IN_TRANSIT",
+                        "OUT_FOR_DELIVERY",
+                        "DELIVERED",
+                        "FAILED_ATTEMPT",
+                        "RETURNING",
+                        "RETURNED",
+                        "CANCELLED"
+                      ]
+                    },
+                    "senderName": {
+                      "type": "string"
+                    },
+                    "recipientName": {
+                      "type": "string"
+                    },
+                    "destinationZoneId": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "format": "uuid"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "status",
+                    "senderName",
+                    "recipientName",
+                    "destinationZoneId",
+                    "createdAt",
+                    "updatedAt"
+                  ]
+                }
+              },
+              "required": [
+                "role",
+                "shipment"
+              ]
+            }
+          }
+        },
+        "required": [
+          "shipments"
+        ]
+      },
       "RunResponse": {
         "type": "object",
         "properties": {
@@ -1730,7 +1823,13 @@
                 "format": "uuid"
               },
               "status": {
-                "type": "string"
+                "type": "string",
+                "enum": [
+                  "PLANNED",
+                  "ACTIVE",
+                  "COMPLETED",
+                  "CANCELLED"
+                ]
               },
               "scheduledDate": {
                 "type": [
@@ -1865,7 +1964,13 @@
                   "format": "uuid"
                 },
                 "status": {
-                  "type": "string"
+                  "type": "string",
+                  "enum": [
+                    "PLANNED",
+                    "ACTIVE",
+                    "COMPLETED",
+                    "CANCELLED"
+                  ]
                 },
                 "scheduledDate": {
                   "type": [
@@ -1937,7 +2042,13 @@
                 "format": "uuid"
               },
               "status": {
-                "type": "string"
+                "type": "string",
+                "enum": [
+                  "PLANNED",
+                  "ACTIVE",
+                  "COMPLETED",
+                  "CANCELLED"
+                ]
               },
               "scheduledDate": {
                 "type": [
@@ -2023,7 +2134,19 @@
                       "format": "uuid"
                     },
                     "status": {
-                      "type": "string"
+                      "type": "string",
+                      "enum": [
+                        "DRAFT",
+                        "BOOKED",
+                        "PICKED_UP",
+                        "IN_TRANSIT",
+                        "OUT_FOR_DELIVERY",
+                        "DELIVERED",
+                        "FAILED_ATTEMPT",
+                        "RETURNING",
+                        "RETURNED",
+                        "CANCELLED"
+                      ]
                     }
                   },
                   "required": [
@@ -3111,6 +3234,28 @@
           "agingBuckets",
           "ageDays"
         ]
+      },
+      "HealthResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "examples": [
+              "ok"
+            ]
+          },
+          "version": {
+            "type": "string"
+          },
+          "sha": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "version",
+          "sha"
+        ]
       }
     },
     "parameters": {}
@@ -3120,6 +3265,7 @@
       "post": {
         "security": [],
         "summary": "POST /auth /register",
+        "operationId": "postAuthRegister",
         "requestBody": {
           "content": {
             "application/json": {
@@ -3218,6 +3364,7 @@
       "post": {
         "security": [],
         "summary": "POST /auth /verify-email",
+        "operationId": "postAuthVerifyEmail",
         "requestBody": {
           "content": {
             "application/json": {
@@ -3306,6 +3453,7 @@
       "post": {
         "security": [],
         "summary": "POST /auth /login",
+        "operationId": "postAuthLogin",
         "requestBody": {
           "content": {
             "application/json": {
@@ -3427,6 +3575,7 @@
       "post": {
         "security": [],
         "summary": "POST /auth /refresh",
+        "operationId": "postAuthRefresh",
         "requestBody": {
           "content": {
             "application/json": {
@@ -3516,6 +3665,7 @@
       "post": {
         "security": [],
         "summary": "POST /auth /logout",
+        "operationId": "postAuthLogout",
         "requestBody": {
           "content": {
             "application/json": {
@@ -3585,6 +3735,7 @@
     "/api/v1/auth/sessions": {
       "get": {
         "summary": "GET /auth /sessions",
+        "operationId": "getAuthSessions",
         "security": [
           {
             "bearerAuth": []
@@ -3694,6 +3845,7 @@
     "/api/v1/auth/sessions/{id}/revoke": {
       "post": {
         "summary": "POST /auth /sessions /{id} /revoke",
+        "operationId": "postAuthSessionsIdRevoke",
         "security": [
           {
             "bearerAuth": []
@@ -3769,6 +3921,7 @@
     "/api/v1/auth/invite": {
       "post": {
         "summary": "POST /auth /invite",
+        "operationId": "postAuthInvite",
         "security": [
           {
             "bearerAuth": []
@@ -3871,6 +4024,7 @@
     "/api/v1/auth/bundles": {
       "get": {
         "summary": "GET /auth /bundles",
+        "operationId": "getAuthBundles",
         "security": [
           {
             "bearerAuth": []
@@ -3979,6 +4133,7 @@
       },
       "post": {
         "summary": "POST /auth /bundles",
+        "operationId": "postAuthBundles",
         "security": [
           {
             "bearerAuth": []
@@ -4095,6 +4250,7 @@
     "/api/v1/auth/bundles/{id}": {
       "put": {
         "summary": "PUT /auth /bundles /{id}",
+        "operationId": "putAuthBundlesId",
         "security": [
           {
             "bearerAuth": []
@@ -4220,6 +4376,7 @@
       },
       "delete": {
         "summary": "DELETE /auth /bundles /{id}",
+        "operationId": "deleteAuthBundlesId",
         "security": [
           {
             "bearerAuth": []
@@ -4296,6 +4453,7 @@
     "/api/v1/auth/bundles/{id}/apply": {
       "post": {
         "summary": "POST /auth /bundles /{id} /apply",
+        "operationId": "postAuthBundlesIdApply",
         "security": [
           {
             "bearerAuth": []
@@ -4400,6 +4558,7 @@
       "post": {
         "security": [],
         "summary": "POST /auth /forgot-password",
+        "operationId": "postAuthForgotPassword",
         "requestBody": {
           "content": {
             "application/json": {
@@ -4488,6 +4647,7 @@
       "post": {
         "security": [],
         "summary": "POST /auth /reset-password",
+        "operationId": "postAuthResetPassword",
         "requestBody": {
           "content": {
             "application/json": {
@@ -4576,6 +4736,7 @@
       "post": {
         "security": [],
         "summary": "POST /auth /otp /request",
+        "operationId": "postAuthOtpRequest",
         "requestBody": {
           "content": {
             "application/json": {
@@ -4664,6 +4825,7 @@
       "post": {
         "security": [],
         "summary": "POST /auth /otp /verify",
+        "operationId": "postAuthOtpVerify",
         "requestBody": {
           "content": {
             "application/json": {
@@ -4770,6 +4932,7 @@
     "/api/v1/auth/otp/upgrade": {
       "post": {
         "summary": "POST /auth /otp /upgrade",
+        "operationId": "postAuthOtpUpgrade",
         "security": [
           {
             "bearerAuth": []
@@ -4863,6 +5026,7 @@
       "get": {
         "summary": "Inspect capability link",
         "security": [],
+        "operationId": "getCapabilityNonce",
         "parameters": [
           {
             "schema": {
@@ -4941,6 +5105,7 @@
       "post": {
         "summary": "Book via capability link",
         "security": [],
+        "operationId": "postCapabilityNonceBook",
         "parameters": [
           {
             "schema": {
@@ -5019,6 +5184,7 @@
       "get": {
         "summary": "Track shipment via capability link",
         "security": [],
+        "operationId": "getCapabilityNonceTrack",
         "parameters": [
           {
             "schema": {
@@ -5096,6 +5262,7 @@
     "/api/v1/capability/{nonce}/revoke": {
       "post": {
         "summary": "Revoke capability link",
+        "operationId": "postCapabilityNonceRevoke",
         "security": [
           {
             "bearerAuth": []
@@ -5180,6 +5347,7 @@
     "/api/v1/customers/me": {
       "post": {
         "summary": "POST /customers /me",
+        "operationId": "postCustomersMe",
         "security": [
           {
             "bearerAuth": []
@@ -5298,6 +5466,7 @@
       },
       "get": {
         "summary": "GET /customers /me",
+        "operationId": "getCustomersMe",
         "security": [
           {
             "bearerAuth": []
@@ -5407,6 +5576,7 @@
       },
       "put": {
         "summary": "PUT /customers /me",
+        "operationId": "putCustomersMe",
         "security": [
           {
             "bearerAuth": []
@@ -5527,6 +5697,7 @@
     "/api/v1/customers/me/addresses": {
       "get": {
         "summary": "GET /customers /me /addresses",
+        "operationId": "getCustomersMeAddresses",
         "security": [
           {
             "bearerAuth": []
@@ -5674,6 +5845,7 @@
       },
       "post": {
         "summary": "POST /customers /me /addresses",
+        "operationId": "postCustomersMeAddresses",
         "security": [
           {
             "bearerAuth": []
@@ -5829,6 +6001,7 @@
     "/api/v1/customers/me/addresses/{id}": {
       "put": {
         "summary": "PUT /customers /me /addresses /{id}",
+        "operationId": "putCustomersMeAddressesId",
         "security": [
           {
             "bearerAuth": []
@@ -5993,6 +6166,7 @@
       },
       "delete": {
         "summary": "DELETE /customers /me /addresses /{id}",
+        "operationId": "deleteCustomersMeAddressesId",
         "security": [
           {
             "bearerAuth": []
@@ -6069,6 +6243,7 @@
     "/api/v1/customers/me/emergency-contacts": {
       "get": {
         "summary": "GET /customers /me /emergency-contacts",
+        "operationId": "getCustomersMeEmergencyContacts",
         "security": [
           {
             "bearerAuth": []
@@ -6188,6 +6363,7 @@
       },
       "post": {
         "summary": "POST /customers /me /emergency-contacts",
+        "operationId": "postCustomersMeEmergencyContacts",
         "security": [
           {
             "bearerAuth": []
@@ -6315,6 +6491,7 @@
     "/api/v1/customers/me/emergency-contacts/{id}": {
       "put": {
         "summary": "PUT /customers /me /emergency-contacts /{id}",
+        "operationId": "putCustomersMeEmergencyContactsId",
         "security": [
           {
             "bearerAuth": []
@@ -6451,6 +6628,7 @@
       },
       "delete": {
         "summary": "DELETE /customers /me /emergency-contacts /{id}",
+        "operationId": "deleteCustomersMeEmergencyContactsId",
         "security": [
           {
             "bearerAuth": []
@@ -6527,6 +6705,7 @@
     "/api/v1/merchants/me": {
       "post": {
         "summary": "Create merchant profile",
+        "operationId": "postMerchantsMe",
         "security": [
           {
             "bearerAuth": []
@@ -6634,6 +6813,7 @@
       },
       "get": {
         "summary": "Get merchant profile",
+        "operationId": "getMerchantsMe",
         "security": [
           {
             "bearerAuth": []
@@ -6732,6 +6912,7 @@
       },
       "put": {
         "summary": "Update merchant profile",
+        "operationId": "putMerchantsMe",
         "security": [
           {
             "bearerAuth": []
@@ -6841,6 +7022,7 @@
     "/api/v1/locations/hubs": {
       "get": {
         "summary": "GET /locations /hubs",
+        "operationId": "getLocationsHubs",
         "security": [
           {
             "bearerAuth": []
@@ -6958,6 +7140,7 @@
       },
       "post": {
         "summary": "POST /locations /hubs",
+        "operationId": "postLocationsHubs",
         "security": [
           {
             "bearerAuth": []
@@ -7083,6 +7266,7 @@
     "/api/v1/locations/hubs/{id}": {
       "put": {
         "summary": "PUT /locations /hubs /{id}",
+        "operationId": "putLocationsHubsId",
         "security": [
           {
             "bearerAuth": []
@@ -7217,6 +7401,7 @@
       },
       "delete": {
         "summary": "DELETE /locations /hubs /{id}",
+        "operationId": "deleteLocationsHubsId",
         "security": [
           {
             "bearerAuth": []
@@ -7333,6 +7518,7 @@
     "/api/v1/locations/pickup-points": {
       "get": {
         "summary": "GET /locations /pickup-points",
+        "operationId": "getLocationsPickupPoints",
         "security": [
           {
             "bearerAuth": []
@@ -7462,6 +7648,7 @@
       },
       "post": {
         "summary": "POST /locations /pickup-points",
+        "operationId": "postLocationsPickupPoints",
         "security": [
           {
             "bearerAuth": []
@@ -7599,6 +7786,7 @@
     "/api/v1/locations/zones": {
       "get": {
         "summary": "GET /locations /zones",
+        "operationId": "getLocationsZones",
         "security": [
           {
             "bearerAuth": []
@@ -7719,6 +7907,7 @@
       },
       "post": {
         "summary": "POST /locations /zones",
+        "operationId": "postLocationsZones",
         "security": [
           {
             "bearerAuth": []
@@ -7847,6 +8036,7 @@
     "/api/v1/locations/pickup-points/{id}": {
       "put": {
         "summary": "PUT /locations /pickup-points /{id}",
+        "operationId": "putLocationsPickupPointsId",
         "security": [
           {
             "bearerAuth": []
@@ -7993,6 +8183,7 @@
       },
       "delete": {
         "summary": "DELETE /locations /pickup-points /{id}",
+        "operationId": "deleteLocationsPickupPointsId",
         "security": [
           {
             "bearerAuth": []
@@ -8121,6 +8312,7 @@
     "/api/v1/locations/zones/{id}": {
       "put": {
         "summary": "PUT /locations /zones /{id}",
+        "operationId": "putLocationsZonesId",
         "security": [
           {
             "bearerAuth": []
@@ -8258,6 +8450,7 @@
       },
       "delete": {
         "summary": "DELETE /locations /zones /{id}",
+        "operationId": "deleteLocationsZonesId",
         "security": [
           {
             "bearerAuth": []
@@ -8379,6 +8572,7 @@
       "get": {
         "security": [],
         "summary": "GET /locations /public /hubs",
+        "operationId": "getLocationsPublicHubs",
         "responses": {
           "200": {
             "description": "List active hubs",
@@ -8479,6 +8673,7 @@
       "get": {
         "security": [],
         "summary": "GET /locations /public /pickup-points",
+        "operationId": "getLocationsPublicPickupPoints",
         "responses": {
           "200": {
             "description": "List active pickup locations",
@@ -8591,6 +8786,7 @@
       "get": {
         "security": [],
         "summary": "GET /locations /public /zones",
+        "operationId": "getLocationsPublicZones",
         "responses": {
           "200": {
             "description": "List active zones",
@@ -8694,6 +8890,7 @@
     "/api/v1/pricing/quote": {
       "post": {
         "summary": "POST /pricing /quote",
+        "operationId": "postPricingQuote",
         "security": [
           {
             "bearerAuth": []
@@ -8775,6 +8972,7 @@
     "/api/v1/pricing/book": {
       "post": {
         "summary": "POST /pricing /book",
+        "operationId": "postPricingBook",
         "security": [
           {
             "bearerAuth": []
@@ -8856,6 +9054,7 @@
     "/api/v1/pricing/rules": {
       "get": {
         "summary": "GET /pricing /rules",
+        "operationId": "getPricingRules",
         "security": [
           {
             "bearerAuth": []
@@ -8926,6 +9125,7 @@
       },
       "post": {
         "summary": "POST /pricing /rules",
+        "operationId": "postPricingRules",
         "security": [
           {
             "bearerAuth": []
@@ -9007,6 +9207,7 @@
     "/api/v1/pricing/rules/{id}": {
       "put": {
         "summary": "PUT /pricing /rules /{id}",
+        "operationId": "putPricingRulesId",
         "security": [
           {
             "bearerAuth": []
@@ -9099,6 +9300,7 @@
     "/api/v1/pricing/delivery-options": {
       "get": {
         "summary": "GET /pricing /delivery-options",
+        "operationId": "getPricingDeliveryOptions",
         "security": [
           {
             "bearerAuth": []
@@ -9169,6 +9371,7 @@
       },
       "post": {
         "summary": "POST /pricing /delivery-options",
+        "operationId": "postPricingDeliveryOptions",
         "security": [
           {
             "bearerAuth": []
@@ -9250,6 +9453,7 @@
     "/api/v1/pricing/delivery-options/{id}": {
       "put": {
         "summary": "PUT /pricing /delivery-options /{id}",
+        "operationId": "putPricingDeliveryOptionsId",
         "security": [
           {
             "bearerAuth": []
@@ -9342,6 +9546,7 @@
     "/api/v1/shipments/{id}/pickup": {
       "post": {
         "summary": "POST /shipments /{id} /pickup",
+        "operationId": "postShipmentsIdPickup",
         "security": [
           {
             "bearerAuth": []
@@ -9446,6 +9651,7 @@
     "/api/v1/shipments/{id}/transit": {
       "post": {
         "summary": "POST /shipments /{id} /transit",
+        "operationId": "postShipmentsIdTransit",
         "security": [
           {
             "bearerAuth": []
@@ -9550,6 +9756,7 @@
     "/api/v1/shipments/{id}/out-for-delivery": {
       "post": {
         "summary": "POST /shipments /{id} /out-for-delivery",
+        "operationId": "postShipmentsIdOutForDelivery",
         "security": [
           {
             "bearerAuth": []
@@ -9654,6 +9861,7 @@
     "/api/v1/shipments/{id}/deliver": {
       "post": {
         "summary": "POST /shipments /{id} /deliver",
+        "operationId": "postShipmentsIdDeliver",
         "security": [
           {
             "bearerAuth": []
@@ -9758,6 +9966,7 @@
     "/api/v1/shipments/{id}/fail-attempt": {
       "post": {
         "summary": "POST /shipments /{id} /fail-attempt",
+        "operationId": "postShipmentsIdFailAttempt",
         "security": [
           {
             "bearerAuth": []
@@ -9862,6 +10071,7 @@
     "/api/v1/shipments/{id}/return": {
       "post": {
         "summary": "POST /shipments /{id} /return",
+        "operationId": "postShipmentsIdReturn",
         "security": [
           {
             "bearerAuth": []
@@ -9966,6 +10176,7 @@
     "/api/v1/shipments/{id}/returned": {
       "post": {
         "summary": "POST /shipments /{id} /returned",
+        "operationId": "postShipmentsIdReturned",
         "security": [
           {
             "bearerAuth": []
@@ -10070,6 +10281,7 @@
     "/api/v1/shipments/{id}/cancel": {
       "patch": {
         "summary": "PATCH /shipments /{id} /cancel",
+        "operationId": "patchShipmentsIdCancel",
         "security": [
           {
             "bearerAuth": []
@@ -10174,6 +10386,7 @@
     "/api/v1/shipments/{id}/events": {
       "get": {
         "summary": "GET /shipments /{id} /events",
+        "operationId": "getShipmentsIdEvents",
         "security": [
           {
             "bearerAuth": []
@@ -10279,6 +10492,7 @@
     "/api/v1/shipments/{id}": {
       "patch": {
         "summary": "PATCH /shipments /{id}",
+        "operationId": "patchShipmentsId",
         "security": [
           {
             "bearerAuth": []
@@ -10378,7 +10592,8 @@
     },
     "/api/v1/tracking/shipments": {
       "get": {
-        "summary": "GET /tracking /shipments",
+        "summary": "List shipments the caller is sender or recipient of",
+        "operationId": "getTrackingShipments",
         "security": [
           {
             "bearerAuth": []
@@ -10386,7 +10601,14 @@
         ],
         "responses": {
           "200": {
-            "description": "ok"
+            "description": "Visible shipments",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrackingResponse"
+                }
+              }
+            }
           },
           "400": {
             "description": "Validation error",
@@ -10399,7 +10621,14 @@
             }
           },
           "401": {
-            "description": "unauthorized"
+            "description": "Unauthenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
           },
           "403": {
             "description": "Forbidden",
@@ -10437,6 +10666,7 @@
     "/api/v1/runs": {
       "post": {
         "summary": "POST /runs",
+        "operationId": "postRuns",
         "security": [
           {
             "bearerAuth": []
@@ -10518,6 +10748,7 @@
     "/api/v1/runs/claim": {
       "post": {
         "summary": "POST /runs /claim",
+        "operationId": "postRunsClaim",
         "security": [
           {
             "bearerAuth": []
@@ -10599,6 +10830,7 @@
     "/api/v1/runs/{id}/start": {
       "post": {
         "summary": "POST /runs /{id} /start",
+        "operationId": "postRunsIdStart",
         "security": [
           {
             "bearerAuth": []
@@ -10682,6 +10914,7 @@
     "/api/v1/runs/{id}/complete": {
       "post": {
         "summary": "POST /runs /{id} /complete",
+        "operationId": "postRunsIdComplete",
         "security": [
           {
             "bearerAuth": []
@@ -10765,6 +10998,7 @@
     "/api/v1/runs/{id}/cancel": {
       "post": {
         "summary": "POST /runs /{id} /cancel",
+        "operationId": "postRunsIdCancel",
         "security": [
           {
             "bearerAuth": []
@@ -10848,6 +11082,7 @@
     "/api/v1/runs/mine": {
       "get": {
         "summary": "GET /runs /mine",
+        "operationId": "getRunsMine",
         "security": [
           {
             "bearerAuth": []
@@ -10920,6 +11155,7 @@
     "/api/v1/runs/{id}": {
       "get": {
         "summary": "GET /runs /{id}",
+        "operationId": "getRunsId",
         "security": [
           {
             "bearerAuth": []
@@ -11003,6 +11239,7 @@
     "/api/v1/runs/{id}/gps": {
       "post": {
         "summary": "POST /runs /{id} /gps",
+        "operationId": "postRunsIdGps",
         "security": [
           {
             "bearerAuth": []
@@ -11095,6 +11332,7 @@
     "/api/v1/sync/push": {
       "post": {
         "summary": "POST /sync /push",
+        "operationId": "postSyncPush",
         "security": [
           {
             "bearerAuth": []
@@ -11176,6 +11414,7 @@
     "/api/v1/sync/pending/{deviceId}": {
       "get": {
         "summary": "GET /sync /pending /{deviceId}",
+        "operationId": "getSyncPendingDeviceId",
         "security": [
           {
             "bearerAuth": []
@@ -11283,6 +11522,7 @@
     "/api/v1/sync/static": {
       "get": {
         "summary": "GET /sync /static",
+        "operationId": "getSyncStatic",
         "security": [
           {
             "bearerAuth": []
@@ -11355,6 +11595,7 @@
     "/api/v1/cod/collections": {
       "post": {
         "summary": "Record COD collection",
+        "operationId": "postCodCollections",
         "security": [
           {
             "bearerAuth": []
@@ -11436,6 +11677,7 @@
     "/api/v1/cod/deposits": {
       "post": {
         "summary": "Record COD deposit",
+        "operationId": "postCodDeposits",
         "security": [
           {
             "bearerAuth": []
@@ -11517,6 +11759,7 @@
     "/api/v1/cod/pending": {
       "get": {
         "summary": "Get pending COD summary",
+        "operationId": "getCodPending",
         "security": [
           {
             "bearerAuth": []
@@ -11589,6 +11832,7 @@
     "/api/v1/cod/reconciliations": {
       "post": {
         "summary": "Reconcile deposits with collections",
+        "operationId": "postCodReconciliations",
         "security": [
           {
             "bearerAuth": []
@@ -11670,6 +11914,7 @@
     "/api/v1/cod/settlements/compute": {
       "post": {
         "summary": "Compute settlements for period",
+        "operationId": "postCodSettlementsCompute",
         "security": [
           {
             "bearerAuth": []
@@ -11751,6 +11996,7 @@
     "/api/v1/cod/settlements/{id}/settle": {
       "patch": {
         "summary": "Mark settlement as settled",
+        "operationId": "patchCodSettlementsIdSettle",
         "security": [
           {
             "bearerAuth": []
@@ -11834,6 +12080,7 @@
     "/api/v1/cod/disputes": {
       "post": {
         "summary": "Open COD dispute",
+        "operationId": "postCodDisputes",
         "security": [
           {
             "bearerAuth": []
@@ -11915,6 +12162,7 @@
     "/api/v1/cod/disputes/{id}/resolve": {
       "patch": {
         "summary": "Resolve COD dispute",
+        "operationId": "patchCodDisputesIdResolve",
         "security": [
           {
             "bearerAuth": []
@@ -12007,6 +12255,7 @@
     "/api/v1/cod/fx-rates": {
       "post": {
         "summary": "Add FX exchange rate",
+        "operationId": "postCodFxRates",
         "security": [
           {
             "bearerAuth": []
@@ -12088,6 +12337,7 @@
     "/api/v1/reports/revenue": {
       "get": {
         "summary": "GET /reports /revenue",
+        "operationId": "getReportsRevenue",
         "security": [
           {
             "bearerAuth": []
@@ -12198,6 +12448,7 @@
     "/api/v1/reports/cod": {
       "get": {
         "summary": "GET /reports /cod",
+        "operationId": "getReportsCod",
         "security": [
           {
             "bearerAuth": []
@@ -12290,6 +12541,7 @@
     "/api/v1/reports/drivers": {
       "get": {
         "summary": "GET /reports /drivers",
+        "operationId": "getReportsDrivers",
         "security": [
           {
             "bearerAuth": []
@@ -12382,6 +12634,7 @@
     "/api/v1/reports/exceptions": {
       "get": {
         "summary": "GET /reports /exceptions",
+        "operationId": "getReportsExceptions",
         "security": [
           {
             "bearerAuth": []
@@ -12465,15 +12718,89 @@
     },
     "/api/v1/health": {
       "get": {
-        "summary": "GET /health",
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
+        "security": [],
+        "summary": "Liveness probe",
+        "operationId": "getHealth",
         "responses": {
           "200": {
-            "description": "ok"
+            "description": "Service is up",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/openapi.json": {
+      "get": {
+        "security": [],
+        "summary": "This document",
+        "operationId": "getOpenapiJson",
+        "responses": {
+          "200": {
+            "description": "OpenAPI document",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              }
+            }
           },
           "400": {
             "description": "Validation error",

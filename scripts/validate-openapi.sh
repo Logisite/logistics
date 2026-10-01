@@ -26,15 +26,21 @@ if (!spec.components?.securitySchemes?.bearerAuth) {
   errors.push('components.securitySchemes.bearerAuth missing');
 }
 
-// 3. Every path operation must have response content
+// 3. Every path operation must type its SUCCESS response.
+//    204/205/304 are bodyless by definition, so an operation whose only
+//    success is one of those is exempt.
 let missing = 0;
+const BODYLESS = ['204', '205', '304'];
 for (const [path, methods] of Object.entries(spec.paths || {})) {
   for (const [method, op] of Object.entries(methods)) {
     if (method === 'parameters') continue;
-    const hasContent = Object.values(op.responses || {}).some(r => r?.content);
-    if (!hasContent) {
+    const success = Object.entries(op.responses || {})
+      .filter(([status]) => /^2\d\d$/.test(status));
+    const typed = success.filter(([, r]) => r?.content);
+    const bodylessOnly = success.length > 0 && success.every(([status]) => BODYLESS.includes(status));
+    if (typed.length === 0 && !bodylessOnly) {
       missing++;
-      console.error('  missing content:', method.toUpperCase(), path);
+      console.error('  missing success content:', method.toUpperCase(), path);
     }
   }
 }
@@ -63,5 +69,5 @@ if (errors.length > 0) {
   process.exit(1);
 }
 
-console.log('OK: ' + schemas.length + ' schemas, ' + (Object.keys(spec.paths || {}).length) + ' paths, all operations have content + security');
+console.log('OK: ' + schemas.length + ' schemas, ' + (Object.keys(spec.paths || {}).length) + ' paths, all operations have typed success + security');
 "

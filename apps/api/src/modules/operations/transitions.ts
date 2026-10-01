@@ -1,4 +1,8 @@
-export type RunStatus = 'PLANNED' | 'ACTIVE' | 'COMPLETED' | 'CANCELLED';
+import { runStatusEnum } from '@logistics/db';
+
+export type RunStatus = (typeof runStatusEnum.enumValues)[number];
+
+export const RUN_STATUSES = runStatusEnum.enumValues;
 
 export const RUN_TRANSITIONS: Readonly<Record<RunStatus, readonly RunStatus[]>> = {
   PLANNED: ['ACTIVE', 'CANCELLED'],

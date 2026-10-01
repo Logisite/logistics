@@ -10,6 +10,8 @@ import { parse } from '../../shared/validate.js';
 import { logger } from '../../shared/logger.js';
 
 import * as service from './service.js';
+import { RUN_STATUSES } from './transitions.js';
+import { SHIPMENT_STATUSES } from '../shipments/index.js';
 import { defineRoute } from '../../openapi/registry.js';
 
 const CreateRunRequest = z.object({
@@ -31,13 +33,13 @@ const GpsPushRequest = z.object({
     .max(100),
 }).openapi('GpsPushRequest');
 
-const RunResponse = z.object({ run: z.object({ id: z.string().uuid(), hubId: z.string().uuid().nullable(), driverUserId: z.string().uuid(), status: z.string(), scheduledDate: z.string().datetime().nullable(), startedAt: z.string().datetime().nullable(), endedAt: z.string().datetime().nullable(), createdAt: z.string().datetime(), updatedAt: z.string().datetime() }) }).openapi('RunResponse');
+const RunResponse = z.object({ run: z.object({ id: z.string().uuid(), hubId: z.string().uuid().nullable(), driverUserId: z.string().uuid(), status: z.enum(RUN_STATUSES), scheduledDate: z.string().datetime().nullable(), startedAt: z.string().datetime().nullable(), endedAt: z.string().datetime().nullable(), createdAt: z.string().datetime(), updatedAt: z.string().datetime() }) }).openapi('RunResponse');
 
-const RunListResponse = z.object({ runs: z.array(z.object({ id: z.string().uuid(), hubId: z.string().uuid().nullable(), driverUserId: z.string().uuid(), status: z.string(), scheduledDate: z.string().datetime().nullable(), startedAt: z.string().datetime().nullable(), endedAt: z.string().datetime().nullable(), createdAt: z.string().datetime(), updatedAt: z.string().datetime() })) }).openapi('RunListResponse');
+const RunListResponse = z.object({ runs: z.array(z.object({ id: z.string().uuid(), hubId: z.string().uuid().nullable(), driverUserId: z.string().uuid(), status: z.enum(RUN_STATUSES), scheduledDate: z.string().datetime().nullable(), startedAt: z.string().datetime().nullable(), endedAt: z.string().datetime().nullable(), createdAt: z.string().datetime(), updatedAt: z.string().datetime() })) }).openapi('RunListResponse');
 
 const RunSheetEntrySchema = z.object({ id: z.string().uuid(), runId: z.string().uuid(), shipmentId: z.string().uuid(), sequence: z.number() });
 
-const RunSheetResponse = z.object({ run: z.object({ id: z.string().uuid(), hubId: z.string().uuid().nullable(), driverUserId: z.string().uuid(), status: z.string(), scheduledDate: z.string().datetime().nullable(), startedAt: z.string().datetime().nullable(), endedAt: z.string().datetime().nullable(), createdAt: z.string().datetime(), updatedAt: z.string().datetime() }), entries: z.array(z.object({ entry: RunSheetEntrySchema, shipment: z.object({ id: z.string().uuid(), status: z.string() }).nullable() })) }).openapi('RunSheetResponse');
+const RunSheetResponse = z.object({ run: z.object({ id: z.string().uuid(), hubId: z.string().uuid().nullable(), driverUserId: z.string().uuid(), status: z.enum(RUN_STATUSES), scheduledDate: z.string().datetime().nullable(), startedAt: z.string().datetime().nullable(), endedAt: z.string().datetime().nullable(), createdAt: z.string().datetime(), updatedAt: z.string().datetime() }), entries: z.array(z.object({ entry: RunSheetEntrySchema, shipment: z.object({ id: z.string().uuid(), status: z.enum(SHIPMENT_STATUSES) }).nullable() })) }).openapi('RunSheetResponse');
 
 const GpsInsertResponse = z.object({ inserted: z.number() }).openapi('GpsInsertResponse');
 

@@ -1,6 +1,7 @@
 export {
   TRANSITIONS,
   TERMINAL_STATUSES,
+  SHIPMENT_STATUSES,
   canTransition,
   isTerminal,
   isTransitionTarget,

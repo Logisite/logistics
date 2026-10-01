@@ -21,6 +21,24 @@ export const ErrorResponse = z.object({
 
 export const API = '/api/v1';
 
+function operationIdFrom(method: string, path: string): string {
+  const verb = method.toLowerCase();
+  const slug = path
+    .replace(/[{}]/g, '')
+    .split('/')
+    .filter(Boolean)
+    .map((segment) =>
+      segment
+        .replace(/[^A-Za-z0-9]+/g, ' ')
+        .trim()
+        .split(' ')
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(''),
+    )
+    .join('');
+  return `${verb}${slug.charAt(0).toUpperCase()}${slug.slice(1)}`;
+}
+
 function summaryFrom(method: string, path: string): string {
   const verb = method.toUpperCase();
   const slug = path.split('/').filter(Boolean).join(' /');
@@ -42,6 +60,7 @@ export function defineRoute(config: RouteConfig): RouteConfig {
     ...config,
     path: `${API}${config.path}`,
     summary: config.summary ?? summaryFrom(config.method, config.path),
+    operationId: config.operationId ?? operationIdFrom(config.method, config.path),
     security: isPublic ? [] : [{ bearerAuth: [] }],
     responses: mergeErrors(config.responses ?? {}, isPublic),
   };

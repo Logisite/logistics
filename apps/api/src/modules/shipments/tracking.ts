@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { z } from 'zod';
 import { or, sql, eq, and } from 'drizzle-orm';
 
 import { contactIdentities } from '@logistics/db';
@@ -7,7 +8,59 @@ import type { Db } from '../../shared/db.js';
 import { requireAuth } from '../auth/middleware.js';
 import { defineRoute } from '../../openapi/registry.js';
 
-defineRoute({ method: 'get', path: '/tracking/shipments', responses: { 200: { description: 'ok' }, 401: { description: 'unauthorized' } } });
+import { SHIPMENT_STATUSES } from './transitions.js';
+
+const TrackedShipment = z.object({
+  id: z.string().uuid(),
+  status: z.enum(SHIPMENT_STATUSES),
+  senderName: z.string(),
+  recipientName: z.string(),
+  destinationZoneId: z.string().uuid().nullable(),
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
+});
+
+defineRoute({
+  method: 'get',
+  path: '/tracking/shipments',
+  summary: 'List shipments the caller is sender or recipient of',
+  responses: {
+    200: {
+      description: 'Visible shipments',
+      content: {
+        'application/json': {
+          schema: z
+            .object({
+              shipments: z.array(
+                z.object({
+                  role: z.enum(['sender', 'recipient']),
+                  shipment: TrackedShipment,
+                }),
+              ),
+            })
+            .openapi('TrackingResponse'),
+        },
+      },
+    },
+  },
+});
+
+const SAFE_TRACKING_COLUMNS = {
+  id: true,
+  status: true,
+  senderName: true,
+  recipientName: true,
+  destinationZoneId: true,
+  createdAt: true,
+  updatedAt: true,
+} as const;
+
+const TRACKED_COLUMNS = {
+  ...SAFE_TRACKING_COLUMNS,
+  senderUserId: true,
+  senderEmail: true,
+  senderPhone: true,
+} as const;
 
 export function trackingRouter(db: Db): Router {
   const router = Router();
@@ -30,6 +83,7 @@ export function trackingRouter(db: Db): Router {
     const phoneSet = new Set(phones.map((p) => p.toLowerCase()));
 
     const rows = await db.query.shipments.findMany({
+      columns: TRACKED_COLUMNS,
       where: (t, { eq: eq }) =>
         or(
           eq(t.senderUserId, ctx.userId),
@@ -41,11 +95,11 @@ export function trackingRouter(db: Db): Router {
       orderBy: (t, { desc }) => [desc(t.createdAt)],
     });
 
-    const tagged = rows.map((shipment) => ({
+    const tagged = rows.map(({ senderUserId, senderEmail, senderPhone, ...shipment }) => ({
       role:
-        shipment.senderUserId === ctx.userId ||
-        shipment.senderEmail?.toLowerCase() === email ||
-        (shipment.senderPhone && phoneSet.has(shipment.senderPhone.toLowerCase()))
+        senderUserId === ctx.userId ||
+        senderEmail?.toLowerCase() === email ||
+        (senderPhone !== null && phoneSet.has(senderPhone.toLowerCase()))
           ? ('sender' as const)
           : ('recipient' as const),
       shipment,

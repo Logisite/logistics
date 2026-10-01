@@ -11,13 +11,13 @@ import { parse } from '../../shared/validate.js';
 import { logger } from '../../shared/logger.js';
 
 import * as service from './service.js';
-import type { ShipmentStatus } from './transitions.js';
+import { SHIPMENT_STATUSES, type ShipmentStatus } from './transitions.js';
 import { notifyTransition } from '../notifications/index.js';
 import { defineRoute } from '../../openapi/registry.js';
 
 const ShipmentRowSchema = z.object({
   id: z.string().uuid(),
-  status: z.string(),
+  status: z.enum(SHIPMENT_STATUSES),
   senderName: z.string(),
   recipientName: z.string(),
   senderUserId: z.string().uuid(),
