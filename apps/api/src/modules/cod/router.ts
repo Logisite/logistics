@@ -7,6 +7,7 @@ import { requireAuth, requirePermission } from '../auth/middleware.js';
 import { PERMISSIONS } from '../auth/permissions.js';
 
 import * as service from './service.js';
+import * as settlementService from './settlements.js';
 import { defineRoute } from '../../openapi/registry.js';
 import { parse } from '../../shared/validate.js';
 
@@ -99,7 +100,7 @@ export function codRouter(db: Db): Router {
   });
 
   router.get('/pending', ...record, async (_req, res) => {
-    res.json({ pending: await service.pendingSummary(db) });
+    res.json({ pending: await settlementService.pendingSummary(db) });
   });
 
   router.post('/reconciliations', ...manage, async (req, res) => {
@@ -109,7 +110,7 @@ export function codRouter(db: Db): Router {
 
   router.post('/settlements/compute', ...manage, async (req, res) => {
     const { periodStart, periodEnd } = parse(CodSettlementRequest, req.body);
-    const settlements = await service.computeSettlements(
+    const settlements = await settlementService.computeSettlements(
       db,
       res.locals.auth,
       new Date(periodStart),
@@ -121,22 +122,22 @@ export function codRouter(db: Db): Router {
   router.patch('/settlements/:id/settle', ...manage, async (req, res) => {
     const id = req.params.id;
     if (typeof id !== 'string') throw badRequest('VALIDATION', 'Invalid settlement id');
-    res.json({ settlement: await service.markSettled(db, res.locals.auth, id) });
+    res.json({ settlement: await settlementService.markSettled(db, res.locals.auth, id) });
   });
 
   router.post('/disputes', ...manage, async (req, res) => {
-    res.status(201).json({ dispute: await service.openDispute(db, res.locals.auth, parse(CodDisputeRequest, req.body)) });
+    res.status(201).json({ dispute: await settlementService.openDispute(db, res.locals.auth, parse(CodDisputeRequest, req.body)) });
   });
 
   router.patch('/disputes/:id/resolve', ...manage, async (req, res) => {
     const id = req.params.id;
     if (typeof id !== 'string') throw badRequest('VALIDATION', 'Invalid dispute id');
     const { resolution } = parse(CodResolveRequest, req.body);
-    res.json({ dispute: await service.resolveDispute(db, res.locals.auth, id, resolution) });
+    res.json({ dispute: await settlementService.resolveDispute(db, res.locals.auth, id, resolution) });
   });
 
   router.post('/fx-rates', ...manage, async (req, res) => {
-    res.status(201).json({ fxRate: await service.addFxRate(db, res.locals.auth, parse(CodFxRateRequest, req.body)) });
+    res.status(201).json({ fxRate: await settlementService.addFxRate(db, res.locals.auth, parse(CodFxRateRequest, req.body)) });
   });
 
   return router;

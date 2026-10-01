@@ -1,5 +1,18 @@
 // rates are 8dp decimal strings, math stays integer, one half-even rounding here
+import { and, eq, lte, sql } from 'drizzle-orm';
+
+import { fxRates } from '@logistics/db';
+
+import { getConfig } from '../../shared/config.js';
+import { badRequest } from '../../shared/errors.js';
 import { logger } from '../../shared/logger.js';
+
+import type { Db } from '../../shared/db.js';
+
+export type Currency = 'USD' | 'EUR' | 'GBP';
+
+// one functional currency per deployment, ADR 0004
+export const FUNCTIONAL_CURRENCY: Currency = getConfig().functionalCurrency;
 
 const RATE_SCALE_DIGITS = 8;
 const RATE_SCALE = 10n ** BigInt(RATE_SCALE_DIGITS);
@@ -31,4 +44,27 @@ export function convertCents(amountCents: number, rate: string): number {
     throw new Error('convertCents overflow');
   }
   return asNumber;
+}
+
+type Queryable = Pick<Db, 'select'>;
+
+/** The most recent rate dated on or before `at`. */
+export async function latestRate(
+  q: Queryable,
+  from: Currency,
+  to: Currency,
+  at: Date,
+): Promise<{ rate: string; rateDate: Date }> {
+  const [row] = await q
+    .select({ rate: fxRates.rate, rateDate: fxRates.rateDate })
+    .from(fxRates)
+    .where(and(eq(fxRates.fromCurrency, from), eq(fxRates.toCurrency, to), lte(fxRates.rateDate, at)))
+    .orderBy(sql`${fxRates.rateDate} desc`)
+    .limit(1);
+  if (!row) throw badRequest('FX_RATE_MISSING', `No ${from}->${to} rate on or before ${at.toISOString()}`);
+  return row;
+}
+
+export function toFunctional(amountCents: number, currency: Currency, rate: string): number {
+  return currency === FUNCTIONAL_CURRENCY ? amountCents : convertCents(amountCents, rate);
 }

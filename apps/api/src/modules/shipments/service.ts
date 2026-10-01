@@ -271,16 +271,6 @@ const MANAGE_FIELDS = [
   'pickupLocationId',
 ] as const;
 
-type PatchField =
-  | 'specialInstructions'
-  | 'category'
-  | 'destinationZoneId'
-  | 'recipientName'
-  | 'recipientEmail'
-  | 'recipientPhone'
-  | 'deliveryOptionId'
-  | 'pickupLocationId';
-
 export interface PatchInput {
   specialInstructions?: string | null;
   category?: string | null;
