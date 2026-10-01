@@ -1720,6 +1720,241 @@
           }
         }
       },
+      "ShipmentTransitionMatrixResponse": {
+        "type": "object",
+        "properties": {
+          "transitions": {
+            "type": "object",
+            "properties": {
+              "DRAFT": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "DRAFT",
+                    "BOOKED",
+                    "PICKED_UP",
+                    "IN_TRANSIT",
+                    "OUT_FOR_DELIVERY",
+                    "DELIVERED",
+                    "FAILED_ATTEMPT",
+                    "RETURNING",
+                    "RETURNED",
+                    "CANCELLED"
+                  ]
+                },
+                "description": "Legal targets from DRAFT"
+              },
+              "BOOKED": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "DRAFT",
+                    "BOOKED",
+                    "PICKED_UP",
+                    "IN_TRANSIT",
+                    "OUT_FOR_DELIVERY",
+                    "DELIVERED",
+                    "FAILED_ATTEMPT",
+                    "RETURNING",
+                    "RETURNED",
+                    "CANCELLED"
+                  ]
+                },
+                "description": "Legal targets from BOOKED"
+              },
+              "PICKED_UP": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "DRAFT",
+                    "BOOKED",
+                    "PICKED_UP",
+                    "IN_TRANSIT",
+                    "OUT_FOR_DELIVERY",
+                    "DELIVERED",
+                    "FAILED_ATTEMPT",
+                    "RETURNING",
+                    "RETURNED",
+                    "CANCELLED"
+                  ]
+                },
+                "description": "Legal targets from PICKED_UP"
+              },
+              "IN_TRANSIT": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "DRAFT",
+                    "BOOKED",
+                    "PICKED_UP",
+                    "IN_TRANSIT",
+                    "OUT_FOR_DELIVERY",
+                    "DELIVERED",
+                    "FAILED_ATTEMPT",
+                    "RETURNING",
+                    "RETURNED",
+                    "CANCELLED"
+                  ]
+                },
+                "description": "Legal targets from IN_TRANSIT"
+              },
+              "OUT_FOR_DELIVERY": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "DRAFT",
+                    "BOOKED",
+                    "PICKED_UP",
+                    "IN_TRANSIT",
+                    "OUT_FOR_DELIVERY",
+                    "DELIVERED",
+                    "FAILED_ATTEMPT",
+                    "RETURNING",
+                    "RETURNED",
+                    "CANCELLED"
+                  ]
+                },
+                "description": "Legal targets from OUT_FOR_DELIVERY"
+              },
+              "DELIVERED": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "DRAFT",
+                    "BOOKED",
+                    "PICKED_UP",
+                    "IN_TRANSIT",
+                    "OUT_FOR_DELIVERY",
+                    "DELIVERED",
+                    "FAILED_ATTEMPT",
+                    "RETURNING",
+                    "RETURNED",
+                    "CANCELLED"
+                  ]
+                },
+                "description": "Legal targets from DELIVERED"
+              },
+              "FAILED_ATTEMPT": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "DRAFT",
+                    "BOOKED",
+                    "PICKED_UP",
+                    "IN_TRANSIT",
+                    "OUT_FOR_DELIVERY",
+                    "DELIVERED",
+                    "FAILED_ATTEMPT",
+                    "RETURNING",
+                    "RETURNED",
+                    "CANCELLED"
+                  ]
+                },
+                "description": "Legal targets from FAILED_ATTEMPT"
+              },
+              "RETURNING": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "DRAFT",
+                    "BOOKED",
+                    "PICKED_UP",
+                    "IN_TRANSIT",
+                    "OUT_FOR_DELIVERY",
+                    "DELIVERED",
+                    "FAILED_ATTEMPT",
+                    "RETURNING",
+                    "RETURNED",
+                    "CANCELLED"
+                  ]
+                },
+                "description": "Legal targets from RETURNING"
+              },
+              "RETURNED": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "DRAFT",
+                    "BOOKED",
+                    "PICKED_UP",
+                    "IN_TRANSIT",
+                    "OUT_FOR_DELIVERY",
+                    "DELIVERED",
+                    "FAILED_ATTEMPT",
+                    "RETURNING",
+                    "RETURNED",
+                    "CANCELLED"
+                  ]
+                },
+                "description": "Legal targets from RETURNED"
+              },
+              "CANCELLED": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "DRAFT",
+                    "BOOKED",
+                    "PICKED_UP",
+                    "IN_TRANSIT",
+                    "OUT_FOR_DELIVERY",
+                    "DELIVERED",
+                    "FAILED_ATTEMPT",
+                    "RETURNING",
+                    "RETURNED",
+                    "CANCELLED"
+                  ]
+                },
+                "description": "Legal targets from CANCELLED"
+              }
+            },
+            "required": [
+              "DRAFT",
+              "BOOKED",
+              "PICKED_UP",
+              "IN_TRANSIT",
+              "OUT_FOR_DELIVERY",
+              "DELIVERED",
+              "FAILED_ATTEMPT",
+              "RETURNING",
+              "RETURNED",
+              "CANCELLED"
+            ],
+            "description": "Shipment state machine: legal target statuses keyed by current status"
+          },
+          "terminalStatuses": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "DRAFT",
+                "BOOKED",
+                "PICKED_UP",
+                "IN_TRANSIT",
+                "OUT_FOR_DELIVERY",
+                "DELIVERED",
+                "FAILED_ATTEMPT",
+                "RETURNING",
+                "RETURNED",
+                "CANCELLED"
+              ]
+            }
+          }
+        },
+        "required": [
+          "transitions",
+          "terminalStatuses"
+        ]
+      },
       "TrackingResponse": {
         "type": "object",
         "properties": {
@@ -10949,6 +11184,76 @@
                   "required": [
                     "shipment"
                   ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/shipments/transitions": {
+      "get": {
+        "security": [],
+        "summary": "Shipment state machine: legal target statuses keyed by current status",
+        "description": "Derived from the same TRANSITIONS constant that enforces transitions server-side, so it cannot drift. A client uses this to decide which actions to offer instead of hardcoding its own copy of the matrix.",
+        "operationId": "getShipmentsTransitions",
+        "responses": {
+          "200": {
+            "description": "Transition matrix",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShipmentTransitionMatrixResponse"
                 }
               }
             }

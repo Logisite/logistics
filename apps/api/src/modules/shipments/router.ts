@@ -11,7 +11,12 @@ import { parse } from '../../shared/validate.js';
 import { logger } from '../../shared/logger.js';
 
 import * as service from './service.js';
-import { SHIPMENT_STATUSES, type ShipmentStatus } from './transitions.js';
+import {
+  SHIPMENT_STATUSES,
+  TransitionMatrixResponse,
+  transitionMatrix,
+  type ShipmentStatus,
+} from './transitions.js';
 import { notifyTransition } from '../notifications/index.js';
 import { defineRoute } from '../../openapi/registry.js';
 
@@ -119,6 +124,21 @@ defineRoute({
   },
 });
 
+defineRoute({
+  method: 'get',
+  path: '/shipments/transitions',
+  security: [],
+  summary: 'Shipment state machine: legal target statuses keyed by current status',
+  description:
+    'Derived from the same TRANSITIONS constant that enforces transitions server-side, so it cannot drift. A client uses this to decide which actions to offer instead of hardcoding its own copy of the matrix.',
+  responses: {
+    200: {
+      description: 'Transition matrix',
+      content: { 'application/json': { schema: TransitionMatrixResponse } },
+    },
+  },
+});
+
 export function shipmentsRouter(db: Db, mailer?: Mailer): Router {
   const router = Router();
 
@@ -136,6 +156,13 @@ export function shipmentsRouter(db: Db, mailer?: Mailer): Router {
   }
 
   const staff = [requireAuth(db), requirePermission(PERMISSIONS.SHIPMENT_TRANSITION)];
+
+  // Public: derived entirely from a compile-time constant, carries no tenant or
+  // user data, and an offline device bootstrapping reference data should not need
+  // a live token to learn which actions exist.
+  router.get('/transitions', (_req, res) => {
+    res.json(transitionMatrix());
+  });
 
   for (const [path, toStatus] of ACTION_ROUTES) {
     router.post(`/:id/${path}`, ...staff, async (req, res) => {
