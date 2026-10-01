@@ -1,6 +1,9 @@
+import { randomUUID } from 'node:crypto';
+
 import express from 'express';
-import type { ErrorRequestHandler, Express } from 'express';
+import type { ErrorRequestHandler, Express, RequestHandler } from 'express';
 import pinoHttp from 'pino-http';
+import { ZodError } from 'zod';
 
 import { authRouter, capabilityRouter, requireAuth, requirePermission, PERMISSIONS } from './modules/auth/index.js';
 import type { Mailer } from './modules/auth/index.js';
@@ -26,13 +29,35 @@ export interface AppDeps {
   mailer: Mailer;
 }
 
+const REQUEST_ID_PATTERN = /^[A-Za-z0-9._-]{1,128}$/;
+
+function requestIdFrom(header: string | undefined): string | undefined {
+  if (!header) return undefined;
+  return REQUEST_ID_PATTERN.test(header) ? header : undefined;
+}
+
 const errorHandler: ErrorRequestHandler = (err, req, res, _next) => {
   if (err instanceof HttpError) {
     res.status(err.status).json({ error: { code: err.code, message: err.message } });
     return;
   }
+  if (err instanceof ZodError) {
+    res.status(400).json({ error: { code: 'VALIDATION', message: 'Invalid request payload' } });
+    return;
+  }
+  const bodyParse = err as { type?: string; status?: number };
+  if (bodyParse.type === 'entity.parse.failed' || bodyParse.type === 'entity.too.large') {
+    req.log.warn({ err: bodyParse.type }, 'request rejected');
+    res.status(400).json({ error: { code: 'VALIDATION', message: 'Malformed request body' } });
+    return;
+  }
   req.log.error({ err }, 'unhandled error');
   res.status(500).json({ error: { code: 'INTERNAL', message: 'Internal server error' } });
+};
+
+const notFoundHandler: RequestHandler = (req, res) => {
+  req.log.info({ path: req.path, method: req.method }, 'route not found');
+  res.status(404).json({ error: { code: 'NOT_FOUND', message: 'No such endpoint' } });
 };
 
 export function createApp({ db, mailer }: AppDeps): Express {
@@ -41,7 +66,7 @@ export function createApp({ db, mailer }: AppDeps): Express {
 
   const httpLogger = pinoHttp({
     logger,
-    genReqId: (req) => (req.headers['x-request-id'] as string) ?? undefined,
+    genReqId: (req) => requestIdFrom(req.headers['x-request-id'] as string | undefined) ?? randomUUID(),
     customSuccessMessage: (req: express.Request, res: express.Response) => {
       if (res.statusCode >= 400) return 'request failed';
       return 'request completed';
@@ -55,15 +80,14 @@ export function createApp({ db, mailer }: AppDeps): Express {
 
   app.use(httpLogger);
 
-  app.use(express.json());
-
   app.use((req, res, next) => {
     const origin = req.headers.origin;
     if (origin && origin === config.appUrl) {
       res.setHeader('Access-Control-Allow-Origin', origin);
       res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
-      res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+      res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Request-Id');
       res.setHeader('Access-Control-Allow-Credentials', 'true');
+      res.setHeader('Vary', 'Origin');
     }
     if (req.method === 'OPTIONS') {
       res.status(204).end();
@@ -71,6 +95,8 @@ export function createApp({ db, mailer }: AppDeps): Express {
     }
     next();
   });
+
+  app.use(express.json({ limit: '1mb' }));
 
   app.get(`${API}/health`, (_req, res) => {
     res.json({ status: 'ok', version: (pkg as { version: string }).version, sha: process.env.GIT_SHA ?? 'dev' });
@@ -101,6 +127,7 @@ export function createApp({ db, mailer }: AppDeps): Express {
   app.use(`${API}/sync`, syncRouter(db));
   app.use(`${API}/reports`, reportingRouter(db));
 
+  app.use(notFoundHandler);
   app.use(errorHandler);
 
   return app;

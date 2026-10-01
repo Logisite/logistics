@@ -2151,7 +2151,11 @@
                   "type": "string",
                   "format": "uuid"
                 },
-                "payload": {}
+                "payload": {
+                  "type": "object",
+                  "additionalProperties": {},
+                  "default": {}
+                }
               },
               "required": [
                 "seq",
@@ -2160,7 +2164,8 @@
                 "entity"
               ]
             },
-            "minItems": 1
+            "minItems": 1,
+            "maxItems": 1000
           }
         },
         "required": [
@@ -11185,6 +11190,30 @@
             "required": true,
             "name": "deviceId",
             "in": "path"
+          },
+          {
+            "schema": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": -1,
+              "default": -1
+            },
+            "required": false,
+            "name": "since",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
           }
         ],
         "responses": {

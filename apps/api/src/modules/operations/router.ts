@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 
 import type { Db } from '../../shared/db.js';
-import { badRequest, forbidden } from '../../shared/errors.js';
+import { forbidden } from '../../shared/errors.js';
 import type { AuthContext } from '../auth/middleware.js';
 import { requireAuth, requirePermission } from '../auth/middleware.js';
 import { PERMISSIONS } from '../auth/permissions.js';
@@ -53,9 +53,7 @@ defineRoute({ method: 'get', path: '/runs/{id}', request: { params: IdParam }, r
 defineRoute({ method: 'post', path: '/runs/{id}/gps', request: { params: IdParam, body: { content: { 'application/json': { schema: GpsPushRequest } } } }, responses: { 200: { description: 'GPS positions inserted', content: { 'application/json': { schema: GpsInsertResponse } } } } });
 
 function runId(req: { params: Record<string, unknown> }): string {
-  const id = req.params.id;
-  if (typeof id !== 'string') throw badRequest('VALIDATION', 'Invalid run id');
-  return id;
+  return parse(IdParam, req.params).id;
 }
 
 export function operationsRouter(db: Db): Router {
