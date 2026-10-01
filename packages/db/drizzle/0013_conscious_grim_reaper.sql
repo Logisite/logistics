@@ -1,0 +1,3 @@
+ALTER TABLE "settlements" ALTER COLUMN "merchant_profile_id" SET NOT NULL;--> statement-breakpoint
+ALTER TABLE "settlements" ADD CONSTRAINT "settlements_merchant_profile_id_merchant_profiles_id_fk" FOREIGN KEY ("merchant_profile_id") REFERENCES "public"."merchant_profiles"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "reconciliations" ADD CONSTRAINT "reconciliations_collection_unique" UNIQUE("collection_id");

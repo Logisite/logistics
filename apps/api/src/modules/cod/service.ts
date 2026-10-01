@@ -434,31 +434,54 @@ export async function computeSettlements(
     return true;
   });
 
-  const groups = new Map<string | null, typeof eligible>();
+  const groups = new Map<string, typeof eligible>();
+  const unattributed: typeof eligible = [];
+  const profileByUser = new Map<string, string | null>();
   for (const row of eligible) {
-    let profileId: string | null = null;
-    if (row.senderUserId) {
+    if (!row.senderUserId) {
+      unattributed.push(row);
+      continue;
+    }
+    if (!profileByUser.has(row.senderUserId)) {
       const [profile] = await db
         .select({ id: merchantProfiles.id })
         .from(merchantProfiles)
         .where(eq(merchantProfiles.userId, row.senderUserId));
-      if (profile?.id) {
-        profileId = profile.id;
-      } else {
-        logger.warn(
-          {
-            senderUserId: row.senderUserId,
-            reconciliationId: row.reconciliation.id,
-            functionalAmountCents: row.reconciliation.functionalAmountCents,
-            functionalCurrency: row.reconciliation.functionalCurrency,
-          },
-          'cod.settlement-unmatched-merchant',
-        );
-      }
+      profileByUser.set(row.senderUserId, profile?.id ?? null);
+    }
+    const profileId = profileByUser.get(row.senderUserId) ?? null;
+    if (!profileId) {
+      logger.warn(
+        {
+          senderUserId: row.senderUserId,
+          reconciliationId: row.reconciliation.id,
+          functionalAmountCents: row.reconciliation.functionalAmountCents,
+          functionalCurrency: row.reconciliation.functionalCurrency,
+        },
+        'cod.settlement-unmatched-merchant',
+      );
+      unattributed.push(row);
+      continue;
     }
     const bucket = groups.get(profileId) ?? [];
     bucket.push(row);
     groups.set(profileId, bucket);
+  }
+
+  if (unattributed.length > 0) {
+    logger.error(
+      {
+        periodStart: periodStart.toISOString(),
+        periodEnd: periodEnd.toISOString(),
+        count: unattributed.length,
+        functionalAmountCents: unattributed.reduce(
+          (sum, r) => sum + r.reconciliation.functionalAmountCents,
+          0,
+        ),
+        functionalCurrency: FUNCTIONAL_CURRENCY,
+      },
+      'cod.settlement-unattributable',
+    );
   }
 
   const created = [];
@@ -471,21 +494,26 @@ export async function computeSettlements(
       lineCount: groupRows.length,
     };
     try {
-      const [settlement] = await db
-        .insert(settlements)
-        .values({
-          merchantProfileId,
-          functionalCurrency: FUNCTIONAL_CURRENCY,
-          functionalAmountCents: total,
-          periodStart,
-          periodEnd,
-        })
-        .returning();
-      for (const r of groupRows) {
-        await db
-          .insert(settlementLines)
-          .values({ settlementId: settlement!.id, reconciliationId: r.reconciliation.id });
-      }
+      const settlement = await db.transaction(async (tx) => {
+        const [row] = await tx
+          .insert(settlements)
+          .values({
+            merchantProfileId,
+            functionalCurrency: FUNCTIONAL_CURRENCY,
+            functionalAmountCents: total,
+            periodStart,
+            periodEnd,
+          })
+          .returning();
+        if (!row) throw new Error('computeSettlements: settlement insert returned nothing');
+        await tx.insert(settlementLines).values(
+          groupRows.map((r) => ({
+            settlementId: row.id,
+            reconciliationId: r.reconciliation.id,
+          })),
+        );
+        return row;
+      });
       created.push(settlement!);
       logger.info({ ...settlementCtx, settlementId: settlement!.id }, 'cod.settlement-created');
     } catch (err) {
@@ -517,14 +545,31 @@ export async function computeSettlements(
 }
 
 export async function markSettled(db: Db, ctx: AuthContext, settlementId: string) {
+  const [existing] = await db
+    .select({ status: settlements.status, merchantProfileId: settlements.merchantProfileId })
+    .from(settlements)
+    .where(eq(settlements.id, settlementId))
+    .limit(1);
+  if (!existing) {
+    logger.warn({ reason: 'not-found', settlementId }, 'cod.settlement-rejected');
+    throw notFound('NOT_FOUND', 'Settlement not found');
+  }
+  if (existing.status !== 'PENDING') {
+    logger.warn(
+      { reason: 'already-settled', settlementId, previousStatus: existing.status },
+      'cod.settlement-rejected',
+    );
+    throw conflict('ALREADY_SETTLED', `Settlement is already ${existing.status}`);
+  }
+
   const [updated] = await db
     .update(settlements)
     .set({ status: 'SETTLED', settledAt: new Date() })
-    .where(eq(settlements.id, settlementId))
+    .where(and(eq(settlements.id, settlementId), eq(settlements.status, 'PENDING')))
     .returning();
   if (!updated) {
-    logger.warn({ reason: 'not-found', settlementId }, 'cod.settlement-rejected');
-    throw notFound('NOT_FOUND', 'Settlement not found');
+    logger.warn({ reason: 'lost-race', settlementId }, 'cod.settlement-rejected');
+    throw conflict('ALREADY_SETTLED', 'Settlement was settled concurrently');
   }
 
   logger.info(

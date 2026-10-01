@@ -12,6 +12,7 @@ import {
 
 import { users } from './identity.js';
 import { hubs } from './locations.js';
+import { merchantProfiles } from './merchants.js';
 import { shipments } from './shipments.js';
 import { currencyEnum } from './enums.js';
 import { runs } from './operations.js';
@@ -91,12 +92,15 @@ export const reconciliations = pgTable(
   (t) => [
     index('reconciliations_deposit_id_idx').on(t.depositId),
     index('reconciliations_collection_id_idx').on(t.collectionId),
+    unique('reconciliations_collection_unique').on(t.collectionId),
   ],
 );
 
 export const settlements = pgTable('settlements', {
   id: uuid('id').primaryKey().defaultRandom(),
-  merchantProfileId: uuid('merchant_profile_id'),
+  merchantProfileId: uuid('merchant_profile_id')
+    .notNull()
+    .references(() => merchantProfiles.id, { onDelete: 'restrict' }),
   functionalCurrency: currencyEnum('functional_currency').notNull(),
   functionalAmountCents: integer('functional_amount_cents').notNull(),
   periodStart: timestamp('period_start', { withTimezone: true }).notNull(),
