@@ -1,4 +1,4 @@
-import { getConfig } from '../../shared/config.js';
+import { getConfig, isProd } from '../../shared/config.js';
 import { logger } from '../../shared/logger.js';
 
 import { sha256Hex } from './hash.js';
@@ -74,7 +74,7 @@ export function createSmsProvider(): SmsProvider {
   if (config.smsAccountSid && config.smsAuthToken && config.smsFromNumber) {
     return new TwilioSmsProvider();
   }
-  if (process.env.NODE_ENV === 'production') {
+  if (isProd) {
     logger.error('identity.sms-not-configured');
     throw new Error(
       'SMS provider not configured. Set SMS_ACCOUNT_SID, SMS_AUTH_TOKEN, and SMS_FROM_NUMBER.',
