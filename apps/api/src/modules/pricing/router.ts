@@ -7,6 +7,7 @@ import type { AuthContext } from '../auth/middleware.js';
 import { requireAuth, requirePermission } from '../auth/middleware.js';
 import { PERMISSIONS } from '../auth/permissions.js';
 
+import * as admin from './admin.js';
 import * as service from './service.js';
 import { defineRoute } from '../../openapi/registry.js';
 import { parse } from '../../shared/validate.js';
@@ -140,14 +141,14 @@ export function pricingRouter(db: Db): Router {
       sizeClass: req.query.sizeClass as string | undefined,
       weightClass: req.query.weightClass as string | undefined,
     };
-    const rules = await service.listPricingRules(db, filters);
+    const rules = await admin.listPricingRules(db, filters);
     res.json({ rules });
   });
 
   router.post('/rules', ...requireAdmin, async (req, res) => {
     const ctx = res.locals.auth as AuthContext;
     const input = parse(PricingRuleRequest, req.body);
-    const rule = await service.createPricingRule(db, ctx, {
+    const rule = await admin.createPricingRule(db, ctx, {
       ...input,
       validFrom: new Date(input.validFrom),
       validTo: input.validTo ? new Date(input.validTo) : null,
@@ -160,7 +161,7 @@ export function pricingRouter(db: Db): Router {
     const { id } = req.params;
     if (typeof id !== 'string') throw badRequest('VALIDATION', 'Invalid pricing rule id');
     const input = parse(PricingRuleUpdateRequest, req.body);
-    const rule = await service.updatePricingRule(db, ctx, id, {
+    const rule = await admin.updatePricingRule(db, ctx, id, {
       ...input,
       validFrom: input.validFrom ? new Date(input.validFrom) : undefined,
       validTo: input.validTo !== undefined ? (input.validTo ? new Date(input.validTo) : null) : undefined,
@@ -173,7 +174,7 @@ export function pricingRouter(db: Db): Router {
     requireAuth(db),
     requirePermission(PERMISSIONS.QUOTE_CREATE),
     async (_req, res) => {
-      const options = await service.listDeliveryOptions(db);
+      const options = await admin.listDeliveryOptions(db);
       res.json({ deliveryOptions: options });
     },
   );
@@ -181,7 +182,7 @@ export function pricingRouter(db: Db): Router {
   router.post('/delivery-options', ...requireAdmin, async (req, res) => {
     const ctx = res.locals.auth as AuthContext;
     const input = parse(DeliveryOptionRequest, req.body);
-    const option = await service.createDeliveryOption(db, ctx, input);
+    const option = await admin.createDeliveryOption(db, ctx, input);
     res.status(201).json({ deliveryOption: option });
   });
 
@@ -190,7 +191,7 @@ export function pricingRouter(db: Db): Router {
     const { id } = req.params;
     if (typeof id !== 'string') throw badRequest('VALIDATION', 'Invalid delivery option id');
     const input = parse(DeliveryOptionUpdateRequest, req.body);
-    const option = await service.updateDeliveryOption(db, ctx, id, input);
+    const option = await admin.updateDeliveryOption(db, ctx, id, input);
     res.json({ deliveryOption: option });
   });
 

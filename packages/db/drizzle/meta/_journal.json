@@ -85,6 +85,13 @@
       "when": 1790816724952,
       "tag": "0011_volatile_black_crow",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1790819313673,
+      "tag": "0012_volatile_stature",
+      "breakpoints": true
     }
   ]
 }

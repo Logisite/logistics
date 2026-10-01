@@ -1,11 +1,9 @@
-import { and, eq } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { createHash } from 'crypto';
 
 import {
-  deliveryOptions,
   idempotencyKeys,
   packages as packagesTable,
-  pricingRules,
   shipments,
   shipmentEvents,
 } from '@logistics/db';
@@ -13,7 +11,7 @@ import {
 import { writeAudit } from '../auth/audit.js';
 import type { AuthContext } from '../auth/middleware.js';
 import type { Db } from '../../shared/db.js';
-import { badRequest, conflict, notFound } from '../../shared/errors.js';
+import { badRequest, conflict } from '../../shared/errors.js';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -159,12 +157,27 @@ export async function computeQuote(
 // Booking
 // ---------------------------------------------------------------------------
 
+function canonicalize(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(canonicalize);
+  if (value !== null && typeof value === 'object') {
+    const source = value as Record<string, unknown>;
+    return Object.fromEntries(
+      Object.keys(source)
+        .sort()
+        .map((k) => [k, canonicalize(source[k])]),
+    );
+  }
+  return value;
+}
+
 function hashRequest(input: Record<string, unknown>): string {
-  const sorted = JSON.stringify(input, Object.keys(input).sort());
-  return createHash('sha256').update(sorted).digest('hex');
+  return createHash('sha256').update(JSON.stringify(canonicalize(input))).digest('hex');
 }
 
 export async function createBooking(db: Db, ctx: AuthContext, input: BookingInput) {
+  let quote: QuoteResult;
+  let pricingSource: 'computed' | 'custom' = 'computed';
+
   // Resolve origin zone from pickup location
   const pickupLoc = await db.query.pickupLocations.findFirst({
     where: (t, { eq }) => eq(t.id, input.pickupLocationId),
@@ -190,17 +203,17 @@ export async function createBooking(db: Db, ctx: AuthContext, input: BookingInpu
   // Idempotency check
   let idempotencyEntry: { id: string; requestHash: string } | null = null;
   if (input.idempotencyKey) {
-    const hashPayload = {
+    const requestHash = hashRequest({
       originZoneId,
       destinationZoneId: input.destinationZoneId,
       deliveryOptionId: input.deliveryOptionId,
       packages: input.packages,
       recipientName: input.recipientName,
-    };
-    const requestHash = hashRequest(hashPayload);
+    });
 
     const existing = await db.query.idempotencyKeys.findFirst({
-      where: (t, { eq }) => eq(t.key, input.idempotencyKey!),
+      where: (t, { and: both, eq: eql }) =>
+        both(eql(t.userId, ctx.userId), eql(t.key, input.idempotencyKey!)),
     });
 
     if (existing) {
@@ -210,30 +223,38 @@ export async function createBooking(db: Db, ctx: AuthContext, input: BookingInpu
       if (existing.response) {
         return existing.response as Record<string, unknown>;
       }
+      if (existing.shipmentId) {
+        const [claimed] = await db
+          .select()
+          .from(shipments)
+          .where(eq(shipments.id, existing.shipmentId));
+        if (claimed) return claimed as unknown as Record<string, unknown>;
+      }
+      idempotencyEntry = { id: existing.id, requestHash };
     } else {
       const [entry] = await db
         .insert(idempotencyKeys)
         .values({
+          userId: ctx.userId,
           key: input.idempotencyKey,
           requestHash,
-          expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24h
+          expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
         })
+        .onConflictDoNothing({ target: [idempotencyKeys.userId, idempotencyKeys.key] })
         .returning({ id: idempotencyKeys.id, requestHash: idempotencyKeys.requestHash });
-      idempotencyEntry = entry ?? null;
+      if (entry) {
+        idempotencyEntry = entry;
+      } else {
+        throw conflict('IDEMPOTENCY_IN_FLIGHT', 'A request with this idempotency key is in flight');
+      }
     }
   }
 
-  // Compute quote (or use custom price)
-  let quote: QuoteResult;
-  let pricingSource: 'computed' | 'custom' = 'computed';
-
   if (input.customPriceCents !== undefined) {
-    // Only MERCHANT and ADMIN can use custom pricing
     if (ctx.roleName !== 'MERCHANT' && ctx.roleName !== 'ADMIN') {
       throw badRequest('INVALID_CUSTOM_PRICE', 'Only merchants and admins can set custom prices');
     }
 
-    // Compute the normal price for comparison
     const computedQuote = await computeQuote(db, {
       originZoneId,
       destinationZoneId: input.destinationZoneId,
@@ -242,10 +263,11 @@ export async function createBooking(db: Db, ctx: AuthContext, input: BookingInpu
       currency: input.currency ?? 'GBP',
     });
 
-    // Warn if custom price deviates significantly
     const deviation =
-      Math.abs(input.customPriceCents - computedQuote.amountCents) / computedQuote.amountCents;
-    if (deviation > 0.5) {
+      computedQuote.amountCents > 0
+        ? Math.abs(input.customPriceCents - computedQuote.amountCents) / computedQuote.amountCents
+        : null;
+    if (deviation !== null && deviation > 0.5) {
       await writeAudit(db, ctx, {
         action: 'pricing.custom_price_warning',
         entityType: 'shipment',
@@ -254,6 +276,12 @@ export async function createBooking(db: Db, ctx: AuthContext, input: BookingInpu
           customAmountCents: input.customPriceCents,
           deviation: Math.round(deviation * 100),
         },
+      });
+    } else if (deviation === null) {
+      await writeAudit(db, ctx, {
+        action: 'pricing.custom_price_unpriced',
+        entityType: 'shipment',
+        payload: { customAmountCents: input.customPriceCents },
       });
     }
 
@@ -286,308 +314,63 @@ export async function createBooking(db: Db, ctx: AuthContext, input: BookingInpu
     computedAt: new Date().toISOString(),
   };
 
-  // Create shipment
-  const [shipment] = await db
-    .insert(shipments)
-    .values({
-      status: 'BOOKED' as const,
-      senderUserId: ctx.userId,
-      senderName: input.senderName ?? null,
-      senderEmail: input.senderEmail ?? null,
-      senderPhone: input.senderPhone ?? null,
-      recipientName: input.recipientName,
-      recipientEmail: input.recipientEmail ?? null,
-      recipientPhone: input.recipientPhone ?? null,
-      pickupLocationId: input.pickupLocationId,
-      destinationZoneId: input.destinationZoneId,
-      deliveryOptionId: input.deliveryOptionId,
-      quoteAmountCents: quote.amountCents,
-      quoteCurrency: quote.currency as 'USD' | 'EUR' | 'GBP',
-      quoteSnapshot,
-      scheduledFor: input.scheduledFor ?? null,
-      specialInstructions: input.specialInstructions ?? null,
-      category: input.category ?? null,
-      createdByUserId: ctx.userId,
-    })
-    .returning();
-  if (!shipment) throw new Error('createBooking: insert returned nothing');
+return db.transaction(async (tx) => {
+    const [shipment] = await tx
+      .insert(shipments)
+      .values({
+        status: 'BOOKED' as const,
+        senderUserId: ctx.userId,
+        senderName: input.senderName ?? null,
+        senderEmail: input.senderEmail ?? null,
+        senderPhone: input.senderPhone ?? null,
+        recipientName: input.recipientName,
+        recipientEmail: input.recipientEmail ?? null,
+        recipientPhone: input.recipientPhone ?? null,
+        pickupLocationId: input.pickupLocationId,
+        destinationZoneId: input.destinationZoneId,
+        deliveryOptionId: input.deliveryOptionId,
+        quoteAmountCents: quote.amountCents,
+        quoteCurrency: quote.currency as 'USD' | 'EUR' | 'GBP',
+        quoteSnapshot,
+        scheduledFor: input.scheduledFor ?? null,
+        specialInstructions: input.specialInstructions ?? null,
+        category: input.category ?? null,
+        createdByUserId: ctx.userId,
+      })
+      .returning();
+    if (!shipment) throw new Error('createBooking: insert returned nothing');
 
-  // Create package rows
-  for (const pkg of input.packages) {
-    await db.insert(packagesTable).values({
+    await tx.insert(packagesTable).values(
+      input.packages.map((pkg) => ({
+        shipmentId: shipment.id,
+        sizeClass: pkg.sizeClass,
+        weightClass: pkg.weightClass,
+        quantity: pkg.quantity,
+      })),
+    );
+
+    await tx.insert(shipmentEvents).values({
       shipmentId: shipment.id,
-      sizeClass: pkg.sizeClass,
-      weightClass: pkg.weightClass,
-      quantity: pkg.quantity,
+      fromStatus: null,
+      toStatus: 'BOOKED',
+      actorUserId: ctx.userId,
+      occurredAt: new Date(),
     });
-  }
 
-  // Append shipment event
-  const now = new Date();
-  await db.insert(shipmentEvents).values({
-    shipmentId: shipment.id,
-    fromStatus: null,
-    toStatus: 'BOOKED',
-    actorUserId: ctx.userId,
-    occurredAt: now,
+    if (idempotencyEntry) {
+      await tx
+        .update(idempotencyKeys)
+        .set({ shipmentId: shipment.id, response: shipment })
+        .where(eq(idempotencyKeys.id, idempotencyEntry.id));
+    }
+
+    await writeAudit(tx as unknown as Db, ctx, {
+      action: 'booking.create',
+      entityType: 'shipment',
+      entityId: shipment.id,
+      payload: { quoteSnapshot },
+    });
+
+    return shipment;
   });
-
-  // Update idempotency entry with response
-  if (idempotencyEntry) {
-    await db
-      .update(idempotencyKeys)
-      .set({ shipmentId: shipment.id, response: shipment })
-      .where(eq(idempotencyKeys.id, idempotencyEntry.id));
-  }
-
-  await writeAudit(db, ctx, {
-    action: 'booking.create',
-    entityType: 'shipment',
-    entityId: shipment.id,
-    payload: { quoteSnapshot },
-  });
-
-  return shipment;
-}
-
-// ---------------------------------------------------------------------------
-// Admin: Pricing rules CRUD
-// ---------------------------------------------------------------------------
-
-export async function listPricingRules(
-  db: Db,
-  filters?: {
-    originZoneId?: string;
-    destinationZoneId?: string;
-    deliveryOptionId?: string;
-    currency?: string;
-    isActive?: boolean;
-    sizeClass?: string;
-    weightClass?: string;
-  },
-) {
-  const conditions = [];
-  if (filters?.originZoneId) {
-    conditions.push(eq(pricingRules.originZoneId, filters.originZoneId));
-  }
-  if (filters?.destinationZoneId) {
-    conditions.push(eq(pricingRules.destinationZoneId, filters.destinationZoneId));
-  }
-  if (filters?.deliveryOptionId) {
-    conditions.push(eq(pricingRules.deliveryOptionId, filters.deliveryOptionId));
-  }
-  if (filters?.currency) {
-    conditions.push(eq(pricingRules.currency, filters.currency as 'USD' | 'EUR' | 'GBP'));
-  }
-  if (filters?.isActive !== undefined) {
-    conditions.push(eq(pricingRules.isActive, filters.isActive));
-  }
-  if (filters?.sizeClass) {
-    conditions.push(
-      eq(pricingRules.sizeClass, filters.sizeClass as 'SMALL' | 'MEDIUM' | 'LARGE' | 'EXTRA_LARGE'),
-    );
-  }
-  if (filters?.weightClass) {
-    conditions.push(
-      eq(
-        pricingRules.weightClass,
-        filters.weightClass as 'LIGHT' | 'MEDIUM' | 'HEAVY' | 'EXTRA_HEAVY',
-      ),
-    );
-  }
-
-  const where = conditions.length > 0 ? and(...conditions) : undefined;
-
-  return db.query.pricingRules.findMany({
-    where,
-    orderBy: (t, { asc }) => [asc(t.createdAt)],
-  });
-}
-
-export async function createPricingRule(
-  db: Db,
-  ctx: AuthContext,
-  input: {
-    originZoneId: string;
-    destinationZoneId: string;
-    sizeClass: string;
-    weightClass: string;
-    deliveryOptionId: string;
-    currency: string;
-    amountCents: number;
-    validFrom: Date;
-    validTo?: Date | null;
-  },
-) {
-  // Validate zones
-  const originZone = await db.query.zones.findFirst({
-    where: (t, { eq }) => eq(t.id, input.originZoneId),
-  });
-  if (!originZone) throw badRequest('VALIDATION', 'Origin zone not found');
-
-  const destZone = await db.query.zones.findFirst({
-    where: (t, { eq }) => eq(t.id, input.destinationZoneId),
-  });
-  if (!destZone) throw badRequest('VALIDATION', 'Destination zone not found');
-
-  // Validate delivery option
-  const deliveryOption = await db.query.deliveryOptions.findFirst({
-    where: (t, { eq }) => eq(t.id, input.deliveryOptionId),
-  });
-  if (!deliveryOption) throw badRequest('VALIDATION', 'Delivery option not found');
-
-  // Check for duplicate active rule
-  const now = new Date();
-  const existingRule = await db.query.pricingRules.findFirst({
-    where: (t, { and, eq, gt, lte, or, isNull }) =>
-      and(
-        eq(t.originZoneId, input.originZoneId),
-        eq(t.destinationZoneId, input.destinationZoneId),
-        eq(t.sizeClass, input.sizeClass as 'SMALL' | 'MEDIUM' | 'LARGE' | 'EXTRA_LARGE'),
-        eq(t.weightClass, input.weightClass as 'LIGHT' | 'MEDIUM' | 'HEAVY' | 'EXTRA_HEAVY'),
-        eq(t.deliveryOptionId, input.deliveryOptionId),
-        eq(t.currency, input.currency as 'USD' | 'EUR' | 'GBP'),
-        eq(t.isActive, true),
-        lte(t.validFrom, now),
-        or(isNull(t.validTo), gt(t.validTo, now)),
-      ),
-  });
-
-  if (existingRule) {
-    throw conflict(
-      'DUPLICATE_RULE',
-      'An active pricing rule already exists for this configuration',
-    );
-  }
-
-  const [rule] = await db
-    .insert(pricingRules)
-    .values({
-      originZoneId: input.originZoneId,
-      destinationZoneId: input.destinationZoneId,
-      sizeClass: input.sizeClass as 'SMALL' | 'MEDIUM' | 'LARGE' | 'EXTRA_LARGE',
-      weightClass: input.weightClass as 'LIGHT' | 'MEDIUM' | 'HEAVY' | 'EXTRA_HEAVY',
-      deliveryOptionId: input.deliveryOptionId,
-      currency: input.currency as 'USD' | 'EUR' | 'GBP',
-      amountCents: input.amountCents,
-      validFrom: input.validFrom,
-      validTo: input.validTo ?? null,
-    })
-    .returning();
-  if (!rule) throw new Error('createPricingRule: insert returned nothing');
-
-  await writeAudit(db, ctx, {
-    action: 'pricing_rule.create',
-    entityType: 'pricing_rule',
-    entityId: rule.id,
-  });
-
-  return rule;
-}
-
-export async function updatePricingRule(
-  db: Db,
-  ctx: AuthContext,
-  ruleId: string,
-  input: {
-    amountCents?: number;
-    isActive?: boolean;
-    validFrom?: Date;
-    validTo?: Date | null;
-  },
-) {
-  const existing = await db.query.pricingRules.findFirst({
-    where: (t, { eq }) => eq(t.id, ruleId),
-  });
-  if (!existing) throw notFound('NOT_FOUND', 'Pricing rule not found');
-
-  const [rule] = await db
-    .update(pricingRules)
-    .set({
-      ...(input.amountCents !== undefined && { amountCents: input.amountCents }),
-      ...(input.isActive !== undefined && { isActive: input.isActive }),
-      ...(input.validFrom !== undefined && { validFrom: input.validFrom }),
-      ...(input.validTo !== undefined && { validTo: input.validTo }),
-    })
-    .where(eq(pricingRules.id, ruleId))
-    .returning();
-  if (!rule) throw new Error('updatePricingRule: update returned nothing');
-
-  await writeAudit(db, ctx, {
-    action: 'pricing_rule.update',
-    entityType: 'pricing_rule',
-    entityId: rule.id,
-  });
-
-  return rule;
-}
-
-// ---------------------------------------------------------------------------
-// Admin: Delivery options CRUD
-// ---------------------------------------------------------------------------
-
-export async function listDeliveryOptions(db: Db) {
-  return db.query.deliveryOptions.findMany({
-    orderBy: (t, { asc }) => [asc(t.code)],
-  });
-}
-
-export async function createDeliveryOption(
-  db: Db,
-  ctx: AuthContext,
-  input: { code: string; name: string; description?: string },
-) {
-  const existing = await db.query.deliveryOptions.findFirst({
-    where: (t, { eq }) => eq(t.code, input.code as 'STANDARD' | 'EXPRESS' | 'SAME_DAY' | 'SCHEDULED' | 'PICKUP_AT_LOCATION' | 'DROP_OFF_AT_LOCATION'),
-  });
-  if (existing) throw conflict('CONFLICT', 'Delivery option code already exists');
-
-  const [option] = await db
-    .insert(deliveryOptions)
-    .values({
-      code: input.code as 'STANDARD' | 'EXPRESS' | 'SAME_DAY' | 'SCHEDULED' | 'PICKUP_AT_LOCATION' | 'DROP_OFF_AT_LOCATION',
-      name: input.name,
-      description: input.description ?? null,
-    })
-    .returning();
-  if (!option) throw new Error('createDeliveryOption: insert returned nothing');
-
-  await writeAudit(db, ctx, {
-    action: 'delivery_option.create',
-    entityType: 'delivery_option',
-    entityId: option.id,
-  });
-
-  return option;
-}
-
-export async function updateDeliveryOption(
-  db: Db,
-  ctx: AuthContext,
-  optionId: string,
-  input: { name?: string; description?: string; isActive?: boolean },
-) {
-  const existing = await db.query.deliveryOptions.findFirst({
-    where: (t, { eq }) => eq(t.id, optionId),
-  });
-  if (!existing) throw notFound('NOT_FOUND', 'Delivery option not found');
-
-  const [option] = await db
-    .update(deliveryOptions)
-    .set({
-      ...(input.name !== undefined && { name: input.name }),
-      ...(input.description !== undefined && { description: input.description }),
-      ...(input.isActive !== undefined && { isActive: input.isActive }),
-    })
-    .where(eq(deliveryOptions.id, optionId))
-    .returning();
-  if (!option) throw new Error('updateDeliveryOption: update returned nothing');
-
-  await writeAudit(db, ctx, {
-    action: 'delivery_option.update',
-    entityType: 'delivery_option',
-    entityId: option.id,
-  });
-
-  return option;
 }

@@ -109,11 +109,15 @@ export const idempotencyKeys = pgTable(
   'idempotency_keys',
   {
     id: uuid('id').primaryKey().defaultRandom(),
-    key: text('key').notNull().unique(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    key: text('key').notNull(),
     requestHash: text('request_hash').notNull(),
     shipmentId: uuid('shipment_id').references(() => shipments.id, { onDelete: 'set null' }),
     response: jsonb('response'),
     expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
+  (t) => [unique('idempotency_keys_user_key_unique').on(t.userId, t.key)],
 );
