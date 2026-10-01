@@ -1,0 +1,1 @@
+ALTER TABLE "collections" ADD CONSTRAINT "collections_shipment_unique" UNIQUE("shipment_id");

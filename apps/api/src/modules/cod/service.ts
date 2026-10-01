@@ -7,9 +7,12 @@ import {
   fxRates,
   merchantProfiles,
   reconciliations,
+  roleGrants,
+  roles,
   settlementLines,
   settlements,
   shipments,
+  users,
 } from '@logistics/db';
 
 import { getConfig } from '../../shared/config.js';
@@ -17,7 +20,7 @@ import { logger } from '../../shared/logger.js';
 import { writeAudit } from '../auth/audit.js';
 import type { AuthContext } from '../auth/middleware.js';
 import type { Db } from '../../shared/db.js';
-import { badRequest, conflict, notFound } from '../../shared/errors.js';
+import { badRequest, conflict, forbidden, notFound } from '../../shared/errors.js';
 
 import { convertCents } from './fx.js';
 
@@ -27,6 +30,33 @@ type Currency = 'USD' | 'EUR' | 'GBP';
 export const FUNCTIONAL_CURRENCY: Currency = getConfig().functionalCurrency;
 
 type Queryable = Pick<Db, 'select'>;
+
+function resolveSelfOrAdmin(ctx: AuthContext, requested?: string): string {
+  if (!requested || requested === ctx.userId) return ctx.userId;
+  if (ctx.roleName !== 'ADMIN') {
+    logger.warn(
+      { actorUserId: ctx.userId, roleName: ctx.roleName, requestedDriverUserId: requested },
+      'cod.driver-mismatch-rejected',
+    );
+    throw forbidden('FORBIDDEN', 'Only an admin can record a collection for another driver');
+  }
+  return requested;
+}
+
+async function assertDriver(db: Db, userId: string): Promise<void> {
+  const [driver] = await db
+    .select({ isActive: users.isActive })
+    .from(users)
+    .innerJoin(roleGrants, eq(roleGrants.userId, users.id))
+    .innerJoin(roles, eq(roles.id, roleGrants.roleId))
+    .where(and(eq(users.id, userId), eq(roles.name, 'DRIVER')))
+    .limit(1);
+  if (!driver) {
+    logger.warn({ driverUserId: userId }, 'cod.driver-mismatch-rejected');
+    throw notFound('NOT_FOUND', 'Driver not found');
+  }
+  if (!driver.isActive) throw badRequest('VALIDATION', 'Driver account is inactive');
+}
 
 async function latestRate(
   q: Queryable,
@@ -80,8 +110,8 @@ export async function recordCollection(db: Db, ctx: AuthContext, input: RecordCo
     throw conflict('NOT_DELIVERED', 'Collections are captured on DELIVERED shipments only');
   }
 
-  const driverUserId = input.driverUserId ?? ctx.userId;
-  const [row] = await db
+  const driverUserId = resolveSelfOrAdmin(ctx, input.driverUserId);
+  const claimed = await db
     .insert(collections)
     .values({
       shipmentId: input.shipmentId,
@@ -91,11 +121,27 @@ export async function recordCollection(db: Db, ctx: AuthContext, input: RecordCo
       paymentMethod: input.paymentMethod,
       collectedAt: input.collectedAt ? new Date(input.collectedAt) : new Date(),
     })
+    .onConflictDoNothing({ target: collections.shipmentId })
     .returning();
 
+  if (!claimed[0]) {
+    const [existing] = await db
+      .select()
+      .from(collections)
+      .where(eq(collections.shipmentId, input.shipmentId))
+      .limit(1);
+    logger.info(
+      { shipmentId: input.shipmentId, collectionId: existing?.id, actorUserId: ctx.userId },
+      'cod.collection-deduped',
+    );
+    if (!existing) throw conflict('DUPLICATE_COLLECTION', 'Shipment already collected');
+    return existing;
+  }
+
+  const row = claimed[0];
   logger.info(
     {
-      collectionId: row!.id,
+      collectionId: row.id,
       shipmentId: input.shipmentId,
       driverUserId,
       amountCents: input.amountCents,
@@ -107,10 +153,10 @@ export async function recordCollection(db: Db, ctx: AuthContext, input: RecordCo
   await writeAudit(db, ctx, {
     action: 'cod.collection.create',
     entityType: 'collection',
-    entityId: row!.id,
+    entityId: row.id,
     payload: { shipmentId: input.shipmentId },
   });
-  return row!;
+  return row;
 }
 
 export interface RecordDepositInput {
@@ -123,6 +169,7 @@ export interface RecordDepositInput {
 }
 
 export async function recordDeposit(db: Db, ctx: AuthContext, input: RecordDepositInput) {
+  await assertDriver(db, input.driverUserId);
   const [row] = await db
     .insert(deposits)
     .values({
@@ -196,7 +243,25 @@ export async function reconcile(
       throw badRequest('VALIDATION', 'One or more collections do not exist');
     }
     for (const c of cols) {
-      if (c.status !== 'COLLECTED') {
+        if (c.driverUserId !== deposit.driverUserId) {
+          logger.warn(
+            {
+              reason: 'driver-mismatch',
+              depositId,
+              collectionId: c.id,
+              collectionDriverUserId: c.driverUserId,
+              depositDriverUserId: deposit.driverUserId,
+            },
+            'cod.reconcile-rejected',
+          );
+          throw badRequest(
+            'VALIDATION',
+            'Collection does not belong to the driver who made this deposit',
+          );
+        }
+      }
+      for (const c of cols) {
+        if (c.status !== 'COLLECTED') {
         logger.warn(
           { reason: 'not-collected', depositId, collectionId: c.id, collectionStatus: c.status },
           'cod.reconcile-rejected',

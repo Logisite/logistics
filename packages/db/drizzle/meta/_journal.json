@@ -78,6 +78,13 @@
       "when": 1790806727530,
       "tag": "0010_chief_magik",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1790816724952,
+      "tag": "0011_volatile_black_crow",
+      "breakpoints": true
     }
   ]
 }

@@ -39,6 +39,7 @@ export const collections = pgTable(
   (t) => [
     index('collections_shipment_id_idx').on(t.shipmentId),
     index('collections_driver_user_id_idx').on(t.driverUserId),
+    unique('collections_shipment_unique').on(t.shipmentId),
   ],
 );
 
